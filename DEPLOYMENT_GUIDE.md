@@ -11,11 +11,12 @@
 
 ### **Solutions:**
 
-#### **Option 1: Cloudinary (Recommended - FREE)**
+#### **Option 1: Cloudinary (✅ IMPLEMENTED - FREE)**
 - **25GB storage** + **25GB bandwidth/month** free
 - **Automatic image optimization**
 - **CDN delivery**
 - **Easy integration**
+- **PDF parsing preserved** - Files uploaded → Cloudinary → Parsed → Database
 
 #### **Option 2: Database Storage**
 - Store PDFs as **BLOB** in PostgreSQL
@@ -26,6 +27,26 @@
 - **5GB storage** + **20,000 requests/month** free
 - **99.999999999% durability**
 - **Global availability**
+
+---
+
+## ☁️ Cloudinary Setup (FREE FOREVER)
+
+### Step 1: Create Cloudinary Account
+1. Go to [Cloudinary.com](https://cloudinary.com)
+2. Sign up for **FREE** account (no credit card required)
+3. Get your credentials from dashboard:
+   - **Cloud Name**
+   - **API Key** 
+   - **API Secret**
+
+### Step 2: Add Environment Variables
+Add these to your Render backend service:
+```
+CLOUDINARY_CLOUD_NAME=dbmms2djl
+CLOUDINARY_API_KEY=247172795367269
+CLOUDINARY_API_SECRET=OFtp0Vk1U3slPQCwxS7SV33tOsI
+```
 
 ---
 
@@ -71,6 +92,9 @@ NODE_ENV=production
 JWT_SECRET=your-super-secret-jwt-key-here-make-it-long-and-random
 FRONTEND_URL=https://your-frontend-domain.vercel.app
 PORT=5000
+CLOUDINARY_CLOUD_NAME=dbmms2djl
+CLOUDINARY_API_KEY=247172795367269
+CLOUDINARY_API_SECRET=OFtp0Vk1U3slPQCwxS7SV33tOsI
 ```
 
 ### Step 3: Database Connection
