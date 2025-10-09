@@ -489,6 +489,48 @@ function formatDate(dateStr) {
   }
 }
 
+/**
+ * Parse ROS Receipt PDF from buffer (for Cloudinary integration)
+ * @param {Buffer} buffer - PDF file buffer
+ * @returns {Object} Parsed data with success status and extracted information
+ */
+async function parseRosReceiptPDFFromBuffer(buffer) {
+  try {
+    console.log('Starting ROS receipt PDF parsing from buffer...');
+    
+    // Parse the PDF buffer
+    const pdfData = await pdf(buffer);
+    const text = pdfData.text;
+    
+    console.log('PDF text extracted from buffer, length:', text.length);
+    
+    // Parse the receipt data
+    const parsedData = extractRosReceiptData(text);
+    
+    if (!parsedData.success) {
+      return {
+        success: false,
+        error: parsedData.error || 'Failed to parse ROS receipt data'
+      };
+    }
+    
+    console.log('ROS receipt parsed successfully from buffer:', parsedData.data);
+    
+    return {
+      success: true,
+      data: parsedData.data
+    };
+    
+  } catch (error) {
+    console.error('Error parsing ROS receipt PDF from buffer:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
 module.exports = {
-  parseRosReceiptPDF
+  parseRosReceiptPDF,
+  parseRosReceiptPDFFromBuffer
 };

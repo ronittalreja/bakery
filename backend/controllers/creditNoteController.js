@@ -1,44 +1,11 @@
 // File: backend/controllers/creditNoteController.js
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 const CreditNoteParser = require('../utils/creditNoteParser');
 const returnsController = require('./returnsController');
 const db = require('../config/database');
+const { creditNoteUpload, downloadFileFromCloudinary, getFileUrl } = require('../utils/cloudinary');
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../Uploads/CreditNotes');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `credit-note-${uniqueSuffix}${path.extname(file.originalname)}`);
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ['.pdf', '.txt'];
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (allowedTypes.includes(ext)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PDF and TXT files are allowed'), false);
-    }
-  },
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
-  }
-});
-
-// Middleware for file upload
-const uploadMiddleware = upload.single('file');
+// Middleware for file upload using Cloudinary
+const uploadMiddleware = creditNoteUpload.single('file');
 
 // Upload credit note file
 const uploadCreditNote = (req, res) => {
@@ -57,14 +24,26 @@ const uploadCreditNoteHandler = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
 
-    const filePath = req.file.path;
-    const fileName = req.file.filename;
-    const originalName = req.file.originalname;
-    const relativePath = `/Uploads/CreditNotes/${fileName}`; // Relative path for frontend use
+    // Cloudinary provides file info in req.file
+    const cloudinaryFile = req.file;
+    const fileName = cloudinaryFile.filename;
+    const originalName = cloudinaryFile.originalname;
+    const cloudinaryUrl = cloudinaryFile.path; // Cloudinary URL
+    const publicId = cloudinaryFile.public_id; // Cloudinary public ID
 
-    // Parse the uploaded credit note
+    console.log('File uploaded to Cloudinary:', {
+      fileName,
+      originalName,
+      cloudinaryUrl,
+      publicId
+    });
+
+    // Download file from Cloudinary for parsing
+    const fileBuffer = await downloadFileFromCloudinary(publicId);
+    
+    // Parse the uploaded credit note using buffer
     const parser = new CreditNoteParser();
-    const parsedData = await parser.parseFromFile(filePath);
+    const parsedData = await parser.parseFromBuffer(fileBuffer);
     
     if (!parsedData.success) {
       return res.status(400).json({ success: false, error: parsedData.error });
@@ -89,15 +68,25 @@ const uploadCreditNoteHandler = async (req, res) => {
         
         // Check if this specific credit note + return date combination already exists
         const [existing] = await db.execute(
-          'SELECT id, file_name FROM credit_notes WHERE credit_note_number = ? AND date = ?',
+          'SELECT id, cloudinary_url FROM credit_notes WHERE credit_note_number = ? AND date = ?',
           [creditNote.creditNoteNumber, creditNote.returnDate || creditNote.date]
         );
 
         if (existing.length > 0) {
-          // Check if it's from the same PDF file
-          const existingFileName = existing[0].file_name;
-          if (existingFileName === fileName) {
+          // Check if it's from the same Cloudinary file
+          const existingCloudinaryUrl = existing[0].cloudinary_url;
+          if (existingCloudinaryUrl === cloudinaryUrl) {
             // Same PDF, same credit note number, same return date - this is expected for split entries
+            console.log(`Credit note ${creditNote.creditNoteNumber} with return date ${creditNote.returnDate || creditNote.date} already exists from same file, skipping...`);
+            continue;
+          } else {
+            // Different PDF file, same credit note number and return date - this is a duplicate
+            return res.status(400).json({ 
+              success: false, 
+              error: `Credit note ${creditNote.creditNoteNumber} with return date ${creditNote.returnDate || creditNote.date} already exists from a different file` 
+            });
+          }
+        }
             storedCreditNotes.push({
               creditNoteNumber: creditNote.creditNoteNumber,
               returnDate: creditNote.returnDate,
@@ -120,8 +109,8 @@ const uploadCreditNoteHandler = async (req, res) => {
           INSERT INTO credit_notes (
             credit_note_number, date, return_date, receiver_name, receiver_gstin, 
             reason, total_items, gross_value, net_value, 
-            file_name, original_name, items, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            file_name, original_name, cloudinary_url, cloudinary_public_id, items, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         `, [
           creditNote.creditNoteNumber,
           creditNote.date, // Original credit note date
@@ -134,6 +123,8 @@ const uploadCreditNoteHandler = async (req, res) => {
           creditNote.totals?.netValue || 0,
           fileName,
           originalName,
+          cloudinaryUrl,
+          publicId,
           JSON.stringify(creditNote.items || [])
         ]);
 

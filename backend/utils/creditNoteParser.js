@@ -1023,6 +1023,38 @@ class CreditNoteParser {
   }
 
   /**
+   * Parse credit note from buffer (for Cloudinary integration)
+   * @param {Buffer} buffer - File buffer
+   * @param {string} originalName - Original filename to determine file type
+   * @returns {Object} Parsed credit note data
+   */
+  async parseFromBuffer(buffer, originalName = '') {
+    try {
+      const ext = path.extname(originalName).toLowerCase();
+      
+      if (ext === '.txt') {
+        const textContent = buffer.toString('utf8');
+        return this.parseFromText(textContent);
+      } else if (ext === '.pdf') {
+        // Parse PDF using pdf-parse
+        const pdfData = await pdf(buffer);
+        return this.parseFromText(pdfData.text);
+      } else {
+        return {
+          success: false,
+          error: `Unsupported file format: ${ext}`
+        };
+      }
+    } catch (error) {
+      console.error('Error parsing credit note buffer:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
    * Group items by their return date
    * @param {Array} items - Array of items
    * @returns {Map} Map of return date to items array

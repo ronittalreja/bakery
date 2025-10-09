@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const { parseRosReceiptPDF, parseRosReceiptPDFFromBuffer } = require('../utils/rosReceiptParser');
 
 // Get all ROS receipts with optional month filter
 const getAllRosReceipts = async (req, res) => {
@@ -112,10 +113,26 @@ const uploadRosReceipt = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
     
-    const { originalname, filename, path } = req.file;
+    // Cloudinary provides file info in req.file
+    const cloudinaryFile = req.file;
+    const fileName = cloudinaryFile.filename;
+    const originalName = cloudinaryFile.originalname;
+    const cloudinaryUrl = cloudinaryFile.path; // Cloudinary URL
+    const publicId = cloudinaryFile.public_id; // Cloudinary public ID
+
+    console.log('ROS Receipt uploaded to Cloudinary:', {
+      fileName,
+      originalName,
+      cloudinaryUrl,
+      publicId
+    });
     
-    // Parse the ROS receipt PDF
-    const parsedData = await parseRosReceiptPDF(path);
+    // Download file from Cloudinary for parsing
+    const { downloadFileFromCloudinary } = require('../utils/cloudinary');
+    const fileBuffer = await downloadFileFromCloudinary(publicId);
+    
+    // Parse the ROS receipt PDF using buffer
+    const parsedData = await parseRosReceiptPDFFromBuffer(fileBuffer);
     
     if (!parsedData.success) {
       return res.status(400).json({ success: false, error: parsedData.error });
@@ -136,8 +153,8 @@ const uploadRosReceipt = async (req, res) => {
     const insertQuery = `
       INSERT INTO ros_receipts (
         receipt_number, receipt_date, received_from, total_amount, 
-        payment_method, bills, file_name, original_name
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        payment_method, bills, file_name, original_name, cloudinary_url, cloudinary_public_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     const [result] = await db.execute(insertQuery, [
@@ -147,8 +164,10 @@ const uploadRosReceipt = async (req, res) => {
       parsedData.data.total_amount,
       parsedData.data.payment_method,
       JSON.stringify(parsedData.data.bills),
-      filename,
-      originalname
+      fileName,
+      originalName,
+      cloudinaryUrl,
+      publicId
     ]);
     
     const rosReceiptId = result.insertId;

@@ -2,42 +2,86 @@
 
 ## 📋 Prerequisites
 - GitHub account
-- Railway account (free tier)
+- Render account (free forever)
 - Vercel account (free tier)
 
-## 🗄️ Database Setup (Railway MySQL)
+## ⚠️ **IMPORTANT: File Storage Limitation**
 
-### Step 1: Create Railway Project
-1. Go to [Railway.app](https://railway.app)
+**Render's free tier doesn't support persistent file storage!** Your project uploads PDF files (invoices, credit notes, ROS receipts) that will be **lost** when the service restarts.
+
+### **Solutions:**
+
+#### **Option 1: Cloudinary (Recommended - FREE)**
+- **25GB storage** + **25GB bandwidth/month** free
+- **Automatic image optimization**
+- **CDN delivery**
+- **Easy integration**
+
+#### **Option 2: Database Storage**
+- Store PDFs as **BLOB** in PostgreSQL
+- **No external dependencies**
+- **Works with Render free tier**
+
+#### **Option 3: AWS S3 (FREE)**
+- **5GB storage** + **20,000 requests/month** free
+- **99.999999999% durability**
+- **Global availability**
+
+---
+
+## 🗄️ Database Setup (Render PostgreSQL)
+
+### Step 1: Create Render Project
+1. Go to [Render.com](https://render.com)
 2. Sign up with GitHub
-3. Click "New Project"
-4. Select "Provision MySQL"
+3. Click "New +" → "PostgreSQL"
 
-### Step 2: Get Database Credentials
-Railway will automatically provide these environment variables:
-- `DB_HOST`
-- `DB_USER` 
-- `DB_PASSWORD`
-- `DB_NAME`
+### Step 2: Configure Database
+1. **Name**: `monginis-db`
+2. **Database**: `monginis_production`
+3. **User**: `monginis_user`
+4. **Region**: Choose closest to you
+5. **Plan**: Free (0$/month)
+6. Click "Create Database"
 
-## 🔧 Backend Deployment (Railway)
+### Step 3: Get Database Credentials
+After creation, Render provides:
+- `External Database URL`
+- `Internal Database URL` (for backend service)
+- `Host`, `Port`, `Database`, `User`, `Password`
+
+## 🔧 Backend Deployment (Render)
 
 ### Step 1: Deploy Backend
-1. In Railway dashboard, click "New Service"
-2. Select "GitHub Repo"
-3. Choose your repository
-4. Set root directory to `backend/`
+1. In Render dashboard, click "New +" → "Web Service"
+2. Connect your GitHub account
+3. Select your `bakery` repository
+4. Configure service:
+   - **Name**: `monginis-backend`
+   - **Root Directory**: `backend`
+   - **Environment**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+   - **Plan**: Free
 
 ### Step 2: Configure Environment Variables
-Add these in Railway dashboard:
+Add these in Render dashboard:
 ```
-JWT_SECRET=your-super-secret-jwt-key-here-make-it-long-and-random
 NODE_ENV=production
+JWT_SECRET=your-super-secret-jwt-key-here-make-it-long-and-random
 FRONTEND_URL=https://your-frontend-domain.vercel.app
+PORT=5000
 ```
 
-### Step 3: Database Migration
-After deployment, you'll need to create the database tables. Railway provides a MySQL console.
+### Step 3: Database Connection
+Use the PostgreSQL credentials from your database service:
+```
+DB_HOST=your-render-postgres-host
+DB_PORT=5432
+DB_USER=your-render-postgres-user
+DB_PASSWORD=your-render-postgres-password
+DB_NAME=your-render-postgres-database
+```
 
 ## 🎨 Frontend Deployment (Vercel)
 

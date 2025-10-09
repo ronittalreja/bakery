@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../utils/upload');
+const { invoiceUpload } = require('../utils/cloudinary');
 const {
   uploadInvoice,
   verifyInvoice,
@@ -13,13 +13,13 @@ const {
 } = require('../controllers/invoiceController');
 
 // Upload invoice
-router.post('/upload', upload.single('file'), uploadInvoice);
+router.post('/upload', invoiceUpload.single('file'), uploadInvoice);
 
 // Verify invoice
 router.post('/verify', verifyInvoice);
 
 // Check invoice (preview)
-router.post('/check', upload.single('file'), checkInvoice);
+router.post('/check', invoiceUpload.single('file'), checkInvoice);
 
 // Get invoices by month (for payments page)
 router.get('/', getInvoicesByMonth);

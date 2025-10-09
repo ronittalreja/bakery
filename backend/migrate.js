@@ -205,20 +205,46 @@ async function runMigrations() {
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS credit_notes (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        credit_note_number VARCHAR(50) UNIQUE NOT NULL,
-        customer_name VARCHAR(255) NOT NULL,
-        customer_email VARCHAR(255) NULL,
-        customer_phone VARCHAR(20) NULL,
-        amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+        credit_note_number VARCHAR(50) NOT NULL,
+        date DATE NOT NULL,
+        return_date DATE,
+        receiver_name VARCHAR(255) NOT NULL,
+        receiver_gstin VARCHAR(50),
         reason TEXT NOT NULL,
-        status ENUM('active', 'used', 'cancelled') NOT NULL DEFAULT 'active',
-        notes TEXT NULL,
-        created_by INT NOT NULL DEFAULT 1,
+        total_items INT DEFAULT 0,
+        gross_value DECIMAL(10,2) DEFAULT 0,
+        net_value DECIMAL(10,2) DEFAULT 0,
+        file_name VARCHAR(255),
+        original_name VARCHAR(255),
+        cloudinary_url VARCHAR(500) NULL,
+        cloudinary_public_id VARCHAR(255) NULL,
+        items JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_credit_note_date (credit_note_number, date)
+      )
+    `);
+    console.log('✅ Created credit_notes table');
+
+    // Create ros_receipts table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS ros_receipts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        receipt_number VARCHAR(50) UNIQUE NOT NULL,
+        receipt_date DATE NOT NULL,
+        received_from VARCHAR(255) NOT NULL,
+        total_amount DECIMAL(10,2) NOT NULL,
+        payment_method VARCHAR(100) NOT NULL,
+        bills JSON,
+        file_name VARCHAR(255),
+        original_name VARCHAR(255),
+        cloudinary_url VARCHAR(500) NULL,
+        cloudinary_public_id VARCHAR(255) NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
-    console.log('✅ Created credit_notes table');
+    console.log('✅ Created ros_receipts table');
 
     console.log('🎉 Database migration completed successfully!');
     console.log('📝 Default credentials:');
