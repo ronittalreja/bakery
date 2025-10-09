@@ -889,7 +889,6 @@ const getCreditNotesFromRosReceipts = async (req, res) => {
 };
 
 module.exports = {
-  upload,
   uploadCreditNote,
   parseCreditNote,
   parseCreditNoteFromPath,
