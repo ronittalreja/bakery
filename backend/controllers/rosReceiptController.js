@@ -255,19 +255,6 @@ const processBillsAndUpdateStatuses = async (rosReceiptId, bills) => {
   }
 };
 
-// Parse ROS receipt PDF using the parser utility
-const parseRosReceiptPDF = async (filePath) => {
-  try {
-    const { parseRosReceiptPDF: parsePDF } = require('../utils/rosReceiptParser');
-    return await parsePDF(filePath);
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-};
-
 // Preview ROS receipt (parse without saving)
 const previewRosReceipt = async (req, res) => {
   try {
