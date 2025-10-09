@@ -87,23 +87,6 @@ const uploadCreditNoteHandler = async (req, res) => {
             });
           }
         }
-            storedCreditNotes.push({
-              creditNoteNumber: creditNote.creditNoteNumber,
-              returnDate: creditNote.returnDate,
-              success: false,
-              error: 'Credit note entry already exists in this PDF'
-            });
-          } else {
-            // Different PDF, same credit note number - this is a real duplicate
-            storedCreditNotes.push({
-              creditNoteNumber: creditNote.creditNoteNumber,
-              returnDate: creditNote.returnDate,
-              success: false,
-              error: 'Credit note already exists from a different PDF'
-            });
-          }
-          continue;
-        }
 
         const [result] = await db.execute(`
           INSERT INTO credit_notes (
