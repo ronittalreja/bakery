@@ -13,7 +13,9 @@ const app = express();
 // Middleware
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://monginis-frontend.vercel.app', // Replace with your actual Vercel domain
+  'https://bakery-phi-two.vercel.app', // Your actual Vercel domain
+  'https://bakery-git-main-talrejaronit13-gmailcoms-projects.vercel.app', // Your Vercel project domain
+  'https://monginis-frontend.vercel.app', // Placeholder
   process.env.FRONTEND_URL // Allow custom frontend URL
 ].filter(Boolean);
 
