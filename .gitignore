@@ -96,9 +96,11 @@ temp/
 ehthumbs.db
 Thumbs.db
 
-# Uploads (keep structure but ignore content)
-backend/Uploads/*
-!backend/Uploads/.gitkeep
+# Uploads (now using Cloudinary - ignore all upload folders)
+backend/Uploads/
+frontend/Uploads/
+uploads/
+Uploads/
 
 # Database files
 *.db
