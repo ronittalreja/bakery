@@ -1,0 +1,26 @@
+DELICIA FOODS PRIVATE LIMITED
+123, Industrial Area, Phase 1
+Chandigarh - 160002
+GSTIN: 03AABCD1234A1Z5
+
+CREDIT NOTE
+
+Credit Note No. : CN/2025-2026/001
+Date : 03/10/2025
+
+Details of Receiver:
+ENTERPRISE R3309
+SHOP NO 15, THANE MAHARASHTRA
+GSTIN: 27ABCDE1234F1Z5
+
+Details of Returns of Goods:
+
+Sl. No.    Item Code    Description of Goods    HSN Code    Qty    UOM    Rate    Total    RTD    Taxable    Rate    Amount
+1          BLACKF       BLACK FOREST HEART VEG  19059000    1.00    NOS    43.31    43.31    15.00    43.31    18.00    51.11
+
+Total Items: 1
+Gross Value: ₹51.11
+Net Value: ₹43.31
+
+Reason: EXPIRED GOODS
+
