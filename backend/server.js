@@ -53,7 +53,7 @@ const authMiddleware = (roles = []) => (req, res, next) => {
     return res.status(401).json({ error: 'No token provided' });
   }
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
     if (roles.length && !roles.includes(decoded.role)) {
       console.error('Forbidden: Invalid role:', decoded.role, req.method, req.url);
       return res.status(403).json({ error: 'Forbidden' });
