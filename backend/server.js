@@ -712,6 +712,66 @@ app.post('/api/fix-invoice-items-direct', async (req, res) => {
   }
 });
 
+// Direct fix for sale_items table
+app.post('/api/fix-sale-items-direct', async (req, res) => {
+  try {
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    console.log('🔧 Starting direct fix for sale_items table...');
+    
+    // Check current table structure
+    const [currentColumns] = await connection.execute('DESCRIBE sale_items');
+    console.log('Current columns:', currentColumns.map(col => col.Field));
+    
+    // Add missing columns
+    try {
+      await connection.execute('ALTER TABLE sale_items ADD COLUMN item_type VARCHAR(50) NOT NULL DEFAULT "product"');
+      console.log('✅ Added item_type column');
+    } catch (error) {
+      console.log('ℹ️ item_type column:', error.message);
+    }
+    
+    // Rename product_id to item_id
+    try {
+      await connection.execute('ALTER TABLE sale_items CHANGE COLUMN product_id item_id VARCHAR(50) NOT NULL');
+      console.log('✅ Renamed product_id to item_id');
+    } catch (error) {
+      console.log('ℹ️ product_id rename:', error.message);
+    }
+    
+    // Check final table structure
+    const [finalColumns] = await connection.execute('DESCRIBE sale_items');
+    console.log('Final columns:', finalColumns.map(col => col.Field));
+    
+    await connection.end();
+    
+    res.json({ 
+      success: true, 
+      message: 'Direct fix completed for sale_items table',
+      columns: finalColumns.map(col => col.Field)
+    });
+    
+  } catch (error) {
+    console.error('Direct fix error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Debug endpoint to check credit note upload errors
 app.post('/api/debug-credit-upload', async (req, res) => {
   try {
