@@ -94,7 +94,7 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
         throw new Error("No authentication token found");
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/products", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/products`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
