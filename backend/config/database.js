@@ -8,9 +8,6 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME || 'monginis_db',
   port: process.env.DB_PORT || 3306,
   connectionLimit: 10,
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true,
   ssl: process.env.NODE_ENV === 'production' ? {
     rejectUnauthorized: false
   } : false
