@@ -205,7 +205,7 @@ const processBillsAndUpdateStatuses = async (rosReceiptId, bills) => {
         const invoiceQuery = `
           UPDATE invoices 
           SET status = 'cleared' 
-          WHERE invoice_no = ? AND ABS(total_amount - ?) < 0.01
+          WHERE invoice_number = ? AND ABS(total_amount - ?) < 0.01
         `;
         const [invoiceResult] = await db.execute(invoiceQuery, [bill_number, amount]);
         
@@ -216,7 +216,7 @@ const processBillsAndUpdateStatuses = async (rosReceiptId, bills) => {
           const clearQuery = `
             INSERT INTO ros_receipt_cleared_items 
             (ros_receipt_id, item_type, item_id, bill_number, amount) 
-            VALUES (?, 'invoice', (SELECT id FROM invoices WHERE invoice_no = ? AND ABS(total_amount - ?) < 0.01), ?, ?)
+            VALUES (?, 'invoice', (SELECT id FROM invoices WHERE invoice_number = ? AND ABS(total_amount - ?) < 0.01), ?, ?)
           `;
           await db.execute(clearQuery, [rosReceiptId, bill_number, amount, bill_number, amount]);
           console.log(`Recorded clearing for invoice: ${bill_number}`);

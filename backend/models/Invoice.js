@@ -5,7 +5,7 @@ class Invoice {
   static async create(invoiceData, connection = db) {
     try {
       const [result] = await connection.execute(
-        'INSERT INTO invoices (invoice_no, invoice_date, store, total_amount, file_reference) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO invoices (invoice_number, invoice_date, store, total_amount, file_reference) VALUES (?, ?, ?, ?, ?)',
         [
           invoiceData.invoiceNo,
           invoiceData.invoiceDate,
