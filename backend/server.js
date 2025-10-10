@@ -565,6 +565,57 @@ app.post('/api/fix-invoices-table', async (req, res) => {
   }
 });
 
+// Manual ALTER TABLE for invoice_items
+app.post('/api/fix-invoice-items-table', async (req, res) => {
+  try {
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    // Add missing columns
+    await connection.execute('ALTER TABLE invoice_items ADD COLUMN sl_no INT NOT NULL DEFAULT 1');
+    console.log('✅ Added sl_no column');
+    
+    await connection.execute('ALTER TABLE invoice_items ADD COLUMN item_code VARCHAR(50) NULL');
+    console.log('✅ Added item_code column');
+    
+    await connection.execute('ALTER TABLE invoice_items ADD COLUMN hsn_code VARCHAR(50) NULL');
+    console.log('✅ Added hsn_code column');
+    
+    await connection.execute('ALTER TABLE invoice_items ADD COLUMN qty INT NOT NULL DEFAULT 1');
+    console.log('✅ Added qty column');
+    
+    await connection.execute('ALTER TABLE invoice_items ADD COLUMN uom VARCHAR(20) NULL');
+    console.log('✅ Added uom column');
+    
+    await connection.execute('ALTER TABLE invoice_items ADD COLUMN rate DECIMAL(10,2) NOT NULL DEFAULT 0');
+    console.log('✅ Added rate column');
+    
+    await connection.end();
+    
+    res.json({ 
+      success: true, 
+      message: 'All missing columns added to invoice_items table' 
+    });
+    
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Debug endpoint to check credit note upload errors
 app.post('/api/debug-credit-upload', async (req, res) => {
   try {
