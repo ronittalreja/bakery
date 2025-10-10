@@ -166,7 +166,8 @@ export function UploadInvoicePage({ onBack }: UploadInvoicePageProps) {
         return;
       }
 
-      const response = await fetch("http://localhost:5000/api/ros-receipts/preview", {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const response = await fetch(`${baseUrl}/api/ros-receipts/preview`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -365,7 +366,8 @@ export function UploadInvoicePage({ onBack }: UploadInvoicePageProps) {
       console.log("🔍 Starting credit note preview...", { fileName: creditFile.name, size: creditFile.size });
 
       // Parse the file directly
-      const parseResponse = await fetch("http://localhost:5000/api/credit-notes/parse", {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const parseResponse = await fetch(`${baseUrl}/api/credit-notes/parse`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -430,7 +432,7 @@ export function UploadInvoicePage({ onBack }: UploadInvoicePageProps) {
       }
 
       const response = await apiClient<{ success: boolean; message: string; data: InvoiceData }>(
-        "/api/invoices/upload?preview=true",
+        "/api/invoices/check",
         {
           method: "POST",
           body: formData,
