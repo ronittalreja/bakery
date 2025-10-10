@@ -190,8 +190,8 @@ const recordSale = async (req, res) => {
     for (const item of decorationItems) {
       // Add sale item for decoration
       await connection.execute(
-        'INSERT INTO sale_items (sale_id, item_id, batch_id, quantity, unit_price, total_price, name, item_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [saleId, item.decorationId, null, item.quantity, item.unitPrice, item.totalPrice, item.name || '', 'decoration']
+        'INSERT INTO sale_items (sale_id, item_id, batch_id, quantity, unit_price, total_price, name) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [saleId, item.decorationId, null, item.quantity, item.unitPrice, item.totalPrice, item.name || '']
       );
       
       // Update decoration stock directly in the same transaction
