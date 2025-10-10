@@ -251,17 +251,110 @@ async function runMigrations() {
       CREATE TABLE IF NOT EXISTS invoice_items (
         id INT AUTO_INCREMENT PRIMARY KEY,
         invoice_id INT NOT NULL,
-        product_name VARCHAR(255) NOT NULL,
-        product_code VARCHAR(50) NULL,
-        quantity INT NOT NULL DEFAULT 1,
-        unit_price DECIMAL(10,2) NOT NULL DEFAULT 0,
-        total_price DECIMAL(10,2) NOT NULL DEFAULT 0,
-        description TEXT NULL,
+        sl_no INT NOT NULL,
+        item_code VARCHAR(50) NULL,
+        item_name VARCHAR(255) NOT NULL,
+        hsn_code VARCHAR(50) NULL,
+        qty INT NOT NULL DEFAULT 1,
+        uom VARCHAR(20) NULL,
+        rate DECIMAL(10,2) NOT NULL DEFAULT 0,
+        total DECIMAL(10,2) NOT NULL DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
       )
     `);
     console.log('✅ Created invoice_items table');
+
+    // Fix existing invoice_items table structure
+    try {
+      await connection.execute('ALTER TABLE invoice_items ADD COLUMN sl_no INT NOT NULL DEFAULT 1');
+      console.log('✅ Added sl_no column to invoice_items table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ sl_no column already exists or error:', error.message);
+      }
+    }
+
+    try {
+      await connection.execute('ALTER TABLE invoice_items ADD COLUMN item_code VARCHAR(50) NULL');
+      console.log('✅ Added item_code column to invoice_items table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ item_code column already exists or error:', error.message);
+      }
+    }
+
+    try {
+      await connection.execute('ALTER TABLE invoice_items ADD COLUMN hsn_code VARCHAR(50) NULL');
+      console.log('✅ Added hsn_code column to invoice_items table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ hsn_code column already exists or error:', error.message);
+      }
+    }
+
+    try {
+      await connection.execute('ALTER TABLE invoice_items ADD COLUMN qty INT NOT NULL DEFAULT 1');
+      console.log('✅ Added qty column to invoice_items table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ qty column already exists or error:', error.message);
+      }
+    }
+
+    try {
+      await connection.execute('ALTER TABLE invoice_items ADD COLUMN uom VARCHAR(20) NULL');
+      console.log('✅ Added uom column to invoice_items table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ uom column already exists or error:', error.message);
+      }
+    }
+
+    try {
+      await connection.execute('ALTER TABLE invoice_items ADD COLUMN rate DECIMAL(10,2) NOT NULL DEFAULT 0');
+      console.log('✅ Added rate column to invoice_items table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ rate column already exists or error:', error.message);
+      }
+    }
+
+    try {
+      await connection.execute('ALTER TABLE invoice_items CHANGE COLUMN product_name item_name VARCHAR(255) NOT NULL');
+      console.log('✅ Renamed product_name to item_name in invoice_items table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ product_name already renamed or error:', error.message);
+      }
+    }
+
+    try {
+      await connection.execute('ALTER TABLE invoice_items CHANGE COLUMN quantity qty INT NOT NULL DEFAULT 1');
+      console.log('✅ Renamed quantity to qty in invoice_items table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ quantity already renamed or error:', error.message);
+      }
+    }
+
+    try {
+      await connection.execute('ALTER TABLE invoice_items CHANGE COLUMN unit_price rate DECIMAL(10,2) NOT NULL DEFAULT 0');
+      console.log('✅ Renamed unit_price to rate in invoice_items table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ unit_price already renamed or error:', error.message);
+      }
+    }
+
+    try {
+      await connection.execute('ALTER TABLE invoice_items CHANGE COLUMN total_price total DECIMAL(10,2) NOT NULL DEFAULT 0');
+      console.log('✅ Renamed total_price to total in invoice_items table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ total_price already renamed or error:', error.message);
+      }
+    }
 
     // Create credit_notes table
     await connection.execute(`
