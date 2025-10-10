@@ -565,6 +565,30 @@ app.post('/api/fix-invoices-table', async (req, res) => {
   }
 });
 
+// Debug endpoint to check credit note upload errors
+app.post('/api/debug-credit-upload', async (req, res) => {
+  try {
+    console.log('🔍 Credit note upload debug - req.body:', req.body);
+    console.log('🔍 Credit note upload debug - req.file:', req.file);
+    console.log('🔍 Credit note upload debug - req.headers:', req.headers);
+    
+    res.json({ 
+      success: true, 
+      message: 'Debug info logged',
+      body: req.body,
+      file: req.file,
+      hasFile: !!req.file
+    });
+    
+  } catch (error) {
+    console.error('Debug credit upload error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });

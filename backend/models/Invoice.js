@@ -5,13 +5,14 @@ class Invoice {
   static async create(invoiceData, connection = db) {
     try {
       const [result] = await connection.execute(
-        'INSERT INTO invoices (invoice_number, invoice_date, store, total_amount, file_reference) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO invoices (invoice_number, invoice_date, store, customer_name, total_amount, file_reference) VALUES (?, ?, ?, ?, ?, ?)',
         [
           invoiceData.invoiceNo,
-          invoiceData.invoiceDate,
-          invoiceData.store,
+          invoiceData.invoiceDate || null,
+          invoiceData.store || null,
+          invoiceData.customerName || invoiceData.store || 'Unknown Customer',
           invoiceData.totalAmount,
-          invoiceData.fileReference,
+          invoiceData.fileReference || null,
         ]
       );
       return result.insertId;
