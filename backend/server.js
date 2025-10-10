@@ -346,6 +346,67 @@ app.post('/api/migrate', async (req, res) => {
   }
 });
 
+// Fix passwords endpoint
+app.post('/api/fix-passwords', async (req, res) => {
+  try {
+    console.log('🔧 Fixing user passwords...');
+    
+    const mysql = require('mysql2/promise');
+    const bcrypt = require('bcryptjs');
+    let connection;
+    
+    // Create connection
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: process.env.NODE_ENV === 'production' ? {
+        rejectUnauthorized: false
+      } : false
+    });
+
+    console.log('✅ Connected to database');
+
+    // Hash the correct passwords
+    const adminPassword = await bcrypt.hash('admin123', 10);
+    const staffPassword = await bcrypt.hash('staff123', 10);
+
+    // Update admin password
+    await connection.execute(
+      'UPDATE users SET password = ? WHERE username = ?',
+      [adminPassword, 'admin']
+    );
+    console.log('✅ Updated admin password');
+
+    // Update staff password
+    await connection.execute(
+      'UPDATE users SET password = ? WHERE username = ?',
+      [staffPassword, 'R3309']
+    );
+    console.log('✅ Updated staff password');
+
+    await connection.end();
+    
+    res.json({ 
+      success: true, 
+      message: 'Passwords fixed successfully!',
+      credentials: {
+        admin: 'admin / admin123',
+        staff: 'R3309 / staff123'
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Password fix failed:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Debug endpoint to check users
 app.get('/api/debug-users', async (req, res) => {
   try {
