@@ -371,7 +371,7 @@ app.post('/api/fix-passwords', async (req, res) => {
 
     // Hash the correct passwords
     const adminPassword = await bcrypt.hash('admin123', 10);
-    const staffPassword = await bcrypt.hash('staff123', 10);
+    const staffPassword = await bcrypt.hash('123456', 10);
 
     // Update admin password
     await connection.execute(
@@ -394,7 +394,7 @@ app.post('/api/fix-passwords', async (req, res) => {
       message: 'Passwords fixed successfully!',
       credentials: {
         admin: 'admin / admin123',
-        staff: 'R3309 / staff123'
+        staff: 'R3309 / 123456'
       }
     });
     
