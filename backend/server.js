@@ -407,6 +407,56 @@ app.post('/api/fix-passwords', async (req, res) => {
   }
 });
 
+// Clear all data endpoint
+app.post('/api/clear-all-data', async (req, res) => {
+  try {
+    console.log('🧹 Clearing all data from database...');
+    
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: process.env.NODE_ENV === 'production' ? {
+        rejectUnauthorized: false
+      } : false
+    });
+
+    console.log('✅ Connected to database');
+
+    // Clear all data tables (keep users)
+    const tablesToClear = [
+      'sales', 'sale_items', 'products', 'stock_batches', 'returns',
+      'decorations', 'expenses', 'invoices', 'invoice_items', 
+      'credit_notes', 'ros_receipts'
+    ];
+
+    for (const table of tablesToClear) {
+      await connection.execute(`DELETE FROM ${table}`);
+      console.log(`✅ Cleared ${table} table`);
+    }
+
+    await connection.end();
+    
+    res.json({ 
+      success: true, 
+      message: 'All data cleared successfully! Database is now empty.',
+      clearedTables: tablesToClear
+    });
+    
+  } catch (error) {
+    console.error('❌ Clear data failed:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Debug endpoint to check users
 app.get('/api/debug-users', async (req, res) => {
   try {
