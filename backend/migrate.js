@@ -101,17 +101,37 @@ async function runMigrations() {
       CREATE TABLE IF NOT EXISTS sale_items (
         id INT AUTO_INCREMENT PRIMARY KEY,
         sale_id INT NOT NULL,
-        product_id VARCHAR(50) NOT NULL,
+        item_id VARCHAR(50) NOT NULL,
         batch_id INT,
         quantity INT NOT NULL,
         unit_price DECIMAL(10,2) NOT NULL,
         total_price DECIMAL(10,2) NOT NULL,
         name VARCHAR(255) NOT NULL,
+        item_type VARCHAR(50) NOT NULL DEFAULT 'product',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE
       )
     `);
     console.log('✅ Created sale_items table');
+
+    // Add missing columns to existing sale_items table
+    try {
+      await connection.execute('ALTER TABLE sale_items ADD COLUMN item_type VARCHAR(50) NOT NULL DEFAULT "product"');
+      console.log('✅ Added item_type column to sale_items table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ item_type column already exists or error:', error.message);
+      }
+    }
+
+    try {
+      await connection.execute('ALTER TABLE sale_items CHANGE COLUMN product_id item_id VARCHAR(50) NOT NULL');
+      console.log('✅ Renamed product_id to item_id in sale_items table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ product_id already renamed or error:', error.message);
+      }
+    }
 
     // Create returns table
     await connection.execute(`
@@ -124,12 +144,23 @@ async function runMigrations() {
         quantity INT NOT NULL,
         invoice_price DECIMAL(10,2) NOT NULL,
         loss_amount DECIMAL(10,2) DEFAULT 0,
+        rtd DECIMAL(10,2) DEFAULT 0,
         staff_id INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
       )
     `);
     console.log('✅ Created returns table');
+
+    // Add missing columns to existing returns table
+    try {
+      await connection.execute('ALTER TABLE returns ADD COLUMN rtd DECIMAL(10,2) DEFAULT 0');
+      console.log('✅ Added rtd column to returns table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ rtd column already exists or error:', error.message);
+      }
+    }
 
     // Create decorations table
     await connection.execute(`
@@ -169,6 +200,8 @@ async function runMigrations() {
       CREATE TABLE IF NOT EXISTS invoices (
         id INT AUTO_INCREMENT PRIMARY KEY,
         invoice_number VARCHAR(50) UNIQUE NOT NULL,
+        invoice_date DATE NULL,
+        store VARCHAR(255) NULL,
         customer_name VARCHAR(255) NOT NULL,
         customer_email VARCHAR(255) NULL,
         customer_phone VARCHAR(20) NULL,
@@ -177,12 +210,41 @@ async function runMigrations() {
         discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
         status ENUM('pending', 'cleared') NOT NULL DEFAULT 'pending',
         notes TEXT NULL,
+        file_reference VARCHAR(255) NULL,
         created_by INT NOT NULL DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
     console.log('✅ Created invoices table');
+
+    // Add missing columns to existing invoices table
+    try {
+      await connection.execute('ALTER TABLE invoices ADD COLUMN invoice_date DATE NULL');
+      console.log('✅ Added invoice_date column to invoices table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ invoice_date column already exists or error:', error.message);
+      }
+    }
+
+    try {
+      await connection.execute('ALTER TABLE invoices ADD COLUMN store VARCHAR(255) NULL');
+      console.log('✅ Added store column to invoices table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ store column already exists or error:', error.message);
+      }
+    }
+
+    try {
+      await connection.execute('ALTER TABLE invoices ADD COLUMN file_reference VARCHAR(255) NULL');
+      console.log('✅ Added file_reference column to invoices table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ file_reference column already exists or error:', error.message);
+      }
+    }
 
     // Create invoice_items table
     await connection.execute(`
