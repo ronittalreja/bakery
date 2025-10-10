@@ -39,7 +39,10 @@ const uploadCreditNoteHandler = async (req, res) => {
     });
 
     // Download file from Cloudinary for parsing
-    const fileBuffer = await downloadFileFromCloudinary(publicId);
+    const { downloadFileFromCloudinary } = require('../utils/cloudinary');
+    const actualPublicId = publicId || fileName;
+    console.log('Using public_id for download:', actualPublicId);
+    const fileBuffer = await downloadFileFromCloudinary(actualPublicId);
     
     // Parse the uploaded credit note using buffer
     const parser = new CreditNoteParser();
@@ -107,7 +110,7 @@ const uploadCreditNoteHandler = async (req, res) => {
           fileName,
           originalName,
           cloudinaryUrl,
-          publicId,
+          actualPublicId,
           JSON.stringify(creditNote.items || [])
         ]);
 

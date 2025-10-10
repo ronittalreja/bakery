@@ -93,8 +93,8 @@ const uploadInvoice = async (req, res) => {
       return res.json({ success: true, message: 'Invoice preview successful', data: validationResult });
     }
 
-    // Check if invoice with same invoice_no exists
-    const [existingInvoices] = await db.execute('SELECT * FROM invoices WHERE invoice_no = ?', [parsedData.invoiceNo]);
+    // Check if invoice with same invoice_number exists
+    const [existingInvoices] = await db.execute('SELECT * FROM invoices WHERE invoice_number = ?', [parsedData.invoiceNo]);
     if (existingInvoices.length > 0) {
       return res.status(400).json({
         success: false,
@@ -426,7 +426,7 @@ const getInvoicesFromRosReceipts = async (req, res) => {
       for (const bill of srBills) {
         // Check if this invoice already exists in invoices table
         const [existingInvoice] = await db.execute(
-          'SELECT id FROM invoices WHERE invoice_no = ?',
+          'SELECT id FROM invoices WHERE invoice_number = ?',
           [bill.bill_number]
         );
         
@@ -434,7 +434,7 @@ const getInvoicesFromRosReceipts = async (req, res) => {
         if (existingInvoice.length === 0) {
           invoicesFromRos.push({
             id: `ros_${rosReceipt.id}_${bill.bill_number}`, // Unique ID for frontend
-            invoice_no: bill.bill_number,
+            invoice_number: bill.bill_number,
             invoice_date: bill.bill_date,
             store: 'From ROS Receipt', // Default store name
             total_amount: Number(bill.amount) || 0,

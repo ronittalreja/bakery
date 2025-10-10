@@ -129,7 +129,9 @@ const uploadRosReceipt = async (req, res) => {
     
     // Download file from Cloudinary for parsing
     const { downloadFileFromCloudinary } = require('../utils/cloudinary');
-    const fileBuffer = await downloadFileFromCloudinary(publicId);
+    const actualPublicId = publicId || fileName;
+    console.log('Using public_id for download:', actualPublicId);
+    const fileBuffer = await downloadFileFromCloudinary(actualPublicId);
     
     // Parse the ROS receipt PDF using buffer
     const parsedData = await parseRosReceiptPDFFromBuffer(fileBuffer);
@@ -167,7 +169,7 @@ const uploadRosReceipt = async (req, res) => {
       fileName,
       originalName,
       cloudinaryUrl,
-      publicId
+      actualPublicId
     ]);
     
     const rosReceiptId = result.insertId;
