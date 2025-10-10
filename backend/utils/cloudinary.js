@@ -89,8 +89,8 @@ const downloadFileFromCloudinary = async (publicId) => {
       throw new Error(`Failed to download file: ${response.statusText}`);
     }
     
-    const buffer = await response.buffer();
-    return buffer;
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
   } catch (error) {
     console.error('Error downloading file from Cloudinary:', error);
     throw error;
