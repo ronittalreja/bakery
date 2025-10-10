@@ -327,12 +327,18 @@ const parseCreditNoteHandler = async (req, res) => {
       originalname: req.file.originalname,
       filename: req.file.filename,
       size: req.file.size,
-      mimetype: req.file.mimetype
+      mimetype: req.file.mimetype,
+      path: req.file.path,
+      public_id: req.file.public_id,
+      url: req.file.url
     });
 
     // Download file from Cloudinary for parsing
     const { downloadFileFromCloudinary } = require('../utils/cloudinary');
-    const fileBuffer = await downloadFileFromCloudinary(req.file.public_id);
+    const publicId = req.file.public_id || req.file.filename;
+    console.log('Using public_id:', publicId);
+    
+    const fileBuffer = await downloadFileFromCloudinary(publicId);
     
     const parser = new CreditNoteParser();
     const parsedData = await parser.parseFromBuffer(fileBuffer, req.file.originalname);

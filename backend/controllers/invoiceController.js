@@ -21,7 +21,12 @@ const uploadInvoice = async (req, res) => {
     }
 
     const isPreview = req.query.preview === 'true';
-    const buffer = req.file.buffer;
+    
+    // Download file from Cloudinary for parsing
+    const { downloadFileFromCloudinary } = require('../utils/cloudinary');
+    const publicId = req.file.public_id || req.file.filename;
+    const buffer = await downloadFileFromCloudinary(publicId);
+    
     const parsedData = await parseInvoice(buffer);
     console.log('Parsed invoice data:', parsedData);
 
@@ -229,9 +234,20 @@ const checkInvoice = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
     
+    console.log('Invoice check - req.file:', {
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      path: req.file.path,
+      public_id: req.file.public_id,
+      url: req.file.url
+    });
+    
     // Download file from Cloudinary for parsing
     const { downloadFileFromCloudinary } = require('../utils/cloudinary');
-    const fileBuffer = await downloadFileFromCloudinary(req.file.public_id);
+    const publicId = req.file.public_id || req.file.filename;
+    console.log('Using public_id:', publicId);
+    
+    const fileBuffer = await downloadFileFromCloudinary(publicId);
     
     const validationResult = await parseInvoice(fileBuffer);
     res.json({ success: true, data: validationResult });
