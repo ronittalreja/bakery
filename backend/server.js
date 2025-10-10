@@ -816,6 +816,46 @@ app.post('/api/add-item-type-column', async (req, res) => {
   }
 });
 
+// Execute raw SQL
+app.post('/api/execute-sql', async (req, res) => {
+  try {
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    const { sql } = req.body;
+    console.log('🔧 Executing SQL:', sql);
+    
+    const [result] = await connection.execute(sql);
+    console.log('✅ SQL executed successfully');
+    
+    await connection.end();
+    
+    res.json({ 
+      success: true, 
+      message: 'SQL executed successfully',
+      result: result
+    });
+    
+  } catch (error) {
+    console.error('SQL execution error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Debug endpoint to check credit note upload errors
 app.post('/api/debug-credit-upload', async (req, res) => {
   try {
