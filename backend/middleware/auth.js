@@ -8,7 +8,9 @@ const auth = (req, res, next) => {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
+    const secret = process.env.JWT_SECRET || 'your_jwt_secret';
+    console.log('JWT Secret used:', secret ? 'Set' : 'Using fallback');
+    const decoded = jwt.verify(token, secret);
     req.user = decoded;
     next();
   } catch (error) {
