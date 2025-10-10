@@ -228,8 +228,12 @@ const checkInvoice = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
-    const buffer = req.file.buffer;
-    const validationResult = await parseInvoice(buffer);
+    
+    // Download file from Cloudinary for parsing
+    const { downloadFileFromCloudinary } = require('../utils/cloudinary');
+    const fileBuffer = await downloadFileFromCloudinary(req.file.public_id);
+    
+    const validationResult = await parseInvoice(fileBuffer);
     res.json({ success: true, data: validationResult });
   } catch (error) {
     console.error('Invoice check error:', error);

@@ -262,10 +262,12 @@ const previewRosReceipt = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
     
-    const { path } = req.file;
+    // Download file from Cloudinary for parsing
+    const { downloadFileFromCloudinary } = require('../utils/cloudinary');
+    const fileBuffer = await downloadFileFromCloudinary(req.file.public_id);
     
-    // Parse the ROS receipt PDF
-    const parsedData = await parseRosReceiptPDF(path);
+    // Parse the ROS receipt PDF using buffer
+    const parsedData = await parseRosReceiptPDFFromBuffer(fileBuffer);
     
     if (!parsedData.success) {
       return res.status(400).json({ success: false, error: parsedData.error });

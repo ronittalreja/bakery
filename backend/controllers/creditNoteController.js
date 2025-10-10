@@ -330,9 +330,12 @@ const parseCreditNoteHandler = async (req, res) => {
       mimetype: req.file.mimetype
     });
 
-    const filePath = req.file.path;
+    // Download file from Cloudinary for parsing
+    const { downloadFileFromCloudinary } = require('../utils/cloudinary');
+    const fileBuffer = await downloadFileFromCloudinary(req.file.public_id);
+    
     const parser = new CreditNoteParser();
-    const parsedData = await parser.parseFromFile(filePath);
+    const parsedData = await parser.parseFromBuffer(fileBuffer, req.file.originalname);
     
     console.log('📊 Parse result:', {
       success: parsedData.success,
