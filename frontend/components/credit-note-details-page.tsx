@@ -60,7 +60,7 @@ export default function CreditNoteDetailsPage({ creditNoteId, selectedMonth, onB
       }
 
       const response = await fetch(
-        `http://localhost:5000/api/credit-notes/${creditNoteId}`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/credit-notes/${creditNoteId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

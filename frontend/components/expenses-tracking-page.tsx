@@ -77,7 +77,7 @@ export function ExpensesTrackingPage({ onBack }: ExpensesTrackingPageProps) {
         if (!token) {
           throw new Error("No authentication token found");
         }
-        const response = await fetch(`http://localhost:5000/api/expenses?month=${selectedMonth}&year=${selectedYear}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/expenses?month=${selectedMonth}&year=${selectedYear}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -166,7 +166,7 @@ export function ExpensesTrackingPage({ onBack }: ExpensesTrackingPageProps) {
         description: formData.description.trim(),
         amount,
       };
-      const response = await fetch(`http://localhost:5000/api/expenses${editingExpense ? `/${editingExpense.id}` : ""}`,
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/expenses${editingExpense ? `/${editingExpense.id}` : ""}`,
         {
           method: editingExpense ? "PUT" : "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -183,7 +183,7 @@ export function ExpensesTrackingPage({ onBack }: ExpensesTrackingPageProps) {
       // Backend returns only insertId/boolean; refetch to sync
       setSuccessMessage(editingExpense ? "Expense updated successfully!" : "Expense added successfully!");
       // Re-fetch list to reflect DB
-      const refresh = await fetch(`http://localhost:5000/api/expenses?month=${selectedMonth}&year=${selectedYear}`, { headers: { Authorization: `Bearer ${token}` } });
+      const refresh = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/expenses?month=${selectedMonth}&year=${selectedYear}`, { headers: { Authorization: `Bearer ${token}` } });
       const refreshed = await refresh.json();
       const refreshedArray = Array.isArray(refreshed) ? refreshed : refreshed.expenses || refreshed.data || [];
       const refreshedMapped: Expense[] = refreshedArray.map((row: any) => ({
@@ -215,7 +215,7 @@ export function ExpensesTrackingPage({ onBack }: ExpensesTrackingPageProps) {
       if (!token) {
         throw new Error("No authentication token found");
       }
-      const response = await fetch(`http://localhost:5000/api/expenses/${expenseId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/expenses/${expenseId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -231,7 +231,7 @@ export function ExpensesTrackingPage({ onBack }: ExpensesTrackingPageProps) {
         throw new Error(errorData.message || "Failed to delete expense");
       }
       // Refetch after delete to stay consistent
-      const refresh = await fetch(`http://localhost:5000/api/expenses?month=${selectedMonth}&year=${selectedYear}`, { headers: { Authorization: `Bearer ${token}` } });
+      const refresh = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/expenses?month=${selectedMonth}&year=${selectedYear}`, { headers: { Authorization: `Bearer ${token}` } });
       const refreshed = await refresh.json();
       const refreshedArray = Array.isArray(refreshed) ? refreshed : refreshed.expenses || refreshed.data || [];
       const refreshedMapped: Expense[] = refreshedArray.map((row: any) => ({

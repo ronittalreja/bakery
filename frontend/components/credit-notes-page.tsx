@@ -53,8 +53,8 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
       }
 
       const url = selectedMonth 
-        ? `http://localhost:5000/api/credit-notes?month=${selectedMonth}`
-        : `http://localhost:5000/api/credit-notes`;
+        ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/credit-notes?month=${selectedMonth}`
+        : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/credit-notes`;
       
       const response = await fetch(url, {
         headers: {

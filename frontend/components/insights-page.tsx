@@ -61,7 +61,7 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
         }
 
         console.log('Fetching insights for month:', selectedMonth);
-        const response = await fetch(`http://localhost:5000/api/insights/monthly/${selectedMonth}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/insights/monthly/${selectedMonth}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',

@@ -58,7 +58,7 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
 
       console.log("Fetching sales data for date:", selectedDate, "with token:", token.slice(0, 10) + "...");
 
-      let response = await fetch(`http://localhost:5000/api/sales/${selectedDate}?t=${Date.now()}`, {
+      let response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/${selectedDate}?t=${Date.now()}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -80,7 +80,7 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
 
       if (response.status === 304) {
         console.warn("Received 304 Not Modified, retrying fetch...");
-        const retryResponse = await fetch(`http://localhost:5000/api/sales/${selectedDate}?t=${Date.now()}&nocache=${Math.random()}`, {
+        const retryResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/${selectedDate}?t=${Date.now()}&nocache=${Math.random()}`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,

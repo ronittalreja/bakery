@@ -108,8 +108,8 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
 
       console.log("Fetching items for tab:", activeTab, "with token:", token.slice(0, 10) + "...", "and date:", selectedDate);
       const url = activeTab === "grm" 
-        ? `http://localhost:5000/api/returns/grm?date=${selectedDate}&t=${Date.now()}`
-        : `http://localhost:5000/api/returns/gvn?date=${selectedDate}&t=${Date.now()}`;
+        ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/grm?date=${selectedDate}&t=${Date.now()}`
+        : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/gvn?date=${selectedDate}&t=${Date.now()}`;
 
       const response = await fetch(url, {
         headers: {
@@ -198,7 +198,7 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
       console.log(`Fetching processed returns for date: ${viewDate}`);
 
       // Use the new backend endpoint that filters by expiry date
-      const processedByExpiryResponse = await fetch(`http://localhost:5000/api/returns/processed-by-expiry/${viewDate}?t=${Date.now()}`, {
+      const processedByExpiryResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/processed-by-expiry/${viewDate}?t=${Date.now()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -323,7 +323,7 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
       console.log(`Fetching pending returns for month: ${pendingMonth}`);
       console.log(`API URL: http://localhost:5000/api/returns/pending?month=${pendingMonth}&t=${Date.now()}`);
 
-      const response = await fetch(`http://localhost:5000/api/returns/pending?month=${pendingMonth}&t=${Date.now()}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/pending?month=${pendingMonth}&t=${Date.now()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -494,7 +494,7 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
         items,
       }, null, 2));
 
-      const response = await fetch(`http://localhost:5000/api/returns/${activeTab}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/${activeTab}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

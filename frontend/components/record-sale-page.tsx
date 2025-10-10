@@ -69,7 +69,7 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
         return;
       }
 
-      const response = await fetch("http://localhost:5000/api/decorations", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/decorations", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -116,7 +116,7 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
 
       console.log("Fetching products with token:", token.slice(0, 10) + "...", "and date:", selectedDate);
 
-      const response = await fetch(`http://localhost:5000/api/stock?group=product&date=${selectedDate}&t=${Date.now()}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?group=product&date=${selectedDate}&t=${Date.now()}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -215,7 +215,7 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
       if (!token) return false;
 
-      const response = await fetch(`http://localhost:5000/api/stock?group=product&date=${selectedDate}&t=${Date.now()}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?group=product&date=${selectedDate}&t=${Date.now()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -452,7 +452,7 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
       const hhmmss = now.toTimeString().slice(0, 8);
       const saleDateTime = `${selectedDate}T${hhmmss}`;
 
-      const response = await fetch("http://localhost:5000/api/sales", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

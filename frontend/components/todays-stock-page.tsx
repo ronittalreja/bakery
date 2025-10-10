@@ -65,7 +65,7 @@ export function TodaysStockPage({ onBack }: TodaysStockPageProps) {
         console.log("Fetching stock with token:", token.slice(0, 10) + "...", "and date:", selectedDate);
 
         const response = await fetch(
-          `http://localhost:5000/api/stock?date=${selectedDate}&t=${Date.now()}`,
+          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?date=${selectedDate}&t=${Date.now()}`,
           {
             method: "GET",
             headers: {

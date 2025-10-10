@@ -118,7 +118,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       if (!token) return;
 
       const response = await fetch(
-        `http://localhost:5000/api/invoices?month=${selectedMonth}&year=${selectedYear}`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/invoices?month=${selectedMonth}&year=${selectedYear}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -157,7 +157,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       const monthYear = `${yearStr}-${monthStr}`;
       
       const response = await fetch(
-        `http://localhost:5000/api/credit-notes?month=${monthYear}`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/credit-notes?month=${monthYear}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -208,7 +208,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       const monthYear = `${yearStr}-${monthStr}`;
       
       const response = await fetch(
-        `http://localhost:5000/api/ros-receipts?month=${monthYear}`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/ros-receipts?month=${monthYear}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -245,7 +245,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       if (!token) return;
 
       const response = await fetch(
-        `http://localhost:5000/api/invoices/from-ros-receipts?month=${selectedMonth}&year=${selectedYear}`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/invoices/from-ros-receipts?month=${selectedMonth}&year=${selectedYear}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -272,7 +272,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       if (!token) return;
 
       const response = await fetch(
-        `http://localhost:5000/api/credit-notes/from-ros-receipts?month=${selectedMonth}&year=${selectedYear}`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/credit-notes/from-ros-receipts?month=${selectedMonth}&year=${selectedYear}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -298,7 +298,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       const token = getAuthToken();
       if (!token) return;
 
-      const response = await fetch(`http://localhost:5000/api/invoices/${invoiceId}/status`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/invoices/${invoiceId}/status`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -346,7 +346,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       if (!token) return;
 
       const response = await fetch(
-        `http://localhost:5000/api/invoices/${invoice.id}/items`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/invoices/${invoice.id}/items`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

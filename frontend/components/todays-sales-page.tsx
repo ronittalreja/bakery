@@ -55,7 +55,7 @@ export function TodaysSalesPage({ onBack }: SalesTimelinePageProps) {
         }
 
         // Fetch transactions
-        const salesResponse = await fetch(`http://localhost:5000/api/sales/${selectedDate}`, {
+        const salesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/${selectedDate}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -105,7 +105,7 @@ export function TodaysSalesPage({ onBack }: SalesTimelinePageProps) {
         setTransactions(mappedTransactions)
 
         // Fetch summary
-        const summaryResponse = await fetch(`http://localhost:5000/api/sales/summary/${selectedDate}`, {
+        const summaryResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/summary/${selectedDate}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",

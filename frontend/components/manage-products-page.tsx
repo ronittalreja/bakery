@@ -91,7 +91,7 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
         throw new Error("No authentication token found");
       }
       
-      const response = await fetch("http://localhost:5000/api/products", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/products", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -106,7 +106,7 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
       const productsArray = Array.isArray(data) ? data : data.products || data.data || [];
 
       // Fetch aggregated stock to enrich with stock and expiry
-      const stockResp = await fetch("http://localhost:5000/api/stock/aggregated", {
+      const stockResp = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock/aggregated", {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });
       const stockData = await stockResp.json();
@@ -229,7 +229,7 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
       } as any;
 
       const response = await fetch(
-        `http://localhost:5000/api/products${editingProduct ? `/${editingProduct.id}` : ""}`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/products${editingProduct ? `/${editingProduct.id}` : ""}`,
         {
           method: editingProduct ? "PUT" : "POST",
           headers: {
@@ -271,7 +271,7 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
         throw new Error("No authentication token found");
       }
       
-      const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/products/${productId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

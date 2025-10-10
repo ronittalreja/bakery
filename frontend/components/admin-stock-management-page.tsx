@@ -94,7 +94,7 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
         throw new Error("No authentication token found");
       }
       
-      const response = await fetch("http://localhost:5000/api/products", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/products", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -138,7 +138,7 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
           throw new Error("No authentication token found");
         }
         // Fetch batch-level stock for admin edits
-        const response = await fetch(`http://localhost:5000/api/stock?date=${new Date().toISOString().split('T')[0]}&t=${Date.now()}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?date=${new Date().toISOString().split('T')[0]}&t=${Date.now()}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -269,7 +269,7 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
 
       if (editingItem) {
         // Update existing stock batch
-      const response = await fetch(`http://localhost:5000/api/stock/update`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock/update`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -302,7 +302,7 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
         const invoiceDate = formData.invoiceDate || new Date().toISOString().split('T')[0];
         const expiryDate = calculateExpiryDate(invoiceDate, selectedProduct.shelf_life_days ?? null);
 
-        const response = await fetch(`http://localhost:5000/api/stock/add-batch`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock/add-batch`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -332,7 +332,7 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
       await new Promise((r) => setTimeout(r, 200));
       const token2 = getAuthToken();
       if (token2) {
-        const ref = await fetch(`http://localhost:5000/api/stock?date=${new Date().toISOString().split('T')[0]}&t=${Date.now()}`, {
+        const ref = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?date=${new Date().toISOString().split('T')[0]}&t=${Date.now()}`, {
           headers: { Authorization: `Bearer ${token2}` },
         });
         const refData = await ref.json();
@@ -378,7 +378,7 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
         throw new Error("No authentication token found");
       }
       
-      const response = await fetch(`http://localhost:5000/api/stock/batch/${itemId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock/batch/${itemId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -397,7 +397,7 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
       }
       
       // Refetch stock data
-      const ref = await fetch(`http://localhost:5000/api/stock?date=${new Date().toISOString().split('T')[0]}&t=${Date.now()}`, {
+      const ref = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?date=${new Date().toISOString().split('T')[0]}&t=${Date.now()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const refData = await ref.json();

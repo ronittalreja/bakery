@@ -86,7 +86,7 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
         
         try {
       const detailsResponse = await fetch(
-            `http://localhost:5000/api/returns/details/${dateStr}`,
+            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/details/${dateStr}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -135,7 +135,7 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
       
           // Fetch summary for the day
       const summaryResponse = await fetch(
-            `http://localhost:5000/api/returns/summary/${dateStr}`,
+            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/summary/${dateStr}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -202,7 +202,7 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
       }
 
       // Fetch all items that expire on this date (available items)
-      const availableResponse = await fetch(`http://localhost:5000/api/returns/items-by-expiry/${insiderDate}`, {
+      const availableResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/items-by-expiry/${insiderDate}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -210,7 +210,7 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
       });
 
       // Fetch processed GRM items that had expiry date = insiderDate (regardless of when processed)
-      const processedResponse = await fetch(`http://localhost:5000/api/returns/processed-by-expiry/${insiderDate}`, {
+      const processedResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/processed-by-expiry/${insiderDate}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",

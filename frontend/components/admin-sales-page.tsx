@@ -124,7 +124,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
         }
         console.log('Fetching sales for month:', selectedMonth);
         // Use month-wise sales endpoint
-        const response = await fetch(`http://localhost:5000/api/sales/monthly/${selectedMonth}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/monthly/${selectedMonth}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -169,7 +169,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
           throw new Error('No authentication token found');
         }
         console.log('Fetching analytics for month:', selectedMonth, 'comparison year:', comparisonYear);
-        const response = await fetch(`http://localhost:5000/api/sales/analytics/monthly/${selectedMonth}/${comparisonYear}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/analytics/monthly/${selectedMonth}/${comparisonYear}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -197,7 +197,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
         }
         const currentYear = new Date().getFullYear();
         console.log('Fetching YTD MTD data for year:', currentYear);
-        const response = await fetch(`http://localhost:5000/api/sales/ytd-mtd/${currentYear}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/ytd-mtd/${currentYear}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',

@@ -102,7 +102,7 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
       if (!token) {
         throw new Error("No authentication token found");
       }
-      const response = await fetch("http://localhost:5000/api/decorations", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/decorations", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -335,7 +335,7 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
       };
       
       const response = await fetch(
-        `http://localhost:5000/api/decorations${editingDecoration ? `/${editingDecoration.id}` : ""}`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/decorations${editingDecoration ? `/${editingDecoration.id}` : ""}`,
         {
           method: editingDecoration ? "PUT" : "POST",
           headers: {
@@ -397,7 +397,7 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
         throw new Error("No authentication token found");
       }
       
-      const response = await fetch(`http://localhost:5000/api/decorations/${decorationId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/decorations/${decorationId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -478,7 +478,7 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
 
       const newStock = selectedDecorationForStock.stock + quantity;
 
-      const response = await fetch(`http://localhost:5000/api/decorations/${selectedDecorationForStock.id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/decorations/${selectedDecorationForStock.id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -555,7 +555,7 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
         throw new Error("Stock cannot be negative");
       }
       
-      const response = await fetch(`http://localhost:5000/api/decorations/${stockAdjustment.decorationId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/decorations/${stockAdjustment.decorationId}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
