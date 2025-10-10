@@ -346,6 +346,39 @@ app.post('/api/migrate', async (req, res) => {
   }
 });
 
+// Debug endpoint to check users
+app.get('/api/debug-users', async (req, res) => {
+  try {
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: process.env.NODE_ENV === 'production' ? {
+        rejectUnauthorized: false
+      } : false
+    });
+
+    const [rows] = await connection.execute('SELECT username, role FROM users');
+    await connection.end();
+    
+    res.json({ 
+      success: true, 
+      users: rows 
+    });
+    
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
