@@ -772,6 +772,50 @@ app.post('/api/fix-sale-items-direct', async (req, res) => {
   }
 });
 
+// Add missing item_type column to sale_items
+app.post('/api/add-item-type-column', async (req, res) => {
+  try {
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    console.log('🔧 Adding item_type column to sale_items...');
+    
+    // Add item_type column
+    await connection.execute('ALTER TABLE sale_items ADD COLUMN item_type VARCHAR(50) NOT NULL DEFAULT "product"');
+    console.log('✅ Added item_type column');
+    
+    // Check final table structure
+    const [finalColumns] = await connection.execute('DESCRIBE sale_items');
+    console.log('Final columns:', finalColumns.map(col => col.Field));
+    
+    await connection.end();
+    
+    res.json({ 
+      success: true, 
+      message: 'item_type column added to sale_items table',
+      columns: finalColumns.map(col => col.Field)
+    });
+    
+  } catch (error) {
+    console.error('Add item_type error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Debug endpoint to check credit note upload errors
 app.post('/api/debug-credit-upload', async (req, res) => {
   try {
