@@ -523,6 +523,48 @@ app.get('/api/debug-invoices-table', async (req, res) => {
   }
 });
 
+// Manual ALTER TABLE for invoices
+app.post('/api/fix-invoices-table', async (req, res) => {
+  try {
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    // Add missing columns
+    await connection.execute('ALTER TABLE invoices ADD COLUMN invoice_date DATE NULL');
+    console.log('✅ Added invoice_date column');
+    
+    await connection.execute('ALTER TABLE invoices ADD COLUMN store VARCHAR(255) NULL');
+    console.log('✅ Added store column');
+    
+    await connection.execute('ALTER TABLE invoices ADD COLUMN file_reference VARCHAR(255) NULL');
+    console.log('✅ Added file_reference column');
+    
+    await connection.end();
+    
+    res.json({ 
+      success: true, 
+      message: 'All missing columns added to invoices table' 
+    });
+    
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
