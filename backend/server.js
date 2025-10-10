@@ -616,6 +616,102 @@ app.post('/api/fix-invoice-items-table', async (req, res) => {
   }
 });
 
+// Direct fix for invoice_items table - run immediately
+app.post('/api/fix-invoice-items-direct', async (req, res) => {
+  try {
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    console.log('🔧 Starting direct fix for invoice_items table...');
+    
+    // Check current table structure
+    const [currentColumns] = await connection.execute('DESCRIBE invoice_items');
+    console.log('Current columns:', currentColumns.map(col => col.Field));
+    
+    // Add missing columns one by one
+    const columnsToAdd = [
+      { name: 'sl_no', sql: 'ALTER TABLE invoice_items ADD COLUMN sl_no INT NOT NULL DEFAULT 1' },
+      { name: 'item_code', sql: 'ALTER TABLE invoice_items ADD COLUMN item_code VARCHAR(50) NULL' },
+      { name: 'hsn_code', sql: 'ALTER TABLE invoice_items ADD COLUMN hsn_code VARCHAR(50) NULL' },
+      { name: 'qty', sql: 'ALTER TABLE invoice_items ADD COLUMN qty INT NOT NULL DEFAULT 1' },
+      { name: 'uom', sql: 'ALTER TABLE invoice_items ADD COLUMN uom VARCHAR(20) NULL' },
+      { name: 'rate', sql: 'ALTER TABLE invoice_items ADD COLUMN rate DECIMAL(10,2) NOT NULL DEFAULT 0' }
+    ];
+    
+    for (const column of columnsToAdd) {
+      try {
+        await connection.execute(column.sql);
+        console.log(`✅ Added ${column.name} column`);
+      } catch (error) {
+        if (error.message.includes('Duplicate column name')) {
+          console.log(`ℹ️ ${column.name} column already exists`);
+        } else {
+          console.log(`❌ Error adding ${column.name}:`, error.message);
+        }
+      }
+    }
+    
+    // Rename existing columns
+    try {
+      await connection.execute('ALTER TABLE invoice_items CHANGE COLUMN product_name item_name VARCHAR(255) NOT NULL');
+      console.log('✅ Renamed product_name to item_name');
+    } catch (error) {
+      console.log('ℹ️ product_name rename:', error.message);
+    }
+    
+    try {
+      await connection.execute('ALTER TABLE invoice_items CHANGE COLUMN quantity qty INT NOT NULL DEFAULT 1');
+      console.log('✅ Renamed quantity to qty');
+    } catch (error) {
+      console.log('ℹ️ quantity rename:', error.message);
+    }
+    
+    try {
+      await connection.execute('ALTER TABLE invoice_items CHANGE COLUMN unit_price rate DECIMAL(10,2) NOT NULL DEFAULT 0');
+      console.log('✅ Renamed unit_price to rate');
+    } catch (error) {
+      console.log('ℹ️ unit_price rename:', error.message);
+    }
+    
+    try {
+      await connection.execute('ALTER TABLE invoice_items CHANGE COLUMN total_price total DECIMAL(10,2) NOT NULL DEFAULT 0');
+      console.log('✅ Renamed total_price to total');
+    } catch (error) {
+      console.log('ℹ️ total_price rename:', error.message);
+    }
+    
+    // Check final table structure
+    const [finalColumns] = await connection.execute('DESCRIBE invoice_items');
+    console.log('Final columns:', finalColumns.map(col => col.Field));
+    
+    await connection.end();
+    
+    res.json({ 
+      success: true, 
+      message: 'Direct fix completed for invoice_items table',
+      columns: finalColumns.map(col => col.Field)
+    });
+    
+  } catch (error) {
+    console.error('Direct fix error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Debug endpoint to check credit note upload errors
 app.post('/api/debug-credit-upload', async (req, res) => {
   try {
