@@ -96,7 +96,7 @@ const uploadCreditNoteHandler = async (req, res) => {
             credit_note_number, date, return_date, receiver_name, receiver_gstin, 
             reason, total_items, gross_value, net_value, 
             file_name, original_name, cloudinary_url, cloudinary_public_id, items, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         `, [
           creditNote.creditNoteNumber,
           creditNote.date, // Original credit note date
