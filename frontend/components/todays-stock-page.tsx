@@ -96,7 +96,8 @@ export function TodaysStockPage({ onBack }: TodaysStockPageProps) {
           console.warn("No stock items returned for date:", selectedDate);
           setStockItems([]);
           setTotalQuantity(0);
-          setTotalValue(0);
+          setMrpValue(0);
+          setInvoiceValue(0);
           return;
         }
 
