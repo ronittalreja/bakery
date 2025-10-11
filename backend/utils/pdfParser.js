@@ -347,7 +347,7 @@ const parseTableDataRegex = (text) => {
   let totalQty = 0;
   let totalAmount = 0;
   
-  // Enhanced regex: More flexible pattern to handle different item name formats
+  // Simple, flexible regex to catch all items including potato wafers
   // Pattern: SlNo + ItemCode + ItemName + HSNCode + Qty + UOM + Rate + Total
   const rowRegex = /(\d{1,2})\s+([A-Z0-9]{4,5})\s+(.+?)\s+(\d{8})\s+(\d{1,3})\s+([A-Z]+)\s+(\d+\.\d{2})/gm;
   
