@@ -163,7 +163,15 @@ const parseInvoice = async (buffer, expectedDate = null) => {
     fs.writeFileSync('debug_pdf_text.txt', text);
     console.log('PDF text saved to debug_pdf_text.txt');
     
+    // Debug: Log first 20 lines to see what we're working with
     const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    console.log('=== PDF TEXT EXTRACTION DEBUG ===');
+    console.log('Total lines:', lines.length);
+    console.log('First 20 lines:');
+    lines.slice(0, 20).forEach((line, index) => {
+      console.log(`${index + 1}: ${line}`);
+    });
+    console.log('=== END DEBUG ===');
     
     // Split into multiple invoices if present
     const invoices = splitIntoMultipleInvoices(lines);
@@ -223,7 +231,7 @@ const splitIntoMultipleInvoices = (lines) => {
     const line = lines[i];
     
     // Check if this line starts a new invoice
-    // Look for "INVOICE" followed by invoice number pattern
+    // Look for "INVOICE" followed by invoice number pattern or invoice date
     if (line.includes('INVOICE') || 
         line.match(/Invoice No\.?\s*:\s*[A-Z0-9\/]+/i) ||
         line.match(/Invoice Date\s*:\s*\d{2}\/\d{2}\/\d{4}/i)) {
