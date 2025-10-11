@@ -291,7 +291,7 @@ const uploadCreditNoteHandler = async (req, res) => {
       file: {
         fileName,
         originalName,
-        path: relativePath,
+        path: cloudinaryUrl,
         size: req.file.size
       },
       storedCreditNotes,

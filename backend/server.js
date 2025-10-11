@@ -856,6 +856,68 @@ app.post('/api/execute-sql', async (req, res) => {
   }
 });
 
+// Safe add item_type column to sale_items
+app.post('/api/safe-add-item-type', async (req, res) => {
+  try {
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    console.log('🔧 Safely adding item_type column...');
+    
+    // Check if column already exists
+    const [columns] = await connection.execute('DESCRIBE sale_items');
+    const columnNames = columns.map(col => col.Field);
+    
+    if (columnNames.includes('item_type')) {
+      console.log('ℹ️ item_type column already exists');
+      await connection.end();
+      return res.json({ 
+        success: true, 
+        message: 'item_type column already exists',
+        columns: columnNames
+      });
+    }
+    
+    // Add the column
+    await connection.execute('ALTER TABLE sale_items ADD COLUMN item_type VARCHAR(50) NOT NULL DEFAULT "product"');
+    console.log('✅ Added item_type column');
+    
+    // Update existing records to have default value
+    await connection.execute('UPDATE sale_items SET item_type = "product" WHERE item_type IS NULL');
+    console.log('✅ Updated existing records');
+    
+    // Check final structure
+    const [finalColumns] = await connection.execute('DESCRIBE sale_items');
+    console.log('Final columns:', finalColumns.map(col => col.Field));
+    
+    await connection.end();
+    
+    res.json({ 
+      success: true, 
+      message: 'item_type column added safely',
+      columns: finalColumns.map(col => col.Field)
+    });
+    
+  } catch (error) {
+    console.error('Safe add error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Debug endpoint to check credit note upload errors
 app.post('/api/debug-credit-upload', async (req, res) => {
   try {
