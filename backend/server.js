@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
 const morgan = require('morgan');
 const db = require('./config/database');
+const { creditNoteUpload } = require('./utils/cloudinary');
 
 dotenv.config();
 
@@ -939,6 +940,47 @@ app.post('/api/debug-credit-upload', async (req, res) => {
       success: false, 
       error: error.message 
     });
+  }
+});
+
+// Debug endpoint to test credit note upload with detailed logging
+app.post('/api/debug-credit-upload-detailed', creditNoteUpload.single('file'), async (req, res) => {
+  try {
+    console.log('🔍 Detailed debug credit note upload request received');
+    console.log('Request body:', req.body);
+    console.log('Request file:', req.file);
+    
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No file uploaded',
+        debug: {
+          body: req.body,
+          files: req.files,
+          file: req.file
+        }
+      });
+    }
+    
+    console.log('File details:', {
+      originalname: req.file.originalname,
+      filename: req.file.filename,
+      size: req.file.size,
+      mimetype: req.file.mimetype,
+      path: req.file.path,
+      public_id: req.file.public_id,
+      url: req.file.url
+    });
+    
+    res.json({
+      success: true,
+      message: 'File uploaded successfully',
+      file: req.file,
+      body: req.body
+    });
+  } catch (error) {
+    console.error('Detailed debug error:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

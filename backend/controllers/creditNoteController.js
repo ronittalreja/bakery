@@ -20,7 +20,12 @@ const uploadCreditNote = (req, res) => {
 
 const uploadCreditNoteHandler = async (req, res) => {
   try {
+    console.log('🔍 Upload credit note handler called');
+    console.log('Request file:', req.file);
+    console.log('Request body:', req.body);
+    
     if (!req.file) {
+      console.log('❌ No file uploaded');
       return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
 
@@ -45,10 +50,18 @@ const uploadCreditNoteHandler = async (req, res) => {
     const fileBuffer = await downloadFileFromCloudinary(actualPublicId);
     
     // Parse the uploaded credit note using buffer
+    console.log('🔍 Starting credit note parsing...');
     const parser = new CreditNoteParser();
     const parsedData = await parser.parseFromBuffer(fileBuffer);
     
+    console.log('📊 Parse result:', {
+      success: parsedData.success,
+      error: parsedData.error,
+      creditNotesCount: parsedData.creditNotes?.length || 0
+    });
+    
     if (!parsedData.success) {
+      console.log('❌ Parse failed:', parsedData.error);
       return res.status(400).json({ success: false, error: parsedData.error });
     }
 
