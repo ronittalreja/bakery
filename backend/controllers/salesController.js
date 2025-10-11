@@ -144,8 +144,8 @@ const recordSale = async (req, res) => {
       }
     }
 
-    // Create sale record with cost tracking - use current datetime for accurate timestamp
-    const currentDateTime = new Date().toISOString();
+    // Create sale record with cost tracking - use MySQL compatible datetime format
+    const currentDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
     const [saleResult] = await connection.execute(
       `INSERT INTO sales (
         sale_date, 
@@ -159,9 +159,9 @@ const recordSale = async (req, res) => {
         total_cost
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        currentDateTime, 
-        totalAmount, 
-        paymentType, 
+        currentDateTime,
+        totalAmount,
+        paymentType,
         staffId,
         productMRPTotal,
         decorationMRPTotal,
