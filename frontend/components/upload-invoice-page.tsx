@@ -657,46 +657,103 @@ export function UploadInvoicePage({ onBack }: UploadInvoicePageProps) {
           <div className="mb-6">
             <h2 className="text-xl font-bold text-slate-900 mb-2">Invoice Preview</h2>
             <p className="text-slate-600">
-              Invoice {previewData.invoiceNo} for {previewData.invoiceDate}
+              {previewData.invoiceCount > 1 
+                ? `Found ${previewData.invoiceCount} invoices in PDF` 
+                : `Invoice ${previewData.invoiceNo} for ${previewData.invoiceDate}`
+              }
             </p>
+            {previewData.invoiceCount > 1 && (
+              <p className="text-sm text-slate-500 mt-1">
+                Total Amount: ₹{previewData.summary?.totalAmount?.toFixed(2) || previewData.totalAmount.toFixed(2)} | 
+                Total Items: {previewData.summary?.totalItems || previewData.totalQty}
+              </p>
+            )}
           </div>
-          <div>
-            <div className="space-y-4">
-              <div>
-                <p><strong>Store:</strong> {previewData.store}</p>
-                <p><strong>Total Quantity:</strong> {previewData.totalQty}</p>
-                <p><strong>Total Amount:</strong> ₹{previewData.totalAmount.toFixed(2)}</p>
-              </div>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Sl No</TableHead>
-                      <TableHead>Item Code</TableHead>
-                      <TableHead>Item Name</TableHead>
-                      <TableHead>HSN Code</TableHead>
-                      <TableHead>Qty</TableHead>
-                      <TableHead>Rate</TableHead>
-                      <TableHead>Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {previewData.items.map((item, index) => (
-                      <TableRow key={`${item.slNo}-${item.itemCode}-${index}`}>
-                        <TableCell>{item.slNo}</TableCell>
-                        <TableCell>{item.itemCode}</TableCell>
-                        <TableCell>{item.itemName}</TableCell>
-                        <TableCell>{item.hsnCode}</TableCell>
-                        <TableCell>{item.qty}</TableCell>
-                        <TableCell>₹{item.rate.toFixed(2)}</TableCell>
-                        <TableCell>₹{item.total.toFixed(2)}</TableCell>
+          
+          {previewData.invoiceCount > 1 ? (
+            // Multiple invoices view
+            <div className="space-y-6">
+              {previewData.allInvoices?.map((invoice, invoiceIndex) => (
+                <div key={invoiceIndex} className="border rounded-lg p-4 bg-white">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-slate-900">
+                      Invoice {invoiceIndex + 1}: {invoice.invoiceNo}
+                    </h3>
+                    <p className="text-sm text-slate-600">
+                      Date: {invoice.invoiceDate} | Amount: ₹{invoice.totalAmount.toFixed(2)} | Items: {invoice.items.length}
+                    </p>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Sl No</TableHead>
+                          <TableHead>Item Code</TableHead>
+                          <TableHead>Item Name</TableHead>
+                          <TableHead>HSN Code</TableHead>
+                          <TableHead>Qty</TableHead>
+                          <TableHead>Rate</TableHead>
+                          <TableHead>Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {invoice.items.map((item, index) => (
+                          <TableRow key={`${invoiceIndex}-${item.slNo}-${item.itemCode}-${index}`}>
+                            <TableCell>{item.slNo}</TableCell>
+                            <TableCell>{item.itemCode}</TableCell>
+                            <TableCell>{item.itemName}</TableCell>
+                            <TableCell>{item.hsnCode}</TableCell>
+                            <TableCell>{item.qty}</TableCell>
+                            <TableCell>₹{item.rate.toFixed(2)}</TableCell>
+                            <TableCell>₹{item.total.toFixed(2)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            // Single invoice view (backward compatibility)
+            <div>
+              <div className="space-y-4">
+                <div>
+                  <p><strong>Store:</strong> {previewData.store}</p>
+                  <p><strong>Total Quantity:</strong> {previewData.totalQty}</p>
+                  <p><strong>Total Amount:</strong> ₹{previewData.totalAmount.toFixed(2)}</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Sl No</TableHead>
+                        <TableHead>Item Code</TableHead>
+                        <TableHead>Item Name</TableHead>
+                        <TableHead>HSN Code</TableHead>
+                        <TableHead>Qty</TableHead>
+                        <TableHead>Rate</TableHead>
+                        <TableHead>Total</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {previewData.items.map((item, index) => (
+                        <TableRow key={`${item.slNo}-${item.itemCode}-${index}`}>
+                          <TableCell>{item.slNo}</TableCell>
+                          <TableCell>{item.itemCode}</TableCell>
+                          <TableCell>{item.itemName}</TableCell>
+                          <TableCell>{item.hsnCode}</TableCell>
+                          <TableCell>{item.qty}</TableCell>
+                          <TableCell>₹{item.rate.toFixed(2)}</TableCell>
+                          <TableCell>₹{item.total.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

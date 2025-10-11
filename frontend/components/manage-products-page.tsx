@@ -642,10 +642,13 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
                   id="image_url"
                   value={formData.image_url}
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="/images/cake.jpg"
+                  placeholder="https://drive.google.com/file/d/FILE_ID/view or direct image URL"
                   disabled={isLoading}
                   className="bg-white border-slate-300 focus:border-slate-500"
                 />
+                <p className="text-xs text-slate-500">
+                  Supports Google Drive links and direct image URLs (jpg, png, gif, webp)
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="is_active" className="text-sm font-medium text-slate-700">Active</Label>

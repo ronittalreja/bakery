@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
 interface DateContextType {
   selectedDate: string
@@ -25,12 +25,41 @@ interface DateProviderProps {
 }
 
 export function DateProvider({ children, userRole }: DateProviderProps) {
-  const today = new Date().toISOString().split("T")[0]
+  const getCurrentDate = () => new Date().toISOString().split("T")[0]
+  const [today, setToday] = useState(getCurrentDate())
   const [selectedDate, setSelectedDate] = useState(today)
   const [currentWorkingDate, setCurrentWorkingDate] = useState(today)
   const [isDayEnded, setIsDayEnded] = useState(false)
   const [adminControlledStaffDate, setAdminControlledStaffDate] = useState(today)
   const [adminMainDate, setAdminMainDate] = useState(today)
+
+  // Update date at midnight
+  useEffect(() => {
+    const updateDate = () => {
+      const newToday = getCurrentDate()
+      console.log(`Date check: current today=${today}, new today=${newToday}`)
+      if (newToday !== today) {
+        console.log(`Date changed from ${today} to ${newToday}`)
+        setToday(newToday)
+        // Auto-update dates to new day at midnight
+        if (userRole === "staff") {
+          setSelectedDate(newToday)
+          setCurrentWorkingDate(newToday)
+          setAdminControlledStaffDate(newToday)
+        } else {
+          setAdminMainDate(newToday)
+        }
+      }
+    }
+
+    // Check every 30 seconds for more responsive date changes
+    const interval = setInterval(updateDate, 30000)
+    
+    // Also check immediately
+    updateDate()
+
+    return () => clearInterval(interval)
+  }, [today, userRole])
 
   const isToday = selectedDate === today
   const canEdit = userRole === "admin" || (selectedDate === currentWorkingDate && !isDayEnded)

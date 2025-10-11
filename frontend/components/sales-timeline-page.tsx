@@ -268,70 +268,7 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
           </Card>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Receipt className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold">{summary.totalTransactions}</div>
-                      <div className="text-sm text-muted-foreground">Transactions</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-secondary/10 rounded-lg">
-                      <TrendingUp className="h-5 w-5 text-secondary" />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold">{summary.totalItems}</div>
-                      <div className="text-sm text-muted-foreground">Items Sold</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex flex-wrap gap-4 items-center">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
-                    <span className="text-sm font-medium">Filters:</span>
-                  </div>
-                  <Select value={filterBy} onValueChange={setFilterBy}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="All Transactions" />
-                    </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="hdfc">HDFC</SelectItem>
-                    <SelectItem value="gpay">GPay</SelectItem>
-                    <SelectItem value="zomato">Zomato</SelectItem>
-                    <SelectItem value="swiggy">Swiggy</SelectItem>
-                  </SelectContent>
-                  </Select>
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Latest First" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="time-desc">Latest First</SelectItem>
-                      <SelectItem value="time-asc">Oldest First</SelectItem>
-                      <SelectItem value="amount-desc">Highest Amount</SelectItem>
-                      <SelectItem value="amount-asc">Lowest Amount</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
+            {/* Transaction History - Moved Up */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Transaction History</CardTitle>
@@ -421,6 +358,126 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Payment Method Breakdown - New */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Payment Method Breakdown</CardTitle>
+                <CardDescription>Revenue distribution by payment method</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const paymentBreakdown = transactions.reduce((acc, transaction) => {
+                    const method = transaction.paymentMethod || 'unknown';
+                    if (!acc[method]) {
+                      acc[method] = { count: 0, amount: 0 };
+                    }
+                    acc[method].count += 1;
+                    acc[method].amount += Number(transaction.totalAmount) || 0;
+                    return acc;
+                  }, {} as Record<string, { count: number; amount: number }>);
+
+                  const totalAmount = transactions.reduce((sum, t) => sum + (Number(t.totalAmount) || 0), 0);
+
+                  return (
+                    <div className="space-y-4">
+                      {Object.entries(paymentBreakdown).map(([method, data]) => (
+                        <div key={method} className="flex items-center justify-between p-3 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            <Badge
+                              className={`${getPaymentMethodColor(method)} border-0`}
+                              variant="secondary"
+                            >
+                              {method.toUpperCase()}
+                            </Badge>
+                            <div>
+                              <div className="font-medium">{data.count} transactions</div>
+                              <div className="text-sm text-muted-foreground">
+                                {totalAmount > 0 ? ((data.amount / totalAmount) * 100).toFixed(1) : 0}% of total
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-lg">
+                              ₹{data.amount.toLocaleString("en-IN", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
+            {/* Summary Cards - Moved Down */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Receipt className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold">{summary.totalTransactions}</div>
+                      <div className="text-sm text-muted-foreground">Transactions</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-secondary/10 rounded-lg">
+                      <TrendingUp className="h-5 w-5 text-secondary" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold">{summary.totalItems}</div>
+                      <div className="text-sm text-muted-foreground">Items Sold</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Filters Card - Moved Down */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex flex-wrap gap-4 items-center">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    <span className="text-sm font-medium">Filters:</span>
+                  </div>
+                  <Select value={filterBy} onValueChange={setFilterBy}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="All Transactions" />
+                    </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="hdfc">HDFC</SelectItem>
+                    <SelectItem value="gpay">GPay</SelectItem>
+                    <SelectItem value="zomato">Zomato</SelectItem>
+                    <SelectItem value="swiggy">Swiggy</SelectItem>
+                  </SelectContent>
+                  </Select>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Latest First" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="time-desc">Latest First</SelectItem>
+                      <SelectItem value="time-asc">Oldest First</SelectItem>
+                      <SelectItem value="amount-desc">Highest Amount</SelectItem>
+                      <SelectItem value="amount-asc">Lowest Amount</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardContent>
             </Card>
           </>

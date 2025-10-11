@@ -21,6 +21,7 @@ import { TodaysSalesPage } from "@/components/todays-sales-page";
 import { ReturnsPage } from "@/components/newreturns";
 import CreditNotesPage from "@/components/credit-notes-page";
 import CreditNoteDetailsPage from "@/components/credit-note-details-page";
+import { DateSelector } from "@/components/date-selector";
 
 type StaffPage = "dashboard" | "upload-invoice" | "record-sale" | "stock" | "sales-summary" | "returns" | "credit-notes" | "credit-note-details";
 
@@ -212,6 +213,9 @@ export function StaffDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex-1 sm:flex-none">
+                <DateSelector selectedDate={selectedDate} onDateChange={() => {}} disabled={true} />
+              </div>
               <Button 
                 variant="outline" 
                 onClick={logout} 

@@ -74,9 +74,9 @@ export const formatDisplayDate = (date: Date | string | number): string => {
 };
 
 /**
- * Format time to HH:MM format
+ * Format time to 12-hour format (HH:MM AM/PM)
  * @param date - Date object, date string, or timestamp
- * @returns Formatted time string in HH:MM format
+ * @returns Formatted time string in 12-hour format
  */
 export const formatTime = (date: Date | string | number): string => {
   try {
@@ -85,10 +85,12 @@ export const formatTime = (date: Date | string | number): string => {
       return '-';
     }
     
-    const hours = dateObj.getHours().toString().padStart(2, '0');
+    const hours = dateObj.getHours();
     const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12; // Convert 0 to 12 for 12 AM
     
-    return `${hours}:${minutes}`;
+    return `${displayHours}:${minutes} ${ampm}`;
   } catch (error) {
     console.error('Error formatting time:', error);
     return '-';
