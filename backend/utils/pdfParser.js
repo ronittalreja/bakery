@@ -11,135 +11,10 @@ const parseInvoice = async (buffer, expectedDate = null) => {
     fs.writeFileSync('debug_pdf_text.txt', text);
     console.log('PDF text saved to debug_pdf_text.txt');
     
-    // Debug: Log first 20 lines to see what we're working with
-    const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-    console.log('=== PDF TEXT EXTRACTION DEBUG ===');
-    console.log('Total lines:', lines.length);
-    console.log('First 20 lines:');
-    lines.slice(0, 20).forEach((line, index) => {
-      console.log(`${index + 1}: ${line}`);
-    });
-    console.log('=== END DEBUG ===');
-    
-    // Split into multiple invoices if present
-    const invoices = splitIntoMultipleInvoices(lines);
-    
-    const parsedInvoices = [];
-    
-    console.log(`\n=== PROCESSING ${invoices.length} INVOICES ===`);
-    
-    for (let i = 0; i < invoices.length; i++) {
-      console.log(`\n--- Processing Invoice ${i + 1}/${invoices.length} ---`);
-      const invoiceData = parseSingleInvoice(invoices[i], i);
-      
-      if (invoiceData && invoiceData.items && invoiceData.items.length > 0) {
-        console.log(`Invoice ${i + 1} created with ${invoiceData.items.length} items`);
-        parsedInvoices.push(invoiceData);
-      } else {
-        console.log(`Invoice ${i + 1} has no items, skipping`);
-      }
-    }
-    
-    console.log(`\n=== FINAL RESULT: ${parsedInvoices.length} TOTAL INVOICES ===`);
-    
-    // Return the first invoice for backward compatibility, but with all invoices in the response
-    if (parsedInvoices.length === 0) {
-      throw new Error('No valid invoices found in the document');
-    }
-    
-    const firstInvoice = parsedInvoices[0];
-    
-    return {
-      invoiceNo: firstInvoice.invoiceNo,
-      invoiceDate: firstInvoice.invoiceDate,
-      store: firstInvoice.store,
-      items: firstInvoice.items,
-      totalQty: firstInvoice.totalQty,
-      totalAmount: firstInvoice.totalAmount,
-      pageCount: firstInvoice.pageCount,
-      validation: firstInvoice.validation,
-      // Add multiple invoices support
-      allInvoices: parsedInvoices,
-      invoiceCount: parsedInvoices.length
-    };
-  } catch (error) {
-    throw new Error('Failed to parse PDF: ' + error.message);
-  }
-};
-
-const splitIntoMultipleInvoices = (lines) => {
-  const invoices = [];
-  let currentInvoice = [];
-  let inInvoice = false;
-  
-  console.log('=== INVOICE DETECTION DEBUG ===');
-  console.log('Looking for invoice patterns...');
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    
-    // Check if this line starts a new invoice
-    // Look for "INVOICE" followed by invoice number pattern or invoice date
-    if (line.includes('INVOICE') || 
-        line.match(/Invoice No\.?\s*:\s*[A-Z0-9\/]+/i) ||
-        line.match(/Invoice Date\s*:\s*\d{2}\/\d{2}\/\d{4}/i)) {
-      
-      console.log(`Found invoice header at line ${i + 1}: ${line}`);
-      
-      // If we're already in an invoice, save it before starting a new one
-      if (inInvoice && currentInvoice.length > 0) {
-        invoices.push([...currentInvoice]);
-        console.log(`Saved previous invoice with ${currentInvoice.length} lines`);
-      }
-      
-      // Start new invoice
-      currentInvoice = [line];
-      inInvoice = true;
-    } else if (inInvoice) {
-      // Add line to current invoice
-      currentInvoice.push(line);
-      
-      // Check if we've reached the end of this invoice
-      // Look for signature lines or next page indicators
-      if (line.includes('Authorised Signatory') || 
-          line.includes('Receiver\'s Signature') ||
-          line.includes('Subject to Mumbai Jurisdiction') ||
-          (line.includes('Page') && line.includes('of'))) {
-        console.log(`Found end of invoice at line ${i + 1}: ${line}`);
-        // Don't end here, continue collecting until we find the next invoice
-      }
-    }
-  }
-  
-  // Add the last invoice
-  if (inInvoice && currentInvoice.length > 0) {
-    invoices.push(currentInvoice);
-    console.log(`Saved final invoice with ${currentInvoice.length} lines`);
-  }
-  
-  console.log(`Total invoices found: ${invoices.length}`);
-  if (invoices.length > 0) {
-    invoices.forEach((inv, index) => {
-      console.log(`Invoice ${index + 1}: ${inv.length} lines`);
-      // Show first few lines to identify the invoice
-      const firstLines = inv.slice(0, 3).join(' | ');
-      console.log(`  First lines: ${firstLines}`);
-    });
-  }
-  console.log('=== END INVOICE DETECTION ===');
-  
-  return invoices.length > 0 ? invoices : [lines];
-};
-
-const parseSingleInvoice = (lines, index) => {
-  try {
-    const text = lines.join('\n');
-    
     // Extract invoice date
     const invoiceDateMatch = text.match(/Invoice Date\s*:\s*(\d{2}\/\d{2}\/\d{4})/);
     if (!invoiceDateMatch) {
-      console.log(`Invoice ${index + 1}: No invoice date found`);
-      return null;
+      throw new Error('Invoice date not found in the document');
     }
     
     const invoiceDate = moment(invoiceDateMatch[1], 'DD/MM/YYYY');
@@ -148,15 +23,12 @@ const parseSingleInvoice = (lines, index) => {
     // Extract store information
     const storeMatch = text.match(/OM SHREE ASHTAVINAYAK ENTERPRISE \( SHAHAD \) - R3309/);
     if (!storeMatch) {
-      console.log(`Invoice ${index + 1}: Store information not found`);
-      return null;
+      throw new Error('Store information not found or does not match R3309');
     }
     
     // Extract invoice number
     const invoiceNoMatch = text.match(/Invoice No\.\s*:\s*([A-Z0-9\/]+)/);
-    const invoiceNo = invoiceNoMatch ? invoiceNoMatch[1] : `Unknown-${index + 1}`;
-    
-    console.log(`Invoice ${index + 1}: Parsing invoice ${invoiceNo}`);
+    const invoiceNo = invoiceNoMatch ? invoiceNoMatch[1] : 'Unknown';
     
     // Parse table data with regex approach
     const { items, totalQty, totalAmount } = parseTableDataRegex(text);
@@ -168,7 +40,7 @@ const parseSingleInvoice = (lines, index) => {
     // Get page count
     const pageCount = getPageCount(text);
     
-    console.log(`Invoice ${index + 1}: Parsed ${items.length} items, total quantity: ${totalQty}, total amount: ${netValue}`);
+    console.log(`Parsed ${items.length} items from invoice, total quantity: ${totalQty}, total amount: ${netValue}`);
     
     return {
       invoiceNo,
@@ -185,8 +57,7 @@ const parseSingleInvoice = (lines, index) => {
       }
     };
   } catch (error) {
-    console.error(`Error parsing invoice ${index + 1}:`, error.message);
-    return null;
+    throw new Error('Failed to parse PDF: ' + error.message);
   }
 };
 
