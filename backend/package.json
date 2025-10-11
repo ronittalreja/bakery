@@ -1,7 +1,7 @@
 {
-  "name": "monginis-backend",
+  "name": "bakery-management-backend",
   "version": "1.0.0",
-  "description": "Backend for Monginis Franchise Management System",
+  "description": "Backend for Bakery Management System",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

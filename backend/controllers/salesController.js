@@ -144,7 +144,8 @@ const recordSale = async (req, res) => {
       }
     }
 
-    // Create sale record with cost tracking
+    // Create sale record with cost tracking - use current datetime for accurate timestamp
+    const currentDateTime = new Date().toISOString();
     const [saleResult] = await connection.execute(
       `INSERT INTO sales (
         sale_date, 
@@ -158,7 +159,7 @@ const recordSale = async (req, res) => {
         total_cost
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        saleDate, 
+        currentDateTime, 
         totalAmount, 
         paymentType, 
         staffId,
@@ -190,8 +191,8 @@ const recordSale = async (req, res) => {
     for (const item of decorationItems) {
       // Add sale item for decoration
       await connection.execute(
-        'INSERT INTO sale_items (sale_id, item_id, batch_id, quantity, unit_price, total_price, name) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [saleId, item.decorationId, null, item.quantity, item.unitPrice, item.totalPrice, item.name || '']
+        'INSERT INTO sale_items (sale_id, item_id, batch_id, quantity, unit_price, total_price, name, item_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [saleId, item.decorationId, null, item.quantity, item.unitPrice, item.totalPrice, item.name || '', 'decoration']
       );
       
       // Update decoration stock directly in the same transaction

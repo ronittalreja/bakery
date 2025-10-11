@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const { processImageUrl } = require('../utils/imageUtils');
 
 class Product {
   static inferCategoryAndShelfLife(itemCode) {
@@ -38,7 +39,7 @@ class Product {
       const salePrice = data.sale_price || (data.invoice_price * 1.33);
       const grmValue = data.grm_value || (data.invoice_price * 0.15);
       const itemCode = data.item_code || `ITEM-${Date.now()}`;
-      const imageUrl = data.image_url || '/placeholder.svg';
+      const imageUrl = processImageUrl(data.image_url) || '/placeholder.svg';
 
       // Auto category/shelf life from item code if not provided
       const inferred = this.inferCategoryAndShelfLife(itemCode);
@@ -68,7 +69,7 @@ class Product {
         invoice_price: data.invoice_price,
         sale_price: data.sale_price,
         grm_value: data.grm_value,
-        image_url: data.image_url,
+        image_url: processImageUrl(data.image_url),
         is_active: data.is_active,
         shelf_life_days: data.shelf_life_days
       };
