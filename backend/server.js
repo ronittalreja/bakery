@@ -857,6 +857,46 @@ app.post('/api/execute-sql', async (req, res) => {
   }
 });
 
+// Quick fix endpoint to create stock_adjustments table
+app.post('/api/fix-stock-adjustments-table', async (req, res) => {
+  try {
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS stock_adjustments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        batch_id INT NOT NULL,
+        old_quantity INT NOT NULL,
+        new_quantity INT NOT NULL,
+        reason VARCHAR(255),
+        staff_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (batch_id) REFERENCES stock_batches(id) ON DELETE CASCADE,
+        FOREIGN KEY (staff_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    
+    await connection.end();
+    
+    res.json({ success: true, message: 'stock_adjustments table created successfully' });
+  } catch (error) {
+    console.error('Create stock_adjustments table error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Safe add item_type column to sale_items
 app.post('/api/safe-add-item-type', async (req, res) => {
   try {
