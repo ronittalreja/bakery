@@ -86,7 +86,9 @@ const updateStockQuantity = async (req, res) => {
     // Add expiry date update if provided
     if (expiryDate) {
       updateFields.push('expiry_date = ?');
-      updateValues.push(expiryDate);
+      // Convert datetime string to date format (YYYY-MM-DD)
+      const formattedDate = new Date(expiryDate).toISOString().split('T')[0];
+      updateValues.push(formattedDate);
     }
     
     updateValues.push(batchId);
