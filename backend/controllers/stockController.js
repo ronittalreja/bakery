@@ -99,13 +99,7 @@ const updateStockQuantity = async (req, res) => {
       updateValues
     );
 
-    // Log the change if reason provided
-    if (reason && req.user) {
-      await db.execute(
-        'INSERT INTO stock_adjustments (batch_id, old_quantity, new_quantity, reason, staff_id, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
-        [batchId, batch[0].quantity, quantity, reason, req.user.id]
-      );
-    }
+    // No need for separate logging table - just update the stock_batches directly
 
     res.json({ 
       success: true, 
