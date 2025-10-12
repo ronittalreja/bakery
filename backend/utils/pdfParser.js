@@ -218,18 +218,15 @@ const parseTableDataRegex = (text) => {
   let totalQty = 0;
   let totalAmount = 0;
   
-  // Flexible regex to catch all items including packing materials
-  // Pattern: SlNo + ItemCode + ItemName + HSNCode + Qty + UOM + Rate + Total
-  const rowRegex = /(\d{1,2})\s+([A-Z0-9]{4,5})\s+(.+?)\s+(\d{8})\s+(\d{1,3})\s+([A-Z]+)\s+(\d+\.\d{2})/gm;
+  // Simplified regex: Flexible capture based on position and patterns
+  const rowRegex = /(\d{1,2})([A-Z0-9]{5})(.{1,30}?)(?=\d{8})(\d{8})(\d{1,3})N([A-Z]+)(\d+\.\d{2})/gm;
   
   let match;
   while ((match = rowRegex.exec(text)) !== null) {
     const slNo = parseInt(match[1]) || 0;
     const itemCode = match[2];
-    let itemName = match[3].trim();
-    
-    // Clean up item name - remove extra spaces and limit length
-    itemName = itemName.replace(/\s+/g, ' ').substring(0, 50);
+    let itemName = match[3].trim().substring(0, 30); // Limit to 30 chars
+    itemName = itemName.replace(/\s*\d+$/, '').trim(); // Clean trailing numbers
     const hsnCode = match[4].trim();
     const qty = parseInt(match[5]) || 0;
     const uom = match[6];
@@ -239,8 +236,8 @@ const parseTableDataRegex = (text) => {
     // Detailed debug logs
     console.log(`Match ${slNo}: Full=[${match[0]}], slNo=${match[1]}, itemCode=${match[2]}, itemName="${match[3]}", hsn=${match[4]}, qty=${match[5]}, uom=${match[6]}, rate=${match[7]}, total=${total}`);
 
-    // Validate and add item - allow different item code lengths (4-5 chars)
-    if (slNo > 0 && itemCode.length >= 4 && itemName.length > 0 && qty > 0 && rate > 0) {
+    // Validate and add item
+    if (slNo > 0 && itemCode.length === 5 && itemName.length > 0 && qty > 0 && rate > 0) {
       const item = {
         slNo,
         itemCode,
@@ -266,7 +263,6 @@ const parseTableDataRegex = (text) => {
     console.log('Table end detected');
   }
   
-  console.log(`Parsed ${items.length} items, total quantity: ${totalQty}, total amount: ${totalAmount}`);
   return { items, totalQty, totalAmount };
 };
 
