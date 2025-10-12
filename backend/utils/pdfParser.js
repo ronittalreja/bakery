@@ -249,16 +249,13 @@ const parseTableDataRegex = (text) => {
         qty,
         uom,
         rate,
-        total,
-        // Add category for packing materials (items starting with ID)
-        category: itemCode.startsWith('ID') ? 'packing_material' : null
+        total
       };
       items.push(item);
       totalQty += qty;
       totalAmount += total;
       
-      const categoryText = itemCode.startsWith('ID') ? ' (PACKING MATERIAL)' : '';
-      console.log(`Parsed item ${slNo}: ${itemCode} - ${itemName} - HSN: ${hsnCode} - Qty: ${qty} - Rate: ${rate} - Total: ${total}${categoryText}`);
+      console.log(`Parsed item ${slNo}: ${itemCode} - ${itemName} - HSN: ${hsnCode} - Qty: ${qty} - Rate: ${rate} - Total: ${total}`);
     } else {
       console.log(`Rejected item ${slNo}: Validation failed - Code=${itemCode}, Name="${itemName}", Qty=${qty}, Rate=${rate}`);
     }
