@@ -94,12 +94,21 @@ const updateStockQuantity = async (req, res) => {
     updateValues.push(batchId);
 
     // Update quantity and optionally expiry date
-    await db.execute(
+    const [updateResult] = await db.execute(
       `UPDATE stock_batches SET ${updateFields.join(', ')} WHERE id = ?`, 
       updateValues
     );
 
-    // No need for separate logging table - just update the stock_batches directly
+    // Check if update actually happened
+    if (updateResult.affectedRows === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No changes made to stock batch' 
+      });
+    }
+
+    // Verify the update by fetching the updated batch
+    const [updatedBatch] = await db.execute('SELECT * FROM stock_batches WHERE id = ?', [batchId]);
 
     res.json({ 
       success: true, 
@@ -107,9 +116,13 @@ const updateStockQuantity = async (req, res) => {
       data: {
         batchId,
         oldQuantity: batch[0].quantity,
-        newQuantity: quantity,
+        newQuantity: updatedBatch[0].quantity,
         oldExpiryDate: batch[0].expiry_date,
-        newExpiryDate: expiryDate || batch[0].expiry_date
+        newExpiryDate: updatedBatch[0].expiry_date,
+        changesApplied: {
+          quantityChanged: batch[0].quantity !== updatedBatch[0].quantity,
+          expiryChanged: expiryDate ? batch[0].expiry_date !== updatedBatch[0].expiry_date : false
+        }
       }
     });
   } catch (error) {
