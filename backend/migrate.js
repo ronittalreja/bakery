@@ -78,6 +78,22 @@ async function runMigrations() {
     `);
     console.log('✅ Created stock_batches table');
 
+    // Create stock_adjustments table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS stock_adjustments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        batch_id INT NOT NULL,
+        old_quantity INT NOT NULL,
+        new_quantity INT NOT NULL,
+        reason VARCHAR(255),
+        staff_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (batch_id) REFERENCES stock_batches(id) ON DELETE CASCADE,
+        FOREIGN KEY (staff_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    console.log('✅ Created stock_adjustments table');
+
     // Create sales table
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS sales (
