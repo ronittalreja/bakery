@@ -1,5 +1,6 @@
 // File: backend/controllers/invoiceController.js
 const InvoiceParser = require('../utils/invoiceParser');
+const { downloadFileFromCloudinary } = require('../utils/cloudinary');
 const Invoice = require('../models/Invoice');
 const InvoiceItem = require('../models/InvoiceItem');
 const Product = require('../models/Product');
@@ -81,10 +82,32 @@ const uploadInvoice = async (req, res) => {
 
     const isPreview = req.query.preview === 'true';
     
-    // Ensure we have a proper buffer
-    let buffer = req.file.buffer;
-    if (!Buffer.isBuffer(buffer)) {
-      buffer = Buffer.from(buffer);
+    console.log('File info:', {
+      fieldname: req.file.fieldname,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      path: req.file.path,
+      public_id: req.file.public_id,
+      buffer: !!req.file.buffer
+    });
+    
+    // With Cloudinary, we get req.file.path (Cloudinary URL) instead of buffer
+    let buffer;
+    if (req.file.buffer) {
+      // If we have a buffer (memory storage), use it directly
+      buffer = req.file.buffer;
+      if (!Buffer.isBuffer(buffer)) {
+        buffer = Buffer.from(buffer);
+      }
+    } else if (req.file.path) {
+      // If we have a Cloudinary path, download the file
+      console.log('Downloading file from Cloudinary:', req.file.path);
+      buffer = await downloadFileFromCloudinary(req.file.public_id);
+    } else {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No file buffer or Cloudinary path found' 
+      });
     }
     
     console.log('Upload - Buffer type:', typeof buffer, 'Is Buffer:', Buffer.isBuffer(buffer), 'Length:', buffer.length);
@@ -329,15 +352,37 @@ const checkInvoice = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
     
-    // Ensure we have a proper buffer
-    let buffer = req.file.buffer;
-    if (!Buffer.isBuffer(buffer)) {
-      buffer = Buffer.from(buffer);
+    console.log('File info:', {
+      fieldname: req.file.fieldname,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      path: req.file.path,
+      public_id: req.file.public_id,
+      buffer: !!req.file.buffer
+    });
+    
+    // With Cloudinary, we get req.file.path (Cloudinary URL) instead of buffer
+    let buffer;
+    if (req.file.buffer) {
+      // If we have a buffer (memory storage), use it directly
+      buffer = req.file.buffer;
+      if (!Buffer.isBuffer(buffer)) {
+        buffer = Buffer.from(buffer);
+      }
+    } else if (req.file.path) {
+      // If we have a Cloudinary path, download the file
+      console.log('Downloading file from Cloudinary:', req.file.path);
+      buffer = await downloadFileFromCloudinary(req.file.public_id);
+    } else {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No file buffer or Cloudinary path found' 
+      });
     }
     
     console.log('Buffer type:', typeof buffer, 'Is Buffer:', Buffer.isBuffer(buffer), 'Length:', buffer.length);
     
-    // Use the new InvoiceParser instead of the old parseInvoice
+    // Use the new InvoiceParser
     const invoiceParser = new InvoiceParser();
     const pdf = require('pdf-parse');
     
