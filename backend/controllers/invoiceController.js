@@ -22,12 +22,29 @@ const parseMultipleInvoices = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
 
-    const buffer = req.file.buffer;
+    // Ensure we have a proper buffer
+    let buffer = req.file.buffer;
+    if (!Buffer.isBuffer(buffer)) {
+      buffer = Buffer.from(buffer);
+    }
+    
+    console.log('Parse Multiple - Buffer type:', typeof buffer, 'Is Buffer:', Buffer.isBuffer(buffer), 'Length:', buffer.length);
+    
     const invoiceParser = new InvoiceParser();
     
     // Parse PDF text
     const pdf = require('pdf-parse');
-    const pdfData = await pdf(buffer);
+    let pdfData;
+    try {
+      pdfData = await pdf(buffer);
+      console.log('Parse Multiple - PDF parsed successfully, text length:', pdfData.text.length);
+    } catch (pdfError) {
+      console.error('Parse Multiple - PDF parsing error:', pdfError);
+      return res.status(400).json({ 
+        success: false, 
+        error: `Failed to parse PDF: ${pdfError.message}` 
+      });
+    }
     
     // Parse multiple invoices from text
     const parsedData = invoiceParser.parseFromText(pdfData.text);
@@ -63,12 +80,31 @@ const uploadInvoice = async (req, res) => {
     }
 
     const isPreview = req.query.preview === 'true';
-    const buffer = req.file.buffer;
+    
+    // Ensure we have a proper buffer
+    let buffer = req.file.buffer;
+    if (!Buffer.isBuffer(buffer)) {
+      buffer = Buffer.from(buffer);
+    }
+    
+    console.log('Upload - Buffer type:', typeof buffer, 'Is Buffer:', Buffer.isBuffer(buffer), 'Length:', buffer.length);
     
     // Try to parse multiple invoices first
     const invoiceParser = new InvoiceParser();
     const pdf = require('pdf-parse');
-    const pdfData = await pdf(buffer);
+    
+    let pdfData;
+    try {
+      pdfData = await pdf(buffer);
+      console.log('Upload - PDF parsed successfully, text length:', pdfData.text.length);
+    } catch (pdfError) {
+      console.error('Upload - PDF parsing error:', pdfError);
+      return res.status(400).json({ 
+        success: false, 
+        error: `Failed to parse PDF: ${pdfError.message}` 
+      });
+    }
+    
     const multipleInvoicesData = invoiceParser.parseFromText(pdfData.text);
     
     let parsedData;
@@ -292,27 +328,45 @@ const checkInvoice = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
-    const buffer = req.file.buffer;
+    
+    // Ensure we have a proper buffer
+    let buffer = req.file.buffer;
+    if (!Buffer.isBuffer(buffer)) {
+      buffer = Buffer.from(buffer);
+    }
+    
+    console.log('Buffer type:', typeof buffer, 'Is Buffer:', Buffer.isBuffer(buffer), 'Length:', buffer.length);
     
     // Use the new InvoiceParser instead of the old parseInvoice
     const invoiceParser = new InvoiceParser();
     const pdf = require('pdf-parse');
-    const pdfData = await pdf(buffer);
-    const parsedData = invoiceParser.parseFromText(pdfData.text);
     
-    if (!parsedData.success) {
+    try {
+      const pdfData = await pdf(buffer);
+      console.log('PDF parsed successfully, text length:', pdfData.text.length);
+      
+      const parsedData = invoiceParser.parseFromText(pdfData.text);
+      
+      if (!parsedData.success) {
+        return res.status(400).json({ 
+          success: false, 
+          error: parsedData.error || 'Failed to parse invoice' 
+        });
+      }
+      
+      // Return the first invoice for preview (backward compatibility)
+      const validationResult = parsedData.invoices && parsedData.invoices.length > 0 
+        ? parsedData.invoices[0] 
+        : null;
+      
+      res.json({ success: true, data: validationResult });
+    } catch (pdfError) {
+      console.error('PDF parsing error:', pdfError);
       return res.status(400).json({ 
         success: false, 
-        error: parsedData.error || 'Failed to parse invoice' 
+        error: `Failed to parse PDF: ${pdfError.message}` 
       });
     }
-    
-    // Return the first invoice for preview (backward compatibility)
-    const validationResult = parsedData.invoices && parsedData.invoices.length > 0 
-      ? parsedData.invoices[0] 
-      : null;
-    
-    res.json({ success: true, data: validationResult });
   } catch (error) {
     console.error('Invoice check error:', error);
     res.status(400).json({ success: false, error: `Failed to validate invoice: ${error.message}` });
@@ -540,12 +594,29 @@ const uploadMultipleInvoices = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
 
-    const buffer = req.file.buffer;
+    // Ensure we have a proper buffer
+    let buffer = req.file.buffer;
+    if (!Buffer.isBuffer(buffer)) {
+      buffer = Buffer.from(buffer);
+    }
+    
+    console.log('Upload Multiple - Buffer type:', typeof buffer, 'Is Buffer:', Buffer.isBuffer(buffer), 'Length:', buffer.length);
+    
     const invoiceParser = new InvoiceParser();
     
     // Parse PDF text
     const pdf = require('pdf-parse');
-    const pdfData = await pdf(buffer);
+    let pdfData;
+    try {
+      pdfData = await pdf(buffer);
+      console.log('Upload Multiple - PDF parsed successfully, text length:', pdfData.text.length);
+    } catch (pdfError) {
+      console.error('Upload Multiple - PDF parsing error:', pdfError);
+      return res.status(400).json({ 
+        success: false, 
+        error: `Failed to parse PDF: ${pdfError.message}` 
+      });
+    }
     
     // Parse multiple invoices from text
     const parsedData = invoiceParser.parseFromText(pdfData.text);
