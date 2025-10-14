@@ -1,5 +1,4 @@
 // File: backend/controllers/invoiceController.js
-const { parseInvoice } = require('../utils/pdfParser');
 const InvoiceParser = require('../utils/invoiceParser');
 const Invoice = require('../models/Invoice');
 const InvoiceItem = require('../models/InvoiceItem');
@@ -79,8 +78,13 @@ const uploadInvoice = async (req, res) => {
       console.log(`Found ${multipleInvoicesData.invoices.length} invoices, using first one for upload`);
       parsedData = multipleInvoicesData.invoices[0];
     } else {
-      // Fallback to original parser
-      parsedData = await parseInvoice(buffer);
+      // Fallback: try to parse as single invoice using the new parser
+      console.log('No multiple invoices found, trying single invoice parsing');
+      if (multipleInvoicesData.success && multipleInvoicesData.invoices.length === 0) {
+        return res.status(400).json({ success: false, error: 'No valid invoices found in the PDF' });
+      } else {
+        return res.status(400).json({ success: false, error: 'Failed to parse PDF: ' + (multipleInvoicesData.error || 'Unknown error') });
+      }
     }
     
     console.log('Parsed invoice data:', parsedData);
@@ -289,7 +293,25 @@ const checkInvoice = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
     const buffer = req.file.buffer;
-    const validationResult = await parseInvoice(buffer);
+    
+    // Use the new InvoiceParser instead of the old parseInvoice
+    const invoiceParser = new InvoiceParser();
+    const pdf = require('pdf-parse');
+    const pdfData = await pdf(buffer);
+    const parsedData = invoiceParser.parseFromText(pdfData.text);
+    
+    if (!parsedData.success) {
+      return res.status(400).json({ 
+        success: false, 
+        error: parsedData.error || 'Failed to parse invoice' 
+      });
+    }
+    
+    // Return the first invoice for preview (backward compatibility)
+    const validationResult = parsedData.invoices && parsedData.invoices.length > 0 
+      ? parsedData.invoices[0] 
+      : null;
+    
     res.json({ success: true, data: validationResult });
   } catch (error) {
     console.error('Invoice check error:', error);
