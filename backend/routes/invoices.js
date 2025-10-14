@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { invoiceUpload } = require('../utils/cloudinary');
 const {
+  parseMultipleInvoices,
   uploadInvoice,
+  uploadMultipleInvoices,
   verifyInvoice,
   checkInvoice,
   getInvoicesByMonth,
@@ -14,6 +16,12 @@ const {
 
 // Upload invoice
 router.post('/upload', invoiceUpload.single('file'), uploadInvoice);
+
+// Upload multiple invoices from PDF
+router.post('/upload-multiple', invoiceUpload.single('file'), uploadMultipleInvoices);
+
+// Parse multiple invoices from PDF
+router.post('/parse', invoiceUpload.single('file'), parseMultipleInvoices);
 
 // Verify invoice
 router.post('/verify', verifyInvoice);
