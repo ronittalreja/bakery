@@ -106,16 +106,37 @@ const uploadInvoice = async (req, res) => {
       console.log('Downloading file from Cloudinary:', req.file.path);
       console.log('Public ID:', req.file.public_id);
       
-      // Extract public_id from the path if it's not directly available
-      let publicId = req.file.public_id;
+      // Use the same improved approach as checkInvoice
+      let publicId = req.file.public_id || req.file.filename;
+      
+      // If still no public_id, try to extract from path
       if (!publicId && req.file.path) {
-        // Extract public_id from Cloudinary URL
-        const pathMatch = req.file.path.match(/\/v\d+\/(.+?)\.pdf$/);
-        if (pathMatch) {
-          publicId = pathMatch[1];
-          console.log('Extracted public_id from path:', publicId);
+        // Extract public_id from Cloudinary URL patterns
+        const patterns = [
+          /\/v\d+\/(.+?)\.pdf$/,  // Standard: /v1234567890/folder/file.pdf
+          /\/monginis\/invoices\/(.+?)\.pdf$/,  // Custom folder
+          /https:\/\/res\.cloudinary\.com\/[^\/]+\/raw\/upload\/v\d+\/(.+?)\.pdf$/,  // Full URL
+          /\/raw\/upload\/v\d+\/(.+?)\.pdf$/,  // Alternative path
+          /\/upload\/v\d+\/(.+?)\.pdf$/  // Another alternative
+        ];
+        
+        for (const pattern of patterns) {
+          const match = req.file.path.match(pattern);
+          if (match) {
+            publicId = match[1];
+            console.log('✅ Extracted public_id using pattern:', pattern.toString(), '->', publicId);
+            break;
+          }
         }
       }
+      
+      // Last resort: use original filename without extension
+      if (!publicId && req.file.originalname) {
+        publicId = req.file.originalname.replace(/\.[^/.]+$/, "");
+        console.log('Using original filename as public_id:', publicId);
+      }
+      
+      console.log('Using public_id:', publicId);
       
       if (!publicId) {
         return res.status(400).json({ 
