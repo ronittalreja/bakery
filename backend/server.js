@@ -17,6 +17,7 @@ const allowedOrigins = [
   'https://bakery-phi-two.vercel.app', // Your actual Vercel domain
   'https://bakery-git-main-talrejaronit13-gmailcoms-projects.vercel.app', // Your Vercel project domain
   'https://monginis-frontend.vercel.app', // Placeholder
+  'https://r3309.vercel.app', // Current Vercel domain
   process.env.FRONTEND_URL // Allow custom frontend URL
 ].filter(Boolean);
 

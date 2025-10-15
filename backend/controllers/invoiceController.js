@@ -405,14 +405,22 @@ const checkInvoice = async (req, res) => {
           publicId = pathMatch[1];
           console.log('Extracted public_id from path:', publicId);
         } else {
-          // Try alternative pattern matching
+          // Try alternative pattern matching for custom public_id format
           const altMatch = req.file.path.match(/\/monginis\/invoices\/(.+?)\.pdf$/);
           if (altMatch) {
             publicId = altMatch[1];
             console.log('Extracted public_id from alternative pattern:', publicId);
           } else {
-            console.log('Could not extract public_id from path:', req.file.path);
-            console.log('Available file keys:', Object.keys(req.file));
+            // Try to extract from the full path by removing the base URL
+            const baseUrlMatch = req.file.path.match(/https:\/\/res\.cloudinary\.com\/[^\/]+\/raw\/upload\/v\d+\/(.+?)\.pdf$/);
+            if (baseUrlMatch) {
+              publicId = baseUrlMatch[1];
+              console.log('Extracted public_id from full URL:', publicId);
+            } else {
+              console.log('Could not extract public_id from path:', req.file.path);
+              console.log('Available file keys:', Object.keys(req.file));
+              console.log('File object:', JSON.stringify(req.file, null, 2));
+            }
           }
         }
       }
