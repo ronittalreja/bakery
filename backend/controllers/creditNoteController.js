@@ -23,6 +23,7 @@ const uploadCreditNoteHandler = async (req, res) => {
     console.log('🔍 Upload credit note handler called');
     console.log('Request file:', req.file);
     console.log('Request body:', req.body);
+    console.log('Request user:', req.user);
     
     if (!req.file) {
       console.log('❌ No file uploaded');
@@ -118,9 +119,13 @@ const uploadCreditNoteHandler = async (req, res) => {
     }
 
     // Store each credit note in the database (now split by return date)
+    console.log('📊 Starting to store credit notes in database...');
+    console.log('Number of credit notes to process:', parsedData.creditNotes.length);
+    
     const storedCreditNotes = [];
     for (const creditNote of parsedData.creditNotes) {
       try {
+        console.log(`Processing credit note: ${creditNote.creditNoteNumber}, return date: ${creditNote.returnDate || creditNote.date}`);
         // Create unique identifier for this credit note + return date combination
         const uniqueId = `${creditNote.creditNoteNumber}_${creditNote.returnDate}`;
         
@@ -146,6 +151,22 @@ const uploadCreditNoteHandler = async (req, res) => {
           }
         }
 
+        console.log('Inserting credit note into database with data:', {
+          creditNoteNumber: creditNote.creditNoteNumber,
+          date: creditNote.date,
+          returnDate: creditNote.returnDate || creditNote.date,
+          receiverName: creditNote.receiver?.name || 'Unknown',
+          receiverGstin: creditNote.receiver?.gstin || 'Unknown',
+          reason: creditNote.reason || 'EXPIRED GOODS',
+          totalItems: creditNote.totalItems || creditNote.items?.length || 0,
+          grossValue: creditNote.totals?.grossValue || 0,
+          netValue: creditNote.totals?.netValue || 0,
+          fileName,
+          originalName,
+          cloudinaryUrl,
+          actualPublicId
+        });
+
         const [result] = await db.execute(`
           INSERT INTO credit_notes (
             credit_note_number, date, return_date, receiver_name, receiver_gstin, 
@@ -169,6 +190,8 @@ const uploadCreditNoteHandler = async (req, res) => {
           JSON.stringify(creditNote.items || [])
         ]);
 
+        console.log('✅ Credit note inserted successfully with ID:', result.insertId);
+
         // Check if this credit note exists in any ROS receipt (reverse logic)
         await checkAndUpdateCreditNoteStatus(result.insertId, creditNote.creditNoteNumber);
 
@@ -179,6 +202,15 @@ const uploadCreditNoteHandler = async (req, res) => {
           success: true
         });
       } catch (dbError) {
+        console.error(`❌ Database error for credit note ${creditNote.creditNoteNumber}:`, dbError);
+        console.error('Error details:', {
+          message: dbError.message,
+          code: dbError.code,
+          errno: dbError.errno,
+          sqlState: dbError.sqlState,
+          sqlMessage: dbError.sqlMessage
+        });
+        
         storedCreditNotes.push({
           creditNoteNumber: creditNote.creditNoteNumber,
           returnDate: creditNote.returnDate,
@@ -356,8 +388,18 @@ const uploadCreditNoteHandler = async (req, res) => {
       parsedData
     });
   } catch (error) {
-    console.error('Error uploading credit note:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('❌ Error uploading credit note:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code
+    });
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 
