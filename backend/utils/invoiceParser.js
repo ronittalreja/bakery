@@ -179,8 +179,8 @@ class InvoiceParser {
       const pageCount = this.getPageCount(lines);
       
       return {
-        invoiceNo: invoiceNumber,
-        invoiceDate: date,
+        invoiceNo: invoiceNumber || 'Unknown',
+        invoiceDate: date || new Date().toISOString().split('T')[0],
         store: store,
         items: items,
         totalQty: totalQty,
