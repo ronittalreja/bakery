@@ -90,43 +90,40 @@ class InvoiceParser {
     console.log('=== INVOICE DETECTION DEBUG ===');
     console.log('Looking for invoice patterns...');
     
-    // CONSERVATIVE APPROACH: Only split if we find clear evidence of multiple invoices
-    // Look for invoice headers with invoice numbers
-    const invoiceHeaders = [];
+    // SIMPLE LOGIC: Count actual invoice numbers, not just "TAX INVOICE" headers
+    const invoiceNumbers = [];
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (line.includes('TAX INVOICE')) {
-        // Check next few lines for invoice number
-        for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
-          if (lines[j].includes('Invoice No.') && lines[j].includes('MUM2526')) {
-            invoiceHeaders.push({ headerLine: i, invoiceLine: j, invoiceNumber: lines[j] });
-            console.log(`Found invoice header at line ${i + 1}, invoice number at line ${j + 1}: ${lines[j]}`);
-            break;
-          }
+      // Look for actual invoice number patterns
+      if (line.includes('Invoice No.') && line.includes('MUM2526')) {
+        const match = line.match(/Invoice No\.?\s*:\s*([A-Z0-9\/]+)/i);
+        if (match) {
+          const invoiceNumber = match[1].trim();
+          invoiceNumbers.push({ line: i, number: invoiceNumber, fullLine: line });
+          console.log(`Found invoice number at line ${i + 1}: ${invoiceNumber}`);
         }
       }
     }
     
-    console.log(`Found ${invoiceHeaders.length} invoice headers`);
+    console.log(`Found ${invoiceNumbers.length} actual invoice numbers:`, invoiceNumbers.map(inv => inv.number));
     
-    // ONLY split if we find MORE THAN ONE clear invoice header with invoice numbers
-    if (invoiceHeaders.length >= 2) {
-      console.log('Multiple invoice headers detected, splitting...');
+    // ONLY split if we find MORE THAN ONE actual invoice number
+    if (invoiceNumbers.length > 1) {
+      console.log('Multiple invoice numbers detected, splitting...');
       
-      // First invoice: from start to first header
-      const firstInvoiceEnd = invoiceHeaders[0].headerLine;
-      const firstInvoiceLines = lines.slice(0, firstInvoiceEnd);
-      invoices.push(firstInvoiceLines);
-      console.log(`Invoice 1: lines 1 to ${firstInvoiceEnd} (${firstInvoiceLines.length} lines)`);
-      
-      // Second invoice: from first header to end
-      const secondInvoiceLines = lines.slice(firstInvoiceEnd);
-      invoices.push(secondInvoiceLines);
-      console.log(`Invoice 2: lines ${firstInvoiceEnd + 1} to ${lines.length} (${secondInvoiceLines.length} lines)`);
+      // For multiple invoices, split at each invoice number
+      for (let i = 0; i < invoiceNumbers.length; i++) {
+        const startLine = i === 0 ? 0 : invoiceNumbers[i - 1].line;
+        const endLine = i === invoiceNumbers.length - 1 ? lines.length : invoiceNumbers[i].line;
+        
+        const invoiceLines = lines.slice(startLine, endLine);
+        invoices.push(invoiceLines);
+        console.log(`Invoice ${i + 1}: lines ${startLine + 1} to ${endLine} (${invoiceLines.length} lines) - Invoice No: ${invoiceNumbers[i].number}`);
+      }
     } else {
       // Single invoice - treat entire document as one invoice
       invoices.push(lines);
-      console.log('Single invoice detected - treating entire document as one invoice');
+      console.log(`Single invoice detected - found only ${invoiceNumbers.length} invoice number(s)`);
     }
     
     console.log(`Total invoices found: ${invoices.length}`);
