@@ -178,7 +178,7 @@ class InvoiceParser {
       // Get page count
       const pageCount = this.getPageCount(lines);
       
-      return {
+      const result = {
         invoiceNo: invoiceNumber || 'Unknown',
         invoiceDate: date || new Date().toISOString().split('T')[0],
         store: store,
@@ -193,6 +193,16 @@ class InvoiceParser {
         },
         index: index
       };
+      
+      console.log(`✅ Invoice ${index + 1} parsed successfully:`, {
+        invoiceNo: result.invoiceNo,
+        invoiceDate: result.invoiceDate,
+        store: result.store,
+        itemsCount: result.items.length,
+        totalAmount: result.totalAmount
+      });
+      
+      return result;
     } catch (error) {
       console.error(`Error parsing invoice ${index}:`, error);
       return null;
@@ -205,19 +215,35 @@ class InvoiceParser {
    * @returns {string|null} Invoice number
    */
   extractInvoiceNumber(lines) {
-    for (const line of lines) {
+    console.log('🔍 Extracting invoice number from lines...');
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      console.log(`Line ${i + 1}: "${line}"`);
+      
       // Look for "Invoice No. : MUM2526/61782" pattern
       const match = line.match(/Invoice No\.?\s*:\s*([A-Z0-9\/]+)/i);
       if (match) {
+        console.log(`✅ Found invoice number pattern: "${match[1]}"`);
         return match[1].trim();
       }
       
       // Also look for standalone invoice number pattern
       const standaloneMatch = line.match(/^([A-Z0-9]+\/[A-Z0-9]+)$/);
       if (standaloneMatch) {
+        console.log(`✅ Found standalone invoice number: "${standaloneMatch[1]}"`);
         return standaloneMatch[1].trim();
       }
+      
+      // Look for any line that contains a pattern like MUM2526/61782
+      const generalMatch = line.match(/([A-Z]{3}\d{4}\/\d{5})/);
+      if (generalMatch) {
+        console.log(`✅ Found general invoice number pattern: "${generalMatch[1]}"`);
+        return generalMatch[1].trim();
+      }
     }
+    
+    console.log('❌ No invoice number found in any line');
     return null;
   }
 
