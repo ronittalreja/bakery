@@ -43,10 +43,52 @@ const uploadCreditNoteHandler = async (req, res) => {
       publicId
     });
 
-    // Download file from Cloudinary for parsing
+    // Download file from Cloudinary for parsing with robust public_id extraction
     const { downloadFileFromCloudinary } = require('../utils/cloudinary');
-    const actualPublicId = publicId || fileName;
+    let actualPublicId = publicId || fileName;
+    
+    // If still no public_id, try to extract from path
+    if (!actualPublicId && cloudinaryUrl) {
+      // Extract public_id from Cloudinary URL patterns
+      const patterns = [
+        /\/v\d+\/(.+?)\.pdf$/,  // Standard: /v1234567890/folder/file.pdf
+        /\/monginis\/credit-notes\/(.+?)\.pdf$/,  // Custom folder
+        /https:\/\/res\.cloudinary\.com\/[^\/]+\/raw\/upload\/v\d+\/(.+?)\.pdf$/,  // Full URL
+        /\/raw\/upload\/v\d+\/(.+?)\.pdf$/,  // Alternative path
+        /\/upload\/v\d+\/(.+?)\.pdf$/  // Another alternative
+      ];
+      
+      for (const pattern of patterns) {
+        const match = cloudinaryUrl.match(pattern);
+        if (match) {
+          actualPublicId = match[1];
+          console.log('✅ Extracted public_id using pattern:', pattern.toString(), '->', actualPublicId);
+          break;
+        }
+      }
+    }
+    
+    // Last resort: use original filename without extension
+    if (!actualPublicId && originalName) {
+      actualPublicId = originalName.replace(/\.[^/.]+$/, "");
+      console.log('Using original filename as public_id:', actualPublicId);
+    }
+    
     console.log('Using public_id for download:', actualPublicId);
+    
+    if (!actualPublicId) {
+      console.error('No public_id found. File object:', {
+        cloudinaryUrl,
+        publicId,
+        fileName,
+        originalName
+      });
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Could not determine Cloudinary public_id for file download' 
+      });
+    }
+    
     const fileBuffer = await downloadFileFromCloudinary(actualPublicId);
     
     // Parse the uploaded credit note using buffer
@@ -349,10 +391,51 @@ const parseCreditNoteHandler = async (req, res) => {
       url: req.file.url
     });
 
-    // Download file from Cloudinary for parsing
+    // Download file from Cloudinary for parsing with robust public_id extraction
     const { downloadFileFromCloudinary } = require('../utils/cloudinary');
-    const publicId = req.file.public_id || req.file.filename;
+    let publicId = req.file.public_id || req.file.filename;
+    
+    // If still no public_id, try to extract from path
+    if (!publicId && req.file.path) {
+      // Extract public_id from Cloudinary URL patterns
+      const patterns = [
+        /\/v\d+\/(.+?)\.pdf$/,  // Standard: /v1234567890/folder/file.pdf
+        /\/monginis\/credit-notes\/(.+?)\.pdf$/,  // Custom folder
+        /https:\/\/res\.cloudinary\.com\/[^\/]+\/raw\/upload\/v\d+\/(.+?)\.pdf$/,  // Full URL
+        /\/raw\/upload\/v\d+\/(.+?)\.pdf$/,  // Alternative path
+        /\/upload\/v\d+\/(.+?)\.pdf$/  // Another alternative
+      ];
+      
+      for (const pattern of patterns) {
+        const match = req.file.path.match(pattern);
+        if (match) {
+          publicId = match[1];
+          console.log('✅ Extracted public_id using pattern:', pattern.toString(), '->', publicId);
+          break;
+        }
+      }
+    }
+    
+    // Last resort: use original filename without extension
+    if (!publicId && req.file.originalname) {
+      publicId = req.file.originalname.replace(/\.[^/.]+$/, "");
+      console.log('Using original filename as public_id:', publicId);
+    }
+    
     console.log('Using public_id:', publicId);
+    
+    if (!publicId) {
+      console.error('No public_id found. File object:', {
+        path: req.file.path,
+        public_id: req.file.public_id,
+        filename: req.file.filename,
+        originalname: req.file.originalname
+      });
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Could not determine Cloudinary public_id for file download' 
+      });
+    }
     
     const fileBuffer = await downloadFileFromCloudinary(publicId);
     
