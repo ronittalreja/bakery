@@ -398,45 +398,9 @@ const checkInvoice = async (req, res) => {
       console.log('Downloading file from Cloudinary:', req.file.path);
       console.log('Public ID:', req.file.public_id);
       
-      // Extract public_id from the path if it's not directly available
-      let publicId = req.file.public_id;
-      
-      // DEBUG: Log everything about the file object
-      console.log('=== CLOUDINARY DEBUG ===');
-      console.log('req.file.public_id:', req.file.public_id);
-      console.log('req.file.path:', req.file.path);
-      console.log('req.file.originalname:', req.file.originalname);
-      console.log('req.file.fieldname:', req.file.fieldname);
-      console.log('req.file.mimetype:', req.file.mimetype);
-      console.log('req.file.size:', req.file.size);
-      console.log('req.file.buffer exists:', !!req.file.buffer);
-      console.log('All file keys:', Object.keys(req.file));
-      console.log('Full file object:', JSON.stringify(req.file, null, 2));
-      console.log('=== END DEBUG ===');
-      
-      if (!publicId && req.file.path) {
-        // Try multiple extraction patterns for different Cloudinary URL formats
-        const patterns = [
-          /\/v\d+\/(.+?)\.pdf$/,  // Standard: /v1234567890/folder/file.pdf
-          /\/monginis\/invoices\/(.+?)\.pdf$/,  // Custom folder
-          /https:\/\/res\.cloudinary\.com\/[^\/]+\/raw\/upload\/v\d+\/(.+?)\.pdf$/,  // Full URL
-          /\/raw\/upload\/v\d+\/(.+?)\.pdf$/,  // Alternative path
-          /\/upload\/v\d+\/(.+?)\.pdf$/  // Another alternative
-        ];
-        
-        for (const pattern of patterns) {
-          const match = req.file.path.match(pattern);
-          if (match) {
-            publicId = match[1];
-            console.log('✅ Extracted public_id using pattern:', pattern.toString(), '->', publicId);
-            break;
-          }
-        }
-        
-        if (!publicId) {
-          console.log('❌ All extraction patterns failed for path:', req.file.path);
-        }
-      }
+      // Use the same approach as ROS receipt controller
+      const publicId = req.file.public_id || req.file.filename;
+      console.log('Using public_id:', publicId);
       
       if (!publicId) {
         console.error('No public_id found. File object:', {
