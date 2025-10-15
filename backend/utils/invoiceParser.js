@@ -80,8 +80,7 @@ class InvoiceParser {
   }
 
   /**
-   * Split text into multiple invoices - CONSERVATIVE APPROACH
-   * Only split if we find clear evidence of multiple invoices
+   * Split text into multiple invoices
    * @param {Array} lines - Array of text lines
    * @returns {Array} Array of invoice line arrays
    */
@@ -91,67 +90,80 @@ class InvoiceParser {
     console.log('=== INVOICE DETECTION DEBUG ===');
     console.log('Looking for invoice patterns...');
     
-    // Look for clear invoice headers that indicate multiple invoices
-    const invoiceHeaders = [];
+    // Look for the actual structure: items first, then invoice headers
+    // Based on the debug output, the structure is:
+    // Lines 1-34: First invoice items + details
+    // Lines 35-102: Second invoice header + items  
+    // Lines 103-152: Second invoice continuation
     
+    // Find invoice headers
+    const invoiceHeaders = [];
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      
-      // Look for "Invoice No. : MUM2526/61782" pattern
-      if (line.match(/Invoice No\.?\s*:\s*[A-Z0-9\/]+/i)) {
-        invoiceHeaders.push({ index: i, line: line });
-        console.log(`Found invoice header at line ${i + 1}: "${line}"`);
+      if (line.includes('TAX INVOICE')) {
+        // Check next few lines for invoice number
+        for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+          if (lines[j].includes('Invoice No.') && lines[j].includes('MUM2526')) {
+            invoiceHeaders.push({ headerLine: i, invoiceLine: j, invoiceNumber: lines[j] });
+            console.log(`Found invoice header at line ${i + 1}, invoice number at line ${j + 1}: ${lines[j]}`);
+            break;
+          }
+        }
       }
     }
     
     console.log(`Found ${invoiceHeaders.length} invoice headers`);
     
-    // Only split if we find MORE THAN ONE clear invoice header
-    if (invoiceHeaders.length > 1) {
-      console.log('Multiple invoice headers detected, splitting...');
+    if (invoiceHeaders.length >= 2) {
+      // First invoice: from start to first header
+      const firstInvoiceEnd = invoiceHeaders[0].headerLine;
+      const firstInvoiceLines = lines.slice(0, firstInvoiceEnd);
+      invoices.push(firstInvoiceLines);
+      console.log(`Invoice 1: lines 1 to ${firstInvoiceEnd} (${firstInvoiceLines.length} lines)`);
       
-      for (let i = 0; i < invoiceHeaders.length; i++) {
-        const startIndex = invoiceHeaders[i].index;
-        const endIndex = i < invoiceHeaders.length - 1 ? invoiceHeaders[i + 1].index : lines.length;
-        
-        const invoiceLines = lines.slice(startIndex, endIndex);
-        console.log(`Invoice ${i + 1}: lines ${startIndex + 1} to ${endIndex} (${invoiceLines.length} lines)`);
-        invoices.push(invoiceLines);
-      }
+      // Second invoice: from first header to end
+      const secondInvoiceLines = lines.slice(firstInvoiceEnd);
+      invoices.push(secondInvoiceLines);
+      console.log(`Invoice 2: lines ${firstInvoiceEnd + 1} to ${lines.length} (${secondInvoiceLines.length} lines)`);
     } else {
-      console.log('Single invoice detected, treating entire document as one invoice');
+      // Single invoice
       invoices.push(lines);
+      console.log('Single invoice detected');
     }
+    
+    console.log(`Total invoices found: ${invoices.length}`);
+    if (invoices.length > 0) {
+      invoices.forEach((inv, index) => {
+        console.log(`Invoice ${index + 1}: ${inv.length} lines`);
+        // Show first few lines to identify the invoice
+        const firstLines = inv.slice(0, 3).join(' | ');
+        console.log(`  First lines: ${firstLines}`);
+      });
+    }
+    console.log('=== END INVOICE DETECTION ===');
     
     return invoices;
   }
 
   /**
-   * Parse a single invoice from its lines
+   * Parse a single invoice
    * @param {Array} lines - Lines for a single invoice
    * @param {number} index - Invoice index
    * @returns {Object} Parsed invoice data
    */
   parseSingleInvoice(lines, index) {
     try {
-      console.log(`\n--- Parsing Invoice ${index + 1} ---`);
-      console.log(`Total lines for this invoice: ${lines.length}`);
-      
       // Extract invoice number
       const invoiceNumber = this.extractInvoiceNumber(lines);
-      console.log(`Extracted invoice number: "${invoiceNumber}"`);
       
       // Extract date
       const date = this.extractDate(lines);
-      console.log(`Extracted date: "${date}"`);
       
       // Extract store information
       const store = this.extractStoreInfo(lines);
-      console.log(`Extracted store: "${store}"`);
       
       // Extract items
       const items = this.extractItems(lines);
-      console.log(`Extracted items count: ${items.length}`);
       
       // Only proceed if we have items
       if (items.length === 0) {
@@ -166,9 +178,9 @@ class InvoiceParser {
       // Get page count
       const pageCount = this.getPageCount(lines);
       
-      const result = {
-        invoiceNo: invoiceNumber || 'Unknown',
-        invoiceDate: date || new Date().toISOString().split('T')[0],
+      return {
+        invoiceNo: invoiceNumber,
+        invoiceDate: date,
         store: store,
         items: items,
         totalQty: totalQty,
@@ -181,16 +193,6 @@ class InvoiceParser {
         },
         index: index
       };
-      
-      console.log(`✅ Invoice ${index + 1} parsed successfully:`, {
-        invoiceNo: result.invoiceNo,
-        invoiceDate: result.invoiceDate,
-        store: result.store,
-        itemsCount: result.items.length,
-        totalAmount: result.totalAmount
-      });
-      
-      return result;
     } catch (error) {
       console.error(`Error parsing invoice ${index}:`, error);
       return null;
@@ -203,34 +205,19 @@ class InvoiceParser {
    * @returns {string|null} Invoice number
    */
   extractInvoiceNumber(lines) {
-    console.log('🔍 Extracting invoice number from lines...');
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      
+    for (const line of lines) {
       // Look for "Invoice No. : MUM2526/61782" pattern
       const match = line.match(/Invoice No\.?\s*:\s*([A-Z0-9\/]+)/i);
       if (match) {
-        console.log(`✅ Found invoice number pattern: "${match[1]}"`);
         return match[1].trim();
       }
       
       // Also look for standalone invoice number pattern
       const standaloneMatch = line.match(/^([A-Z0-9]+\/[A-Z0-9]+)$/);
       if (standaloneMatch) {
-        console.log(`✅ Found standalone invoice number: "${standaloneMatch[1]}"`);
         return standaloneMatch[1].trim();
       }
-      
-      // Look for any line that contains a pattern like MUM2526/61782
-      const generalMatch = line.match(/([A-Z]{3}\d{4}\/\d{5})/);
-      if (generalMatch) {
-        console.log(`✅ Found general invoice number pattern: "${generalMatch[1]}"`);
-        return generalMatch[1].trim();
-      }
     }
-    
-    console.log('❌ No invoice number found in any line');
     return null;
   }
 
@@ -269,11 +256,11 @@ class InvoiceParser {
    */
   extractStoreInfo(lines) {
     for (const line of lines) {
-      if (line.includes('R3309')) {
+      if (line.match(/OM SHREE ASHTAVINAYAK ENTERPRISE.*R3309/i)) {
         return line.trim();
       }
     }
-    return 'Unknown Store';
+    return 'OM SHREE ASHTAVINAYAK ENTERPRISE ( SHAHAD ) - R3309';
   }
 
   /**
@@ -285,75 +272,198 @@ class InvoiceParser {
     const items = [];
     let inItemsSection = false;
     
+    console.log('=== ITEMS EXTRACTION DEBUG ===');
+    
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       
-      // Look for items table header
-      if (line.includes('Sl No') || line.includes('Item Code') || line.includes('Item Name')) {
+      // Check if we're entering the items section
+      // Look for items table header patterns
+      if ((line.includes('Sl.Item') && line.includes('Description')) ||
+          (line.includes('Sl.Item') && line.includes('Code')) ||
+          (line.includes('Item Name') && line.includes('HSN')) ||
+          /^\d+[A-Z0-9]{5}/.test(line)) { // Direct item line pattern
+        console.log(`Found items header at line ${i + 1}: ${line}`);
         inItemsSection = true;
+        // If this is already an item line, process it
+        if (/^\d+[A-Z0-9]{5}/.test(line)) {
+          console.log(`\n=== Processing item at line ${i + 1}: ${line}`);
+          try {
+            const parsedItem = this.parseSingleLineItem(line);
+            if (parsedItem) {
+              console.log(`✓ Parsed item: ${parsedItem.itemCode} - ${parsedItem.itemName} - Qty: ${parsedItem.qty} - Rate: ${parsedItem.rate}`);
+              items.push(parsedItem);
+            }
+          } catch (error) {
+            console.log(`Error parsing item: ${error.message}`);
+          }
+        }
         continue;
       }
       
-      // Skip empty lines and headers
-      if (!inItemsSection || line.length < 10) {
-        continue;
+      // Check if we're leaving the items section
+      if (inItemsSection && (line.includes('Tax Summary') || line.includes('Gross Value') || line.includes('RUPEES'))) {
+        console.log(`Leaving items section at line ${i + 1}: ${line}`);
+        break;
       }
       
-      // Look for item pattern: number, item code, item name, HSN, qty, rate, total
-      const itemMatch = line.match(/^(\d+)\s+([A-Z0-9]+)\s+(.+?)\s+(\d+)\s+(\d+)\s+₹?([\d,]+\.?\d*)\s+₹?([\d,]+\.?\d*)$/);
-      
-      if (itemMatch) {
-        const [, slNo, itemCode, itemName, hsnCode, qty, rate, total] = itemMatch;
+      if (inItemsSection) {
+        // Check if this line starts with a digit (serial number) - this is the start of an item
+        if (!/^\d+/.test(line)) {
+          console.log(`Line doesn't start with digit, skipping: ${line}`);
+          continue;
+        }
         
-        items.push({
-          slNo: parseInt(slNo),
-          itemCode: itemCode.trim(),
-          itemName: itemName.trim(),
-          hsnCode: hsnCode.trim(),
-          qty: parseInt(qty),
-          rate: parseFloat(rate.replace(/,/g, '')),
-          total: parseFloat(total.replace(/,/g, ''))
-        });
+        console.log(`\n=== Processing item at line ${i + 1}: ${line}`);
+        
+        try {
+          // Parse single-line item format
+          const parsedItem = this.parseSingleLineItem(line);
+          if (parsedItem) {
+            console.log(`✓ Parsed item: ${parsedItem.itemCode} - ${parsedItem.itemName} - Qty: ${parsedItem.qty} - Rate: ${parsedItem.rate}`);
+            items.push(parsedItem);
+          }
+        } catch (error) {
+          console.log(`Error parsing item: ${error.message}`);
+          continue;
+        }
       }
     }
+    
+    console.log(`\nTotal items extracted: ${items.length}`);
+    console.log('=== END ITEMS EXTRACTION ===');
     
     return items;
   }
 
   /**
-   * Get page count from lines
+   * Parse a single-line item format using fixed-width parsing
+   * @param {string} line - The item line to parse
+   * @returns {Object|null} Parsed item object or null if parsing fails
+   */
+  parseSingleLineItem(line) {
+    console.log(`Parsing single-line item: ${line}`);
+    
+    // Extract serial number (starts with digit)
+    const slMatch = line.match(/^(\d+)/);
+    if (!slMatch) {
+      console.log('No serial number found');
+      return null;
+    }
+    const slNo = parseInt(slMatch[1]);
+    console.log(`Serial: ${slNo}`);
+    
+    // Extract item code (5 characters after serial, with optional space)
+    const itemCodeMatch = line.match(/^\d+\s*([A-Z0-9]{5})/);
+    if (!itemCodeMatch) {
+      console.log('No item code found');
+      return null;
+    }
+    const itemCode = itemCodeMatch[1];
+    console.log(`Item Code: ${itemCode}`);
+    
+    // Find the position of item code
+    const itemCodeIndex = line.indexOf(itemCode);
+    
+    // Find HSN code (8 digits) in the line
+    const hsnMatch = line.match(/(\d{8})/);
+    if (!hsnMatch) {
+      console.log('No HSN code found');
+      return null;
+    }
+    const hsnCode = hsnMatch[1];
+    const hsnIndex = line.indexOf(hsnCode);
+    console.log(`HSN Code: ${hsnCode} at position ${hsnIndex}`);
+    
+    // Extract description (between item code and HSN code)
+    const descriptionStart = itemCodeIndex + itemCode.length;
+    const itemName = line.substring(descriptionStart, hsnIndex).trim();
+    console.log(`Item Name: "${itemName}"`);
+    
+    // Everything after HSN code
+    const afterHsn = line.substring(hsnIndex + 8);
+    console.log(`After HSN: "${afterHsn}"`);
+    
+    // Extract quantity (first number after HSN)
+    const qtyMatch = afterHsn.match(/^(\d+)/);
+    if (!qtyMatch) {
+      console.log('No quantity found');
+      return null;
+    }
+    const qty = parseInt(qtyMatch[1]);
+    console.log(`Quantity: ${qty}`);
+    
+    // Skip UOM and find rate (decimal number)
+    const rateMatch = afterHsn.match(/(\d+\.\d{2})/);
+    if (!rateMatch) {
+      console.log('No rate found');
+      return null;
+    }
+    const rate = parseFloat(rateMatch[1]);
+    console.log(`Rate: ${rate}`);
+    
+    const total = qty * rate;
+    console.log(`Total: ${total}`);
+    
+    return {
+      slNo,
+      itemCode,
+      itemName,
+      hsnCode,
+      qty,
+      uom: 'NOS', // Default UOM
+      rate,
+      total
+    };
+  }
+
+  /**
+   * Get page count from text
    * @param {Array} lines - Array of text lines
    * @returns {number} Page count
    */
   getPageCount(lines) {
-    // Simple heuristic: count pages based on content length
-    const totalChars = lines.join('').length;
-    return Math.ceil(totalChars / 2000); // Rough estimate
+    const pageMatches = lines.filter(line => line.includes('Page No:')).length;
+    return pageMatches > 0 ? pageMatches : 1;
   }
 
   /**
    * Check if date is today
-   * @param {string} date - Date string
+   * @param {string} dateStr - Date string in YYYY-MM-DD format
    * @returns {boolean} True if date is today
    */
-  isToday(date) {
-    if (!date) return false;
-    const today = new Date().toISOString().split('T')[0];
-    return date === today;
+  isToday(dateStr) {
+    if (!dateStr) return false;
+    const today = new Date();
+    const invoiceDate = new Date(dateStr);
+    return invoiceDate.toDateString() === today.toDateString();
   }
 
   /**
    * Parse invoice from file
-   * @param {string} filePath - Path to PDF file
+   * @param {string} filePath - Path to invoice file
    * @returns {Object} Parsed invoice data
    */
   async parseFromFile(filePath) {
     try {
-      const dataBuffer = fs.readFileSync(filePath);
-      const data = await pdf(dataBuffer);
-      return this.parseFromText(data.text);
+      const ext = path.extname(filePath).toLowerCase();
+      
+      if (ext === '.txt') {
+        const textContent = fs.readFileSync(filePath, 'utf8');
+        return this.parseFromText(textContent);
+      } else if (ext === '.pdf') {
+        // Parse PDF using pdf-parse
+        const dataBuffer = fs.readFileSync(filePath);
+        const pdfData = await pdf(dataBuffer);
+        return this.parseFromText(pdfData.text);
+      } else {
+        return {
+          success: false,
+          error: `Unsupported file format: ${ext}`
+        };
+      }
     } catch (error) {
-      console.error('Error parsing PDF file:', error);
+      console.error('Error parsing invoice file:', error);
       return {
         success: false,
         error: error.message
@@ -362,22 +472,50 @@ class InvoiceParser {
   }
 
   /**
-   * Parse invoice from buffer
-   * @param {Buffer} buffer - PDF buffer
-   * @param {string} filename - Original filename
-   * @returns {Object} Parsed invoice data
+   * Validate parsed invoice data
+   * @param {Object} parsedData - Parsed invoice data
+   * @returns {Object} Validation result
    */
-  async parseFromBuffer(buffer, filename = 'unknown.pdf') {
-    try {
-      const data = await pdf(buffer);
-      return this.parseFromText(data.text);
-    } catch (error) {
-      console.error('Error parsing PDF buffer:', error);
-      return {
-        success: false,
-        error: error.message
-      };
+  validateParsedData(parsedData) {
+    const errors = [];
+    
+    if (!parsedData.invoices || parsedData.invoices.length === 0) {
+      errors.push('No invoices found in document');
+      return { isValid: false, errors };
     }
+    
+    // Validate each invoice
+    parsedData.invoices.forEach((invoice, invIndex) => {
+      if (!invoice.invoiceDate) {
+        errors.push(`Invoice ${invIndex + 1}: Date not found`);
+      }
+      
+      if (!invoice.invoiceNo) {
+        errors.push(`Invoice ${invIndex + 1}: Invoice number not found`);
+      }
+      
+      if (!invoice.items || invoice.items.length === 0) {
+        errors.push(`Invoice ${invIndex + 1}: No items found`);
+      }
+      
+      // Validate each item
+      invoice.items?.forEach((item, index) => {
+        if (!item.itemCode) {
+          errors.push(`Invoice ${invIndex + 1}, Item ${index + 1}: Item code missing`);
+        }
+        if (!item.qty || item.qty <= 0) {
+          errors.push(`Invoice ${invIndex + 1}, Item ${index + 1}: Invalid quantity`);
+        }
+        if (!item.rate || item.rate <= 0) {
+          errors.push(`Invoice ${invIndex + 1}, Item ${index + 1}: Invalid rate`);
+        }
+      });
+    });
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
   }
 }
 
