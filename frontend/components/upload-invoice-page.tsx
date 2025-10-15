@@ -444,8 +444,20 @@ export function UploadInvoicePage({ onBack }: UploadInvoicePageProps) {
         throw new Error(response.message || "Failed to preview invoice");
       }
 
-      const validatedData = InvoiceDataSchema.parse(response.data);
-      setPreviewData(validatedData);
+      // Handle multiple invoices response
+      if (response.invoiceCount && response.invoiceCount > 1) {
+        // Multiple invoices - create a combined preview data structure
+        const combinedData = {
+          ...response.data, // First invoice data
+          invoiceCount: response.invoiceCount,
+          allInvoices: response.allInvoices
+        };
+        setPreviewData(combinedData);
+      } else {
+        // Single invoice - validate normally
+        const validatedData = InvoiceDataSchema.parse(response.data);
+        setPreviewData(validatedData);
+      }
     } catch (err: any) {
       console.error("Preview error:", err.message, err.stack);
       if (err.message.includes("Unauthorized")) {

@@ -398,8 +398,36 @@ const checkInvoice = async (req, res) => {
       console.log('Downloading file from Cloudinary:', req.file.path);
       console.log('Public ID:', req.file.public_id);
       
-      // Use the same approach as ROS receipt controller
-      const publicId = req.file.public_id || req.file.filename;
+      // Use the same approach as ROS receipt controller with better fallbacks
+      let publicId = req.file.public_id || req.file.filename;
+      
+      // If still no public_id, try to extract from path
+      if (!publicId && req.file.path) {
+        // Extract public_id from Cloudinary URL patterns
+        const patterns = [
+          /\/v\d+\/(.+?)\.pdf$/,  // Standard: /v1234567890/folder/file.pdf
+          /\/monginis\/invoices\/(.+?)\.pdf$/,  // Custom folder
+          /https:\/\/res\.cloudinary\.com\/[^\/]+\/raw\/upload\/v\d+\/(.+?)\.pdf$/,  // Full URL
+          /\/raw\/upload\/v\d+\/(.+?)\.pdf$/,  // Alternative path
+          /\/upload\/v\d+\/(.+?)\.pdf$/  // Another alternative
+        ];
+        
+        for (const pattern of patterns) {
+          const match = req.file.path.match(pattern);
+          if (match) {
+            publicId = match[1];
+            console.log('✅ Extracted public_id using pattern:', pattern.toString(), '->', publicId);
+            break;
+          }
+        }
+      }
+      
+      // Last resort: use original filename without extension
+      if (!publicId && req.file.originalname) {
+        publicId = req.file.originalname.replace(/\.[^/.]+$/, "");
+        console.log('Using original filename as public_id:', publicId);
+      }
+      
       console.log('Using public_id:', publicId);
       
       if (!publicId) {
@@ -450,12 +478,23 @@ const checkInvoice = async (req, res) => {
         });
       }
       
-      // Return the first invoice for preview (backward compatibility)
-      const validationResult = parsedData.invoices && parsedData.invoices.length > 0 
-        ? parsedData.invoices[0] 
-        : null;
-      
-      res.json({ success: true, data: validationResult });
+      // Return all invoices for preview with proper structure
+      if (parsedData.invoices && parsedData.invoices.length > 0) {
+        if (parsedData.invoices.length === 1) {
+          // Single invoice - return the first one for backward compatibility
+          res.json({ success: true, data: parsedData.invoices[0] });
+        } else {
+          // Multiple invoices - return structured data for frontend
+          res.json({ 
+            success: true, 
+            data: parsedData.invoices[0], // First invoice for backward compatibility
+            invoiceCount: parsedData.invoices.length,
+            allInvoices: parsedData.invoices
+          });
+        }
+      } else {
+        res.json({ success: true, data: null });
+      }
     } catch (pdfError) {
       console.error('PDF parsing error:', pdfError);
       return res.status(400).json({ 
