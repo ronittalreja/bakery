@@ -88,7 +88,8 @@ const uploadInvoice = async (req, res) => {
       mimetype: req.file.mimetype,
       path: req.file.path,
       public_id: req.file.public_id,
-      buffer: !!req.file.buffer
+      buffer: !!req.file.buffer,
+      allKeys: Object.keys(req.file)
     });
     
     // With Cloudinary, we get req.file.path (Cloudinary URL) instead of buffer
@@ -102,7 +103,27 @@ const uploadInvoice = async (req, res) => {
     } else if (req.file.path) {
       // If we have a Cloudinary path, download the file
       console.log('Downloading file from Cloudinary:', req.file.path);
-      buffer = await downloadFileFromCloudinary(req.file.public_id);
+      console.log('Public ID:', req.file.public_id);
+      
+      // Extract public_id from the path if it's not directly available
+      let publicId = req.file.public_id;
+      if (!publicId && req.file.path) {
+        // Extract public_id from Cloudinary URL
+        const pathMatch = req.file.path.match(/\/v\d+\/(.+?)\.pdf$/);
+        if (pathMatch) {
+          publicId = pathMatch[1];
+          console.log('Extracted public_id from path:', publicId);
+        }
+      }
+      
+      if (!publicId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Could not determine Cloudinary public_id for file download' 
+        });
+      }
+      
+      buffer = await downloadFileFromCloudinary(publicId);
     } else {
       return res.status(400).json({ 
         success: false, 
@@ -358,7 +379,8 @@ const checkInvoice = async (req, res) => {
       mimetype: req.file.mimetype,
       path: req.file.path,
       public_id: req.file.public_id,
-      buffer: !!req.file.buffer
+      buffer: !!req.file.buffer,
+      allKeys: Object.keys(req.file)
     });
     
     // With Cloudinary, we get req.file.path (Cloudinary URL) instead of buffer
@@ -372,7 +394,51 @@ const checkInvoice = async (req, res) => {
     } else if (req.file.path) {
       // If we have a Cloudinary path, download the file
       console.log('Downloading file from Cloudinary:', req.file.path);
-      buffer = await downloadFileFromCloudinary(req.file.public_id);
+      console.log('Public ID:', req.file.public_id);
+      
+      // Extract public_id from the path if it's not directly available
+      let publicId = req.file.public_id;
+      if (!publicId && req.file.path) {
+        // Extract public_id from Cloudinary URL
+        const pathMatch = req.file.path.match(/\/v\d+\/(.+?)\.pdf$/);
+        if (pathMatch) {
+          publicId = pathMatch[1];
+          console.log('Extracted public_id from path:', publicId);
+        } else {
+          // Try alternative pattern matching
+          const altMatch = req.file.path.match(/\/monginis\/invoices\/(.+?)\.pdf$/);
+          if (altMatch) {
+            publicId = altMatch[1];
+            console.log('Extracted public_id from alternative pattern:', publicId);
+          } else {
+            console.log('Could not extract public_id from path:', req.file.path);
+            console.log('Available file keys:', Object.keys(req.file));
+          }
+        }
+      }
+      
+      if (!publicId) {
+        console.error('No public_id found. File object:', {
+          path: req.file.path,
+          public_id: req.file.public_id,
+          originalname: req.file.originalname,
+          fieldname: req.file.fieldname
+        });
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Could not determine Cloudinary public_id for file download' 
+        });
+      }
+      
+      try {
+        buffer = await downloadFileFromCloudinary(publicId);
+      } catch (downloadError) {
+        console.error('Error downloading file from Cloudinary:', downloadError);
+        return res.status(400).json({ 
+          success: false, 
+          error: `Failed to download file from Cloudinary: ${downloadError.message}` 
+        });
+      }
     } else {
       return res.status(400).json({ 
         success: false, 

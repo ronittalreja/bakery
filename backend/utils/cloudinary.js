@@ -78,19 +78,20 @@ const rosReceiptUpload = multer({
 // Utility function to download file from Cloudinary for parsing
 const downloadFileFromCloudinary = async (publicId) => {
   try {
+    const axios = require('axios');
     const url = cloudinary.url(publicId, {
       resource_type: 'raw',
       secure: true
     });
     
-    // Fetch the file
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to download file: ${response.statusText}`);
-    }
+    console.log('Downloading file from URL:', url);
     
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+    // Fetch the file using axios
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer'
+    });
+    
+    return Buffer.from(response.data);
   } catch (error) {
     console.error('Error downloading file from Cloudinary:', error);
     throw error;
