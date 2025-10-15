@@ -90,13 +90,8 @@ class InvoiceParser {
     console.log('=== INVOICE DETECTION DEBUG ===');
     console.log('Looking for invoice patterns...');
     
-    // Look for the actual structure: items first, then invoice headers
-    // Based on the debug output, the structure is:
-    // Lines 1-34: First invoice items + details
-    // Lines 35-102: Second invoice header + items  
-    // Lines 103-152: Second invoice continuation
-    
-    // Find invoice headers
+    // CONSERVATIVE APPROACH: Only split if we find clear evidence of multiple invoices
+    // Look for invoice headers with invoice numbers
     const invoiceHeaders = [];
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -114,7 +109,10 @@ class InvoiceParser {
     
     console.log(`Found ${invoiceHeaders.length} invoice headers`);
     
+    // ONLY split if we find MORE THAN ONE clear invoice header with invoice numbers
     if (invoiceHeaders.length >= 2) {
+      console.log('Multiple invoice headers detected, splitting...');
+      
       // First invoice: from start to first header
       const firstInvoiceEnd = invoiceHeaders[0].headerLine;
       const firstInvoiceLines = lines.slice(0, firstInvoiceEnd);
@@ -126,9 +124,9 @@ class InvoiceParser {
       invoices.push(secondInvoiceLines);
       console.log(`Invoice 2: lines ${firstInvoiceEnd + 1} to ${lines.length} (${secondInvoiceLines.length} lines)`);
     } else {
-      // Single invoice
+      // Single invoice - treat entire document as one invoice
       invoices.push(lines);
-      console.log('Single invoice detected');
+      console.log('Single invoice detected - treating entire document as one invoice');
     }
     
     console.log(`Total invoices found: ${invoices.length}`);
