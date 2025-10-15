@@ -100,6 +100,7 @@ const uploadInvoice = async (req, res) => {
       if (!Buffer.isBuffer(buffer)) {
         buffer = Buffer.from(buffer);
       }
+      console.log('✅ Using file buffer directly, length:', buffer.length);
     } else if (req.file.path) {
       // If we have a Cloudinary path, download the file
       console.log('Downloading file from Cloudinary:', req.file.path);
@@ -391,6 +392,7 @@ const checkInvoice = async (req, res) => {
       if (!Buffer.isBuffer(buffer)) {
         buffer = Buffer.from(buffer);
       }
+      console.log('✅ Using file buffer directly, length:', buffer.length);
     } else if (req.file.path) {
       // If we have a Cloudinary path, download the file
       console.log('Downloading file from Cloudinary:', req.file.path);
@@ -398,30 +400,41 @@ const checkInvoice = async (req, res) => {
       
       // Extract public_id from the path if it's not directly available
       let publicId = req.file.public_id;
+      
+      // DEBUG: Log everything about the file object
+      console.log('=== CLOUDINARY DEBUG ===');
+      console.log('req.file.public_id:', req.file.public_id);
+      console.log('req.file.path:', req.file.path);
+      console.log('req.file.originalname:', req.file.originalname);
+      console.log('req.file.fieldname:', req.file.fieldname);
+      console.log('req.file.mimetype:', req.file.mimetype);
+      console.log('req.file.size:', req.file.size);
+      console.log('req.file.buffer exists:', !!req.file.buffer);
+      console.log('All file keys:', Object.keys(req.file));
+      console.log('Full file object:', JSON.stringify(req.file, null, 2));
+      console.log('=== END DEBUG ===');
+      
       if (!publicId && req.file.path) {
-        // Extract public_id from Cloudinary URL
-        const pathMatch = req.file.path.match(/\/v\d+\/(.+?)\.pdf$/);
-        if (pathMatch) {
-          publicId = pathMatch[1];
-          console.log('Extracted public_id from path:', publicId);
-        } else {
-          // Try alternative pattern matching for custom public_id format
-          const altMatch = req.file.path.match(/\/monginis\/invoices\/(.+?)\.pdf$/);
-          if (altMatch) {
-            publicId = altMatch[1];
-            console.log('Extracted public_id from alternative pattern:', publicId);
-          } else {
-            // Try to extract from the full path by removing the base URL
-            const baseUrlMatch = req.file.path.match(/https:\/\/res\.cloudinary\.com\/[^\/]+\/raw\/upload\/v\d+\/(.+?)\.pdf$/);
-            if (baseUrlMatch) {
-              publicId = baseUrlMatch[1];
-              console.log('Extracted public_id from full URL:', publicId);
-            } else {
-              console.log('Could not extract public_id from path:', req.file.path);
-              console.log('Available file keys:', Object.keys(req.file));
-              console.log('File object:', JSON.stringify(req.file, null, 2));
-            }
+        // Try multiple extraction patterns for different Cloudinary URL formats
+        const patterns = [
+          /\/v\d+\/(.+?)\.pdf$/,  // Standard: /v1234567890/folder/file.pdf
+          /\/monginis\/invoices\/(.+?)\.pdf$/,  // Custom folder
+          /https:\/\/res\.cloudinary\.com\/[^\/]+\/raw\/upload\/v\d+\/(.+?)\.pdf$/,  // Full URL
+          /\/raw\/upload\/v\d+\/(.+?)\.pdf$/,  // Alternative path
+          /\/upload\/v\d+\/(.+?)\.pdf$/  // Another alternative
+        ];
+        
+        for (const pattern of patterns) {
+          const match = req.file.path.match(pattern);
+          if (match) {
+            publicId = match[1];
+            console.log('✅ Extracted public_id using pattern:', pattern.toString(), '->', publicId);
+            break;
           }
+        }
+        
+        if (!publicId) {
+          console.log('❌ All extraction patterns failed for path:', req.file.path);
         }
       }
       
