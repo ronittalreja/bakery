@@ -32,9 +32,11 @@ class InvoiceParser {
       const parsedInvoices = [];
       
       console.log(`\n=== PROCESSING ${invoices.length} INVOICES ===`);
+      console.log(`DEBUG: invoices.length = ${invoices.length}`);
       
       // If we found multiple invoices, process them
       if (invoices.length > 1) {
+        console.log('DEBUG: Processing multiple invoices');
         for (let i = 0; i < invoices.length; i++) {
           console.log(`\n--- Processing Invoice ${i + 1}/${invoices.length} ---`);
           const invoiceData = this.parseSingleInvoice(invoices[i], i);
@@ -49,6 +51,7 @@ class InvoiceParser {
       } else {
         // If only one invoice or no clear splitting, treat the entire document as one invoice
         console.log(`\n--- Processing Single Invoice from entire document ---`);
+        console.log('DEBUG: Processing single invoice');
         const invoiceData = this.parseSingleInvoice(lines, 0);
         
         if (invoiceData && invoiceData.items && invoiceData.items.length > 0) {
@@ -122,8 +125,10 @@ class InvoiceParser {
       }
     } else {
       // Single invoice - treat entire document as one invoice
+      console.log(`DEBUG: Adding single invoice with ${lines.length} lines`);
       invoices.push(lines);
       console.log(`Single invoice detected - found only ${invoiceNumbers.length} invoice number(s)`);
+      console.log(`DEBUG: invoices array now has ${invoices.length} items`);
     }
     
     console.log(`Total invoices found: ${invoices.length}`);
