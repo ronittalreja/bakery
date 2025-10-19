@@ -55,6 +55,7 @@ class InvoiceParser {
         console.log('DEBUG: Processing single invoice');
         console.log(`DEBUG: Single invoice has ${lines.length} lines`);
         console.log(`DEBUG: This should be ONE SINGLE INVOICE with all items`);
+        console.log(`DEBUG: Multi-page invoices are treated as ONE invoice until a new invoice number is found`);
         const invoiceData = this.parseSingleInvoice(lines, 0);
         
         if (invoiceData && invoiceData.items && invoiceData.items.length > 0) {
@@ -130,6 +131,7 @@ class InvoiceParser {
       // Single invoice - treat entire document as one invoice (even if multi-page)
       console.log(`DEBUG: Adding single invoice with ${lines.length} lines`);
       console.log(`DEBUG: This is a SINGLE INVOICE - no splitting needed`);
+      console.log(`DEBUG: Multi-page invoices are treated as ONE invoice until a new invoice number is found`);
       invoices.push(lines);
       console.log(`Single invoice detected - found only ${invoiceNumbers.length} invoice number(s)`);
       console.log(`DEBUG: invoices array now has ${invoices.length} items`);
