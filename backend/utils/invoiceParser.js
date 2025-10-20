@@ -32,14 +32,11 @@ class InvoiceParser {
       const parsedInvoices = [];
       
       console.log(`\n=== PROCESSING ${invoices.length} INVOICES ===`);
-      console.log(`DEBUG: invoices.length = ${invoices.length}`);
       
       // If we found multiple invoices, process them
       if (invoices.length > 1) {
-        console.log('DEBUG: Processing multiple invoices');
         for (let i = 0; i < invoices.length; i++) {
           console.log(`\n--- Processing Invoice ${i + 1}/${invoices.length} ---`);
-          console.log(`DEBUG: Invoice ${i + 1} has ${invoices[i].length} lines`);
           const invoiceData = this.parseSingleInvoice(invoices[i], i);
           
           if (invoiceData && invoiceData.items && invoiceData.items.length > 0) {
@@ -52,10 +49,6 @@ class InvoiceParser {
       } else {
         // If only one invoice or no clear splitting, treat the entire document as one invoice
         console.log(`\n--- Processing Single Invoice from entire document ---`);
-        console.log('DEBUG: Processing single invoice');
-        console.log(`DEBUG: Single invoice has ${lines.length} lines`);
-        console.log(`DEBUG: This should be ONE SINGLE INVOICE with all items`);
-        console.log(`DEBUG: Multi-page invoices are treated as ONE invoice until a new invoice number is found`);
         const invoiceData = this.parseSingleInvoice(lines, 0);
         
         if (invoiceData && invoiceData.items && invoiceData.items.length > 0) {
@@ -97,44 +90,72 @@ class InvoiceParser {
     console.log('=== INVOICE DETECTION DEBUG ===');
     console.log('Looking for invoice patterns...');
     
-    // SIMPLE LOGIC: Count actual invoice numbers, not just "TAX INVOICE" headers
-    const invoiceNumbers = [];
+    // First, extract all unique invoice numbers from the document
+    const uniqueInvoiceNumbers = new Set();
+    const invoiceNumberPositions = [];
+    
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      // Look for actual invoice number patterns
-      if (line.includes('Invoice No.') && line.includes('MUM2526')) {
-        const match = line.match(/Invoice No\.?\s*:\s*([A-Z0-9\/]+)/i);
-        if (match) {
-          const invoiceNumber = match[1].trim();
-          invoiceNumbers.push({ line: i, number: invoiceNumber, fullLine: line });
-          console.log(`Found invoice number at line ${i + 1}: ${invoiceNumber}`);
-        }
+      
+      // Look for "Invoice No. : MUM2526/61782" pattern
+      const match = line.match(/Invoice No\.?\s*:\s*([A-Z0-9\/]+)/i);
+      if (match) {
+        const invoiceNumber = match[1].trim();
+        uniqueInvoiceNumbers.add(invoiceNumber);
+        invoiceNumberPositions.push({ lineIndex: i, invoiceNumber: invoiceNumber });
+        console.log(`Found invoice number "${invoiceNumber}" at line ${i + 1}`);
       }
     }
     
-    console.log(`Found ${invoiceNumbers.length} actual invoice numbers:`, invoiceNumbers.map(inv => inv.number));
+    console.log(`Found ${uniqueInvoiceNumbers.size} unique invoice numbers:`, Array.from(uniqueInvoiceNumbers));
+    console.log(`Found ${invoiceNumberPositions.length} invoice number occurrences`);
     
-    // ONLY split if we find MORE THAN ONE actual invoice number
-    if (invoiceNumbers.length > 1) {
-      console.log('Multiple invoice numbers detected, splitting...');
+    // If we have multiple unique invoice numbers, split by them
+    if (uniqueInvoiceNumbers.size > 1) {
+      console.log('Multiple unique invoices detected, splitting by invoice numbers...');
       
-      // For multiple invoices, split at each invoice number
-      for (let i = 0; i < invoiceNumbers.length; i++) {
-        const startLine = i === 0 ? 0 : invoiceNumbers[i - 1].line;
-        const endLine = i === invoiceNumbers.length - 1 ? lines.length : invoiceNumbers[i].line;
+      // Sort positions by line index
+      invoiceNumberPositions.sort((a, b) => a.lineIndex - b.lineIndex);
+      
+      // Create splits based on unique invoice numbers
+      let currentStart = 0;
+      let currentInvoiceNumber = null;
+      
+      for (let i = 0; i < invoiceNumberPositions.length; i++) {
+        const position = invoiceNumberPositions[i];
         
-        const invoiceLines = lines.slice(startLine, endLine);
-        invoices.push(invoiceLines);
-        console.log(`Invoice ${i + 1}: lines ${startLine + 1} to ${endLine} (${invoiceLines.length} lines) - Invoice No: ${invoiceNumbers[i].number}`);
+        // If this is a new invoice number, create a split
+        if (currentInvoiceNumber !== null && position.invoiceNumber !== currentInvoiceNumber) {
+          // End current invoice and start new one
+          const invoiceLines = lines.slice(currentStart, position.lineIndex);
+          if (invoiceLines.length > 0) {
+            invoices.push(invoiceLines);
+            console.log(`Invoice "${currentInvoiceNumber}": lines ${currentStart + 1} to ${position.lineIndex} (${invoiceLines.length} lines)`);
+          }
+          currentStart = position.lineIndex;
+        }
+        
+        // If this is the first occurrence of this invoice number, start tracking it
+        if (currentInvoiceNumber === null) {
+          currentInvoiceNumber = position.invoiceNumber;
+        }
       }
-    } else {
-      // Single invoice - treat entire document as one invoice (even if multi-page)
-      console.log(`DEBUG: Adding single invoice with ${lines.length} lines`);
-      console.log(`DEBUG: This is a SINGLE INVOICE - no splitting needed`);
-      console.log(`DEBUG: Multi-page invoices are treated as ONE invoice until a new invoice number is found`);
+      
+      // Add the last invoice
+      const lastInvoiceLines = lines.slice(currentStart);
+      if (lastInvoiceLines.length > 0) {
+        invoices.push(lastInvoiceLines);
+        console.log(`Last invoice "${currentInvoiceNumber}": lines ${currentStart + 1} to ${lines.length} (${lastInvoiceLines.length} lines)`);
+      }
+      
+    } else if (uniqueInvoiceNumbers.size === 1) {
+      // Single unique invoice number - treat entire document as one invoice
+      console.log('Single unique invoice detected, treating entire document as one invoice');
       invoices.push(lines);
-      console.log(`Single invoice detected - found only ${invoiceNumbers.length} invoice number(s)`);
-      console.log(`DEBUG: invoices array now has ${invoices.length} items`);
+    } else {
+      // No invoice numbers found - treat entire document as one invoice
+      console.log('No invoice numbers found, treating entire document as one invoice');
+      invoices.push(lines);
     }
     
     console.log(`Total invoices found: ${invoices.length}`);
