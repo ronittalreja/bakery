@@ -9,9 +9,18 @@ const uploadMiddleware = creditNoteUpload.single('file');
 
 // Upload credit note file
 const uploadCreditNote = (req, res) => {
+  console.log('🔍 Credit note upload endpoint called');
+  console.log('Request headers:', req.headers);
+  console.log('Request body keys:', Object.keys(req.body || {}));
+  
   uploadMiddleware(req, res, (err) => {
     if (err) {
       console.error('Multer error:', err);
+      console.error('Multer error details:', {
+        message: err.message,
+        code: err.code,
+        field: err.field
+      });
       return res.status(400).json({ success: false, error: err.message });
     }
     uploadCreditNoteHandler(req, res);

@@ -301,7 +301,9 @@ export function UploadInvoicePage({ onBack }: UploadInvoicePageProps) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to upload credit note");
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Credit note upload error:', errorData);
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to upload credit note`);
       }
 
       const data = await response.json();
