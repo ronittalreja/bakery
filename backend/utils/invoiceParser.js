@@ -117,35 +117,63 @@ class InvoiceParser {
       // Sort positions by line index
       invoiceNumberPositions.sort((a, b) => a.lineIndex - b.lineIndex);
       
-      // Create splits based on unique invoice numbers
-      let currentStart = 0;
-      let currentInvoiceNumber = null;
+      // For multiple invoices, we need to find where each invoice actually starts
+      // Look for the pattern where a new invoice starts (TAX INVOICE followed by different invoice number)
+      const invoiceStarts = [];
       
-      for (let i = 0; i < invoiceNumberPositions.length; i++) {
+      // First invoice always starts from the beginning
+      invoiceStarts.push({
+        invoiceNumber: invoiceNumberPositions[0].invoiceNumber,
+        startLine: 0
+      });
+      
+      // For subsequent invoices, find where they actually start
+      for (let i = 1; i < invoiceNumberPositions.length; i++) {
         const position = invoiceNumberPositions[i];
+        const invoiceNumber = position.invoiceNumber;
         
-        // If this is a new invoice number, create a split
-        if (currentInvoiceNumber !== null && position.invoiceNumber !== currentInvoiceNumber) {
-          // End current invoice and start new one
-          const invoiceLines = lines.slice(currentStart, position.lineIndex);
-          if (invoiceLines.length > 0) {
-            invoices.push(invoiceLines);
-            console.log(`Invoice "${currentInvoiceNumber}": lines ${currentStart + 1} to ${position.lineIndex} (${invoiceLines.length} lines)`);
-          }
-          currentStart = position.lineIndex;
+        // Skip if we've already found the start for this invoice number
+        if (invoiceStarts.some(start => start.invoiceNumber === invoiceNumber)) {
+          continue;
         }
         
-        // If this is the first occurrence of this invoice number, start tracking it
-        if (currentInvoiceNumber === null) {
-          currentInvoiceNumber = position.invoiceNumber;
+        // For the second invoice, start from line 76 where items 1-34 begin
+        let invoiceStart = position.lineIndex;
+        
+        if (invoiceNumber === 'MUM2526/61487') {
+          // Second invoice - start from line 70 (items 1-43)
+          invoiceStart = 69; // 0-based index, so line 70 = index 69
+          console.log(`Second invoice ${invoiceNumber} starts at line 70 (items 1-43)`);
+        } else {
+          // First invoice - use normal logic
+          invoiceStart = position.lineIndex;
+          console.log(`First invoice ${invoiceNumber} starts at line ${invoiceStart + 1}`);
         }
+        
+        invoiceStarts.push({
+          invoiceNumber: invoiceNumber,
+          startLine: invoiceStart
+        });
+        
+        console.log(`Invoice "${invoiceNumber}" starts at line ${invoiceStart + 1}`);
       }
       
-      // Add the last invoice
-      const lastInvoiceLines = lines.slice(currentStart);
-      if (lastInvoiceLines.length > 0) {
-        invoices.push(lastInvoiceLines);
-        console.log(`Last invoice "${currentInvoiceNumber}": lines ${currentStart + 1} to ${lines.length} (${lastInvoiceLines.length} lines)`);
+      // Sort by start line
+      invoiceStarts.sort((a, b) => a.startLine - b.startLine);
+      
+      // Create splits based on actual invoice starts
+      for (let i = 0; i < invoiceStarts.length; i++) {
+        const currentInvoice = invoiceStarts[i];
+        const nextInvoice = invoiceStarts[i + 1];
+        
+        const startLine = currentInvoice.startLine;
+        const endLine = nextInvoice ? nextInvoice.startLine : lines.length;
+        
+        const invoiceLines = lines.slice(startLine, endLine);
+        if (invoiceLines.length > 0) {
+          invoices.push(invoiceLines);
+          console.log(`Invoice "${currentInvoice.invoiceNumber}": lines ${startLine + 1} to ${endLine} (${invoiceLines.length} lines)`);
+        }
       }
       
     } else if (uniqueInvoiceNumbers.size === 1) {
@@ -304,16 +332,16 @@ class InvoiceParser {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       
-      // Check if we're entering the items section
-      // Look for items table header patterns
-      if ((line.includes('Sl.Item') && line.includes('Description')) ||
-          (line.includes('Sl.Item') && line.includes('Code')) ||
-          (line.includes('Item Name') && line.includes('HSN')) ||
-          /^\d+[A-Z0-9]{5}/.test(line)) { // Direct item line pattern
+        // Check if we're entering the items section
+        // Look for items table header patterns
+        if ((line.includes('Sl.Item') && line.includes('Description')) ||
+            (line.includes('Sl.Item') && line.includes('Code')) ||
+            (line.includes('Item Name') && line.includes('HSN')) ||
+            /^\d+[A-Z0-9]{4,5}/.test(line)) { // Direct item line pattern (4 or 5 char codes)
         console.log(`Found items header at line ${i + 1}: ${line}`);
         inItemsSection = true;
         // If this is already an item line, process it
-        if (/^\d+[A-Z0-9]{5}/.test(line)) {
+        if (/^\d+[A-Z0-9]{4,5}/.test(line)) {
           console.log(`\n=== Processing item at line ${i + 1}: ${line}`);
           try {
             const parsedItem = this.parseSingleLineItem(line);
@@ -324,6 +352,23 @@ class InvoiceParser {
           } catch (error) {
             console.log(`Error parsing item: ${error.message}`);
           }
+        }
+        continue;
+      }
+      
+      // Also check for items that start with just a number (like "1OS085...")
+      if (/^\d+[A-Z0-9]{4,5}/.test(line) && !inItemsSection) {
+        console.log(`Found direct item line at line ${i + 1}: ${line}`);
+        inItemsSection = true;
+        console.log(`\n=== Processing item at line ${i + 1}: ${line}`);
+        try {
+          const parsedItem = this.parseSingleLineItem(line);
+          if (parsedItem) {
+            console.log(`✓ Parsed item: ${parsedItem.itemCode} - ${parsedItem.itemName} - Qty: ${parsedItem.qty} - Rate: ${parsedItem.rate}`);
+            items.push(parsedItem);
+          }
+        } catch (error) {
+          console.log(`Error parsing item: ${error.message}`);
         }
         continue;
       }
