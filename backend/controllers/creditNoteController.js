@@ -151,6 +151,15 @@ const uploadCreditNoteHandler = async (req, res) => {
     console.log('📊 Starting to store credit notes in database...');
     console.log('Number of credit notes to process:', parsedData.creditNotes.length);
     
+    // First, let's test the database connection
+    try {
+      const [testQuery] = await db.execute('SELECT 1 as test');
+      console.log('✅ Database connection test successful:', testQuery);
+    } catch (error) {
+      console.error('❌ Database connection test failed:', error);
+      return res.status(500).json({ success: false, error: 'Database connection failed' });
+    }
+    
     const storedCreditNotes = [];
     for (const creditNote of parsedData.creditNotes) {
       try {
@@ -159,18 +168,37 @@ const uploadCreditNoteHandler = async (req, res) => {
         // Check if this specific credit note + date combination already exists
         console.log('Checking for existing credit note with:', {
           creditNoteNumber: creditNote.creditNoteNumber,
-          date: creditNote.date
+          date: creditNote.date,
+          dateType: typeof creditNote.date
         });
+        
+        // First, let's check what's actually in the database
+        const [allCreditNotes] = await db.execute('SELECT credit_note_number, date FROM credit_notes');
+        const [countResult] = await db.execute('SELECT COUNT(*) as total FROM credit_notes');
+        console.log('Total credit notes in database:', countResult[0].total);
+        console.log('All existing credit notes in database:', allCreditNotes);
+        
+        // Let's also check the table structure
+        const [tableStructure] = await db.execute('DESCRIBE credit_notes');
+        console.log('Credit notes table structure:', tableStructure);
         
         const [existing] = await db.execute(
           'SELECT id, cloudinary_url FROM credit_notes WHERE credit_note_number = ? AND date = ?',
           [creditNote.creditNoteNumber, creditNote.date]
         );
         
-        console.log('Existing credit notes found:', existing.length);
-        if (existing.length > 0) {
-          console.log('Existing credit note details:', existing[0]);
-        }
+        console.log('Query result for existing credit notes:', {
+          query: 'SELECT id, cloudinary_url FROM credit_notes WHERE credit_note_number = ? AND date = ?',
+          params: [creditNote.creditNoteNumber, creditNote.date],
+          resultCount: existing.length,
+          results: existing
+        });
+        
+        // Let's also try a raw query to see if there are any matches
+        const [rawTest] = await db.execute(
+          `SELECT id, credit_note_number, date FROM credit_notes WHERE credit_note_number LIKE '%${creditNote.creditNoteNumber}%'`
+        );
+        console.log('Raw test query results:', rawTest);
 
         if (existing.length > 0) {
           // Check if it's from the same Cloudinary file

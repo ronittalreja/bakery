@@ -152,9 +152,11 @@ class CreditNoteParser {
     try {
       // Extract credit note number
       const creditNoteNumber = this.extractCreditNoteNumber(lines);
+      console.log('📄 Extracted credit note number:', creditNoteNumber);
       
       // Extract date
       const date = this.extractDate(lines);
+      console.log('📅 Extracted date for credit note:', date);
       
       // Extract items first
       const items = this.extractItems(lines);
@@ -214,13 +216,18 @@ class CreditNoteParser {
    * @returns {string|null} Credit note number
    */
   extractCreditNoteNumber(lines) {
+    console.log('🔍 Extracting credit note number...');
     for (const line of lines) {
       const match = line.match(/Credit Note No\.?\s*:\s*([A-Z0-9\/]+)/i);
       if (match) {
-        return match[1].trim();
+        const number = match[1].trim();
+        console.log('✅ Found credit note number:', number);
+        return number;
       }
     }
-    return null;
+    console.log('❌ No credit note number found, using fallback');
+    // Fallback to a unique identifier
+    return `CREDIT-${Date.now()}`;
   }
 
   /**
