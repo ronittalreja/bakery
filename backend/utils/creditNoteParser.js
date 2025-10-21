@@ -229,6 +229,7 @@ class CreditNoteParser {
    * @returns {string|null} Extracted date in YYYY-MM-DD format
    */
   extractDate(lines) {
+    console.log('🔍 Extracting date from credit note...');
     for (const line of lines) {
       // Look for "Date:" followed by date - handle both formats
       const match = line.match(/Date\s*:\s*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/i);
@@ -236,7 +237,9 @@ class CreditNoteParser {
         const day = match[1].padStart(2, '0');
         const month = match[2].padStart(2, '0');
         const year = match[3];
-        return `${year}-${month}-${day}`;
+        const date = `${year}-${month}-${day}`;
+        console.log('✅ Found date with "Date:" pattern:', date);
+        return date;
       }
       
       // Also try to find date in other formats
@@ -245,10 +248,18 @@ class CreditNoteParser {
         const day = dateMatch[1].padStart(2, '0');
         const month = dateMatch[2].padStart(2, '0');
         const year = dateMatch[3];
-        return `${year}-${month}-${day}`;
+        const date = `${year}-${month}-${day}`;
+        console.log('✅ Found date with general pattern:', date);
+        return date;
       }
     }
-    return null;
+    console.log('❌ No date found in credit note, using today as fallback');
+    // Fallback to today's date if no date found
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   /**

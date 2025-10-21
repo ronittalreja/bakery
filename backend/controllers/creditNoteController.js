@@ -154,15 +154,23 @@ const uploadCreditNoteHandler = async (req, res) => {
     const storedCreditNotes = [];
     for (const creditNote of parsedData.creditNotes) {
       try {
-        console.log(`Processing credit note: ${creditNote.creditNoteNumber}, return date: ${creditNote.returnDate || creditNote.date}`);
-        // Create unique identifier for this credit note + return date combination
-        const uniqueId = `${creditNote.creditNoteNumber}_${creditNote.returnDate}`;
+        console.log(`Processing credit note: ${creditNote.creditNoteNumber}, date: ${creditNote.date}, return date: ${creditNote.returnDate}`);
         
-        // Check if this specific credit note + return date combination already exists
+        // Check if this specific credit note + date combination already exists
+        console.log('Checking for existing credit note with:', {
+          creditNoteNumber: creditNote.creditNoteNumber,
+          date: creditNote.date
+        });
+        
         const [existing] = await db.execute(
           'SELECT id, cloudinary_url FROM credit_notes WHERE credit_note_number = ? AND date = ?',
-          [creditNote.creditNoteNumber, creditNote.returnDate || creditNote.date]
+          [creditNote.creditNoteNumber, creditNote.date]
         );
+        
+        console.log('Existing credit notes found:', existing.length);
+        if (existing.length > 0) {
+          console.log('Existing credit note details:', existing[0]);
+        }
 
         if (existing.length > 0) {
           // Check if it's from the same Cloudinary file
@@ -172,10 +180,10 @@ const uploadCreditNoteHandler = async (req, res) => {
             console.log(`Credit note ${creditNote.creditNoteNumber} with return date ${creditNote.returnDate || creditNote.date} already exists from same file, skipping...`);
             continue;
           } else {
-            // Different PDF file, same credit note number and return date - this is a duplicate
+            // Different PDF file, same credit note number and date - this is a duplicate
             return res.status(400).json({ 
               success: false, 
-              error: `Credit note ${creditNote.creditNoteNumber} with return date ${creditNote.returnDate || creditNote.date} already exists from a different file` 
+              error: `Credit note ${creditNote.creditNoteNumber} with date ${creditNote.date} already exists from a different file` 
             });
           }
         }
