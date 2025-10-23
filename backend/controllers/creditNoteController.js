@@ -53,6 +53,9 @@ const uploadCreditNoteHandler = async (req, res) => {
       publicId
     });
 
+    // Define actualPublicId in the broader scope
+    let actualPublicId = publicId || fileName;
+
     // With Cloudinary, we get req.file.path (Cloudinary URL) instead of buffer
     let fileBuffer;
     if (req.file.buffer) {
@@ -66,9 +69,6 @@ const uploadCreditNoteHandler = async (req, res) => {
       // If we have a Cloudinary path, download the file
       console.log('Downloading file from Cloudinary:', req.file.path);
       console.log('Public ID:', req.file.public_id);
-      
-      // Use the same improved approach as invoice controller
-      let actualPublicId = publicId || fileName;
       
       // If still no public_id, try to extract from path
       if (!actualPublicId && cloudinaryUrl) {
@@ -236,7 +236,7 @@ const uploadCreditNoteHandler = async (req, res) => {
           fileName,
           originalName,
           cloudinaryUrl,
-          actualPublicId
+          actualPublicId: actualPublicId || 'NOT_DEFINED'
         });
 
         const [result] = await db.execute(`
