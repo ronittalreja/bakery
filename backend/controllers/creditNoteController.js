@@ -199,6 +199,13 @@ const uploadCreditNoteHandler = async (req, res) => {
           `SELECT id, credit_note_number, date FROM credit_notes WHERE credit_note_number LIKE '%${creditNote.creditNoteNumber}%'`
         );
         console.log('Raw test query results:', rawTest);
+        
+        // Let's also try a simple count query
+        const [countTest] = await db.execute(
+          'SELECT COUNT(*) as count FROM credit_notes WHERE credit_note_number = ?',
+          [creditNote.creditNoteNumber]
+        );
+        console.log('Count test for credit note number:', countTest[0].count);
 
         if (existing.length > 0) {
           // Check if it's from the same Cloudinary file
@@ -256,6 +263,12 @@ const uploadCreditNoteHandler = async (req, res) => {
         ]);
 
         console.log('✅ Credit note inserted successfully with ID:', result.insertId);
+        console.log('✅ Inserted credit note details:', {
+          id: result.insertId,
+          creditNoteNumber: creditNote.creditNoteNumber,
+          date: creditNote.date,
+          returnDate: creditNote.returnDate
+        });
 
         // Check if this credit note exists in any ROS receipt (reverse logic)
         await checkAndUpdateCreditNoteStatus(result.insertId, creditNote.creditNoteNumber);
@@ -290,6 +303,15 @@ const uploadCreditNoteHandler = async (req, res) => {
     const failedUploads = storedCreditNotes.filter(cn => !cn.success);
     const samePdfSkips = failedUploads.filter(cn => cn.error.includes('already exists in this PDF'));
     const differentPdfSkips = failedUploads.filter(cn => cn.error.includes('already exists from a different PDF'));
+    
+    console.log('📊 Final upload results:', {
+      totalStored: storedCreditNotes.length,
+      successful: successfulUploads.length,
+      failed: failedUploads.length,
+      samePdfSkips: samePdfSkips.length,
+      differentPdfSkips: differentPdfSkips.length,
+      failedUploads: failedUploads.map(f => ({ creditNoteNumber: f.creditNoteNumber, error: f.error }))
+    });
     
     // Auto-compare with returns for each successful upload
     const comparisonResults = [];
@@ -449,6 +471,7 @@ const uploadCreditNoteHandler = async (req, res) => {
       storedCreditNotes,
       successfulUploads: successfulUploads.length,
       failedUploads: failedUploads.length,
+      error: failedUploads.length > 0 ? failedUploads.map(f => f.error).join('; ') : null,
       comparisonResults,
       parsedData
     });

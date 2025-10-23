@@ -314,7 +314,7 @@ export function UploadInvoicePage({ onBack }: UploadInvoicePageProps) {
         
         // Show success message with comparison results
         if (data.failedUploads > 0) {
-          setCreditError("Credit note already exists");
+          setCreditError(data.error || "Some credit notes could not be uploaded");
         } else {
           setCreditSuccess(true);
           
