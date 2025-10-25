@@ -76,12 +76,7 @@ class StockBatch {
           p.image_url,
           p.category,
           p.shelf_life_days,
-          COALESCE(
-            sb.quantity - 
-            COALESCE((SELECT SUM(si.quantity) FROM sale_items si WHERE si.batch_id = sb.id), 0) -
-            COALESCE((SELECT SUM(r.quantity) FROM returns r WHERE r.batch_id = sb.id), 0),
-            0
-          ) AS quantity
+          sb.quantity AS quantity
         FROM stock_batches sb
         JOIN products p ON sb.product_id = p.id
         WHERE p.is_active = 1
@@ -139,16 +134,9 @@ class StockBatch {
           p.image_url,
           p.category,
           p.shelf_life_days,
-          SUM(COALESCE(
-            sb.quantity - 
-            COALESCE((SELECT SUM(si.quantity) FROM sale_items si WHERE si.batch_id = sb.id), 0) -
-            COALESCE((SELECT SUM(r.quantity) FROM returns r WHERE r.batch_id = sb.id), 0),
-            0
-          )) AS total_available,
+          SUM(sb.quantity) AS total_available,
           MIN(CASE 
-                WHEN (sb.quantity - 
-                      COALESCE((SELECT SUM(si.quantity) FROM sale_items si WHERE si.batch_id = sb.id), 0) -
-                      COALESCE((SELECT SUM(r.quantity) FROM returns r WHERE r.batch_id = sb.id), 0)) > 0
+                WHEN sb.quantity > 0
                 THEN (CASE WHEN p.shelf_life_days IS NOT NULL AND p.shelf_life_days >= 0 THEN DATE_ADD(sb.invoice_date, INTERVAL p.shelf_life_days DAY) ELSE sb.expiry_date END)
               END) AS next_expiry
         FROM stock_batches sb

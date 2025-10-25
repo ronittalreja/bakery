@@ -139,12 +139,7 @@ const getStockReport = async (req, res) => {
         sb.expiry_date,
         sb.invoice_date,
         sb.invoice_reference,
-        COALESCE(
-          sb.quantity - 
-          COALESCE((SELECT SUM(si.quantity) FROM sale_items si WHERE si.batch_id = sb.id), 0) -
-          COALESCE((SELECT SUM(r.quantity) FROM returns r WHERE r.batch_id = sb.id), 0),
-          0
-        ) AS available_quantity,
+        sb.quantity AS available_quantity,
         sb.quantity as original_quantity
       FROM stock_batches sb
       JOIN products p ON sb.product_id = p.id
@@ -209,12 +204,7 @@ const getExpiredStockReport = async (req, res) => {
         sb.expiry_date,
         sb.invoice_date,
         sb.invoice_reference,
-        COALESCE(
-          sb.quantity - 
-          COALESCE((SELECT SUM(si.quantity) FROM sale_items si WHERE si.batch_id = sb.id), 0) -
-          COALESCE((SELECT SUM(r.quantity) FROM returns r WHERE r.batch_id = sb.id), 0),
-          0
-        ) AS available_quantity,
+        sb.quantity AS available_quantity,
         DATEDIFF(sb.expiry_date, CURDATE()) as days_to_expiry
       FROM stock_batches sb
       JOIN products p ON sb.product_id = p.id

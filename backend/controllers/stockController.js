@@ -23,12 +23,7 @@ const getStock = async (req, res) => {
         p.sale_price,
         p.grm_value,
         p.image_url,
-        COALESCE(
-          sb.quantity - 
-          COALESCE((SELECT SUM(si.quantity) FROM sale_items si WHERE si.batch_id = sb.id), 0) -
-          COALESCE((SELECT SUM(r.quantity) FROM returns r WHERE r.batch_id = sb.id), 0),
-          0
-        ) AS available_quantity
+        sb.quantity AS available_quantity
       FROM stock_batches sb
       JOIN products p ON sb.product_id = p.id
       WHERE sb.expiry_date > ? AND p.is_active = 1
@@ -142,12 +137,7 @@ const getLowStockAlerts = async (req, res) => {
         sb.product_id,
         p.name,
         p.item_code,
-        SUM(COALESCE(
-          sb.quantity - 
-          COALESCE((SELECT SUM(si.quantity) FROM sale_items si WHERE si.batch_id = sb.id), 0) -
-          COALESCE((SELECT SUM(r.quantity) FROM returns r WHERE r.batch_id = sb.id), 0),
-          0
-        )) AS total_available
+        SUM(sb.quantity) AS total_available
       FROM stock_batches sb
       JOIN products p ON sb.product_id = p.id
       WHERE p.is_active = 1 AND sb.expiry_date > CURDATE()
