@@ -206,7 +206,6 @@ const recordSale = async (req, res) => {
     res.json({ success: true, saleId });
   } catch (error) {
     await connection.rollback();
-    console.error('Error recording sale:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to record sale' });
   } finally {
     connection.release();
@@ -252,7 +251,6 @@ const getSalesSummary = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching sales summary:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch summary' });
   }
 };
@@ -354,7 +352,6 @@ const getSalesByDate = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching sales by date:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch sales' });
   }
 };
@@ -456,7 +453,6 @@ const getMonthlySales = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching monthly sales:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch monthly sales' });
   }
 };
@@ -475,16 +471,10 @@ const getMonthlySalesAnalytics = async (req, res) => {
     // Parse month correctly (month is in YYYY-MM format)
     const [currentYear, monthNum] = month.split('-');
     const currentDate = new Date(parseInt(currentYear), parseInt(monthNum) - 1, 1); // monthNum - 1 because JS months are 0-indexed
-    console.log(`Current month: ${month}, Parsed year: ${currentYear}, monthNum: ${monthNum}, Current date: ${currentDate}, Month index: ${currentDate.getMonth()}`);
     
     // Create previous year month using the same month number as current
     const previousYearMonth = `${comparisonYear}-${monthNum}`;
     const previousYear = new Date(comparisonYear, parseInt(monthNum) - 1, 1);
-    
-    console.log(`Comparing ${month} with ${previousYearMonth} (year: ${comparisonYear})`);
-    console.log(`Previous year date: ${previousYear}`);
-    console.log(`Previous year month index: ${previousYear.getMonth()}`);
-    console.log(`Previous year month name: ${previousYear.toLocaleDateString('en-US', { month: 'long' })}`);
     
     // Calculate last month properly - handle year rollover
     let lastMonthYear = currentDate.getFullYear();
@@ -510,14 +500,7 @@ const getMonthlySalesAnalytics = async (req, res) => {
     }
     
     const lastMonthStr2 = `${lastMonthYear2}-${lastMonthNum2.toString().padStart(2, '0')}`;
-    console.log(`Alternative last month calculation: ${lastMonthStr2}`);
-    console.log(`Using lastMonthStr2 for query: ${lastMonthStr2}`);
     
-    console.log(`Current month: ${month}`);
-    console.log(`Last month calculated: ${lastMonthStr}`);
-    console.log(`Last month date object: ${lastMonth}`);
-    console.log(`Last month year: ${lastMonthYear}, month index: ${lastMonthIndex}`);
-
     // Get current month sales summary
     const [currentSummary] = await db.execute(`
       SELECT 
@@ -541,7 +524,6 @@ const getMonthlySalesAnalytics = async (req, res) => {
     `, [previousYearMonth]);
 
     // Get last month sales summary - use the simpler calculation
-    console.log(`Querying last month data for: ${lastMonthStr2}`);
     const [lastMonthSummary] = await db.execute(`
       SELECT 
         COUNT(DISTINCT s.id) as totalTransactions,
@@ -552,8 +534,6 @@ const getMonthlySalesAnalytics = async (req, res) => {
       WHERE DATE_FORMAT(s.sale_date, '%Y-%m') = ?
     `, [lastMonthStr2]);
     
-    console.log(`Last month query result:`, lastMonthSummary[0]);
-    
     // Debug: Check what months have data
     const [availableMonths] = await db.execute(`
       SELECT DISTINCT DATE_FORMAT(sale_date, '%Y-%m') as month
@@ -561,7 +541,6 @@ const getMonthlySalesAnalytics = async (req, res) => {
       ORDER BY month DESC
       LIMIT 12
     `);
-    console.log('Available months in database:', availableMonths);
 
     // Get most sold items for current month
     const [mostSoldItems] = await db.execute(`
@@ -584,11 +563,6 @@ const getMonthlySalesAnalytics = async (req, res) => {
     const current = currentSummary[0];
     const previous = previousSummary[0];
     const lastMonthData = lastMonthSummary[0];
-    
-    console.log('Current data:', current);
-    console.log('Previous data:', previous);
-    console.log('Last month data:', lastMonthData);
-    console.log('Last month string:', lastMonthStr);
     
     const revenueGrowth = previous.totalSales > 0 
       ? ((current.totalSales - previous.totalSales) / previous.totalSales) * 100 
@@ -656,7 +630,6 @@ const getMonthlySalesAnalytics = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching monthly sales analytics:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch analytics' });
   }
 };
@@ -760,7 +733,6 @@ const getSalesAnalytics = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching sales analytics:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch analytics' });
   }
 };
@@ -770,40 +742,24 @@ const getYTDMTDComparison = async (req, res) => {
   try {
     const { year } = req.params;
     const currentYear = year ? parseInt(year) : new Date().getFullYear();
-    const previousYear = currentYear - 1;
-    
-    // Use current date for YTD and MTD calculations
+    // Main change: allow compare_year (single int) or years (comma-separated) as query param(s)
+    const compareYears = req.query.years
+      ? req.query.years.split(',').map(y => parseInt(y)).filter(Boolean)
+      : req.query.compare_year
+        ? [parseInt(req.query.compare_year)]
+        : [currentYear - 1];
+
+    // Use current date for YTD/MTD end range
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1; // 1-12
     const currentDay = currentDate.getDate();
-    
-    console.log('Using current date:', currentDate.toISOString(), 'Month:', currentMonth, 'Day:', currentDay);
-    
-    // YTD: January 1st of current year to today
+
     const ytdStartDate = `${currentYear}-01-01`;
     const ytdEndDate = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
-    
-    // MTD: First day of current month to today
     const mtdStartDate = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`;
     const mtdEndDate = ytdEndDate;
-    
-    // Previous year YTD: Same period last year (Jan 1 to same day last year)
-    const prevYtdStartDate = `${previousYear}-01-01`;
-    const prevYtdEndDate = `${previousYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
-    
-    // Previous year MTD: Same month last year (same day of month last year)
-    const prevMtdStartDate = `${previousYear}-${currentMonth.toString().padStart(2, '0')}-01`;
-    const prevMtdEndDate = `${previousYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
 
-    console.log('YTD MTD Comparison dates:', {
-      currentDate: currentDate.toISOString(),
-      ytdStartDate, ytdEndDate,
-      mtdStartDate, mtdEndDate,
-      prevYtdStartDate, prevYtdEndDate,
-      prevMtdStartDate, prevMtdEndDate
-    });
-
-    // YTD from sales table only (no join)
+    // YTD & MTD for current year (main blocks remain as in your logic)
     const [currentYTD] = await db.execute(`
       SELECT COUNT(*) as totalTransactions,
              COALESCE(SUM(total_amount), 0) as totalSales,
@@ -811,14 +767,12 @@ const getYTDMTDComparison = async (req, res) => {
       FROM sales
       WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ?
     `, [ytdStartDate, ytdEndDate, currentYear]);
-    // Items
     const [itemsYTD] = await db.execute(`
       SELECT COALESCE(SUM(si.quantity), 0) as totalItems
       FROM sales s
       LEFT JOIN sale_items si ON s.id = si.sale_id
       WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
     `, [ytdStartDate, ytdEndDate, currentYear]);
-    // MTD, same
     const [currentMTD] = await db.execute(`
       SELECT COUNT(*) as totalTransactions,
              COALESCE(SUM(total_amount), 0) as totalSales,
@@ -833,148 +787,102 @@ const getYTDMTDComparison = async (req, res) => {
       WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
     `, [mtdStartDate, mtdEndDate, currentYear]);
 
-    // Previous year YTD
-    const [previousYTD] = await db.execute(`
-      SELECT COUNT(*) as totalTransactions,
-             COALESCE(SUM(total_amount), 0) as totalSales,
-             COALESCE(SUM(total_cost), 0) as totalCost
-      FROM sales
-      WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ?
-    `, [prevYtdStartDate, prevYtdEndDate, previousYear]);
-    const [itemsPrevYTD] = await db.execute(`
-      SELECT COALESCE(SUM(si.quantity), 0) as totalItems
-      FROM sales s
-      LEFT JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
-    `, [prevYtdStartDate, prevYtdEndDate, previousYear]);
+    // For each compareYear, get YTD/MTD stats
+    const comparisons = {};
+    for (const compYear of compareYears) {
+      const ytdStart = `${compYear}-01-01`;
+      const ytdEnd = `${compYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
+      const mtdStart = `${compYear}-${currentMonth.toString().padStart(2, '0')}-01`;
+      const mtdEnd = ytdEnd;
 
-    // Previous year MTD
-    const [previousMTD] = await db.execute(`
-      SELECT COUNT(*) as totalTransactions,
-             COALESCE(SUM(total_amount), 0) as totalSales,
-             COALESCE(SUM(total_cost), 0) as totalCost
-      FROM sales
-      WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ?
-    `, [prevMtdStartDate, prevMtdEndDate, previousYear]);
-    const [itemsPrevMTD] = await db.execute(`
-      SELECT COALESCE(SUM(si.quantity), 0) as totalItems
-      FROM sales s
-      LEFT JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
-    `, [prevMtdStartDate, prevMtdEndDate, previousYear]);
+      const [cyYTD] = await db.execute(`
+        SELECT COUNT(*) as totalTransactions, COALESCE(SUM(total_amount), 0) as totalSales, COALESCE(SUM(total_cost), 0) as totalCost
+        FROM sales
+        WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ?
+      `, [ytdStart, ytdEnd, compYear]);
+      const [cyYTDItems] = await db.execute(`
+        SELECT COALESCE(SUM(si.quantity), 0) as totalItems
+        FROM sales s
+        LEFT JOIN sale_items si ON s.id = si.sale_id
+        WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
+      `, [ytdStart, ytdEnd, compYear]);
+      const [cyMTD] = await db.execute(`
+        SELECT COUNT(*) as totalTransactions, COALESCE(SUM(total_amount), 0) as totalSales, COALESCE(SUM(total_cost), 0) as totalCost
+        FROM sales
+        WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
+      `, [mtdStart, mtdEnd, compYear]);
+      const [cyMTDItems] = await db.execute(`
+        SELECT COALESCE(SUM(si.quantity), 0) as totalItems
+        FROM sales s
+        LEFT JOIN sale_items si ON s.id = si.sale_id
+        WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
+      `, [mtdStart, mtdEnd, compYear]);
+      comparisons[compYear] = {
+        ytd: {
+          totalTransactions: Number(cyYTD[0].totalTransactions),
+          totalSales: Number(cyYTD[0].totalSales),
+          totalItems: Number(cyYTDItems[0].totalItems),
+          totalCost: Number(cyYTD[0].totalCost)
+        },
+        mtd: {
+          totalTransactions: Number(cyMTD[0].totalTransactions),
+          totalSales: Number(cyMTD[0].totalSales),
+          totalItems: Number(cyMTDItems[0].totalItems),
+          totalCost: Number(cyMTD[0].totalCost)
+        }
+      };
+    }
 
-    // Populate actual response with correct item totals
-    const fixedYtdCurrent = {
-      totalTransactions: Number(currentYTD[0].totalTransactions),
-      totalSales: Number(currentYTD[0].totalSales),
-      totalItems: Number(itemsYTD[0].totalItems),
-      totalCost: Number(currentYTD[0].totalCost),
-    };
-    const fixedMtdCurrent = {
-      totalTransactions: Number(currentMTD[0].totalTransactions),
-      totalSales: Number(currentMTD[0].totalSales),
-      totalItems: Number(itemsMTD[0].totalItems),
-      totalCost: Number(currentMTD[0].totalCost),
-    };
-    const fixedYtdPrevious = {
-      totalTransactions: Number(previousYTD[0].totalTransactions),
-      totalSales: Number(previousYTD[0].totalSales),
-      totalItems: Number(itemsPrevYTD[0].totalItems),
-      totalCost: Number(previousYTD[0].totalCost),
-    };
-    const fixedMtdPrevious = {
-      totalTransactions: Number(previousMTD[0].totalTransactions),
-      totalSales: Number(previousMTD[0].totalSales),
-      totalItems: Number(itemsPrevMTD[0].totalItems),
-      totalCost: Number(previousMTD[0].totalCost),
-    };
-
-    // Debug: Print all sales being summed for YTD
-    const [debugSalesYTD] = await db.execute(
-      `SELECT id, sale_date, total_amount FROM sales WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ? ORDER BY sale_date`,
-      [ytdStartDate, ytdEndDate, currentYear]
-    );
-    let debugSumYTD = 0;
-    console.log('=== YTD SALES ===');
-    debugSalesYTD.forEach(row => {
-      debugSumYTD += Number(row.total_amount || 0);
-      console.log(`${row.sale_date}: ₹${row.total_amount} (id: ${row.id})`);
-    });
-    console.log('YTD Sum:', debugSumYTD);
-    console.log('=== END YTD SALES ===');
-    
-    // Debug: Print all sales being summed for MTD
-    const [debugSalesMTD] = await db.execute(
-      `SELECT id, sale_date, total_amount FROM sales WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ? ORDER BY sale_date`,
-      [mtdStartDate, mtdEndDate, currentYear]
-    );
-    let debugSumMTD = 0;
-    console.log('=== MTD SALES ===');
-    debugSalesMTD.forEach(row => {
-      debugSumMTD += Number(row.total_amount || 0);
-      console.log(`${row.sale_date}: ₹${row.total_amount} (id: ${row.id})`);
-    });
-    console.log('MTD Sum:', debugSumMTD);
-    console.log('=== END MTD SALES ===');
-
-    // Calculate growth percentages
-    const ytdRevenueGrowth = previousYTD[0].totalSales > 0 
-      ? ((currentYTD[0].totalSales - previousYTD[0].totalSales) / previousYTD[0].totalSales) * 100 
-      : currentYTD[0].totalSales > 0 ? 100 : 0;
-    
-    const ytdTransactionGrowth = previousYTD[0].totalTransactions > 0 
-      ? ((currentYTD[0].totalTransactions - previousYTD[0].totalTransactions) / previousYTD[0].totalTransactions) * 100 
-      : currentYTD[0].totalTransactions > 0 ? 100 : 0;
-    
-    const ytdItemsGrowth = previousYTD[0].totalItems > 0 
-      ? ((currentYTD[0].totalItems - previousYTD[0].totalItems) / previousYTD[0].totalItems) * 100 
-      : currentYTD[0].totalItems > 0 ? 100 : 0;
-
-    const mtdRevenueGrowth = previousMTD[0].totalSales > 0 
-      ? ((currentMTD[0].totalSales - previousMTD[0].totalSales) / previousMTD[0].totalSales) * 100 
-      : currentMTD[0].totalSales > 0 ? 100 : 0;
-    
-    const mtdTransactionGrowth = previousMTD[0].totalTransactions > 0 
-      ? ((currentMTD[0].totalTransactions - previousMTD[0].totalTransactions) / previousMTD[0].totalTransactions) * 100 
-      : currentMTD[0].totalTransactions > 0 ? 100 : 0;
-    
-    const mtdItemsGrowth = previousMTD[0].totalItems > 0 
-      ? ((currentMTD[0].totalItems - previousMTD[0].totalItems) / previousMTD[0].totalItems) * 100 
-      : currentMTD[0].totalItems > 0 ? 100 : 0;
+    // Growth vs. selected first comparison year (for each metric)
+    const mainComp = comparisons[compareYears[0]];
+    function computeGrowth(cur, comp) {
+      return comp > 0 ? Math.round(((cur - comp) / comp) * 10000) / 100 : (cur > 0 ? 100 : 0);
+    }
 
     res.json({
       success: true,
       data: {
         currentYear,
-        previousYear,
+        compareYears,
         ytd: {
-          current: fixedYtdCurrent,
-          previous: fixedYtdPrevious,
+          current: {
+            totalTransactions: Number(currentYTD[0].totalTransactions),
+            totalSales: Number(currentYTD[0].totalSales),
+            totalItems: Number(itemsYTD[0].totalItems),
+            totalCost: Number(currentYTD[0].totalCost)
+          },
+          comparisons,
           growth: {
-            revenue: Math.round(ytdRevenueGrowth * 100) / 100,
-            transactions: Math.round(ytdTransactionGrowth * 100) / 100,
-            items: Math.round(ytdItemsGrowth * 100) / 100
+            revenue: computeGrowth(currentYTD[0].totalSales, mainComp.ytd.totalSales),
+            transactions: computeGrowth(currentYTD[0].totalTransactions, mainComp.ytd.totalTransactions),
+            items: computeGrowth(itemsYTD[0].totalItems, mainComp.ytd.totalItems)
           }
         },
         mtd: {
-          current: fixedMtdCurrent,
-          previous: fixedMtdPrevious,
+          current: {
+            totalTransactions: Number(currentMTD[0].totalTransactions),
+            totalSales: Number(currentMTD[0].totalSales),
+            totalItems: Number(itemsMTD[0].totalItems),
+            totalCost: Number(currentMTD[0].totalCost)
+          },
+          comparisons,
           growth: {
-            revenue: Math.round(mtdRevenueGrowth * 100) / 100,
-            transactions: Math.round(mtdTransactionGrowth * 100) / 100,
-            items: Math.round(mtdItemsGrowth * 100) / 100
+            revenue: computeGrowth(currentMTD[0].totalSales, mainComp.mtd.totalSales),
+            transactions: computeGrowth(currentMTD[0].totalTransactions, mainComp.mtd.totalTransactions),
+            items: computeGrowth(itemsMTD[0].totalItems, mainComp.mtd.totalItems)
           }
         }
       }
     });
-
   } catch (error) {
-    console.error('Error fetching YTD MTD comparison:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch YTD MTD comparison' });
   }
 };
+// Update endpoint doc:
+// GET /api/sales/ytd-mtd/:year?compare_year=YYYY&years=YYYY,YYYY,YYYY
+//  - compare_year: (optional) one year to compare with (default: previous)
+//  - years: (optional) comma-separated list for multi-year comparison
 
-// Routes
 router.post('/', recordSale);
 router.get('/summary/:date', getSalesSummary);
 router.get('/analytics/:date', getSalesAnalytics);
