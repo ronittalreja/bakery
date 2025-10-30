@@ -772,27 +772,36 @@ const getYTDMTDComparison = async (req, res) => {
     const currentYear = year ? parseInt(year) : new Date().getFullYear();
     const previousYear = currentYear - 1;
     
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1; // 1-12
-    const currentDay = currentDate.getDate();
+    // Find the latest sale date in the database to use as reference date
+    const [latestSale] = await db.execute(`
+      SELECT MAX(sale_date) as latest_date FROM sales
+    `);
     
-    // YTD: January 1st to current date
+    const referenceDate = latestSale[0]?.latest_date ? new Date(latestSale[0].latest_date) : new Date();
+    const referenceMonth = referenceDate.getMonth() + 1; // 1-12
+    const referenceDay = referenceDate.getDate();
+    
+    console.log('Latest sale date from DB:', latestSale[0]?.latest_date);
+    console.log('Using reference date:', referenceDate.toISOString(), 'Month:', referenceMonth, 'Day:', referenceDay);
+    
+    // YTD: January 1st to latest sale date in the database
     const ytdStartDate = `${currentYear}-01-01`;
-    const ytdEndDate = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
+    const ytdEndDate = `${currentYear}-${referenceMonth.toString().padStart(2, '0')}-${referenceDay.toString().padStart(2, '0')}`;
     
-    // MTD: First day of current month to current date
-    const mtdStartDate = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`;
+    // MTD: First day of reference month to reference date
+    const mtdStartDate = `${currentYear}-${referenceMonth.toString().padStart(2, '0')}-01`;
     const mtdEndDate = ytdEndDate;
     
     // Previous year YTD: Same period last year
     const prevYtdStartDate = `${previousYear}-01-01`;
-    const prevYtdEndDate = `${previousYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
+    const prevYtdEndDate = `${previousYear}-${referenceMonth.toString().padStart(2, '0')}-${referenceDay.toString().padStart(2, '0')}`;
     
     // Previous year MTD: Same month last year
-    const prevMtdStartDate = `${previousYear}-${currentMonth.toString().padStart(2, '0')}-01`;
-    const prevMtdEndDate = `${previousYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
+    const prevMtdStartDate = `${previousYear}-${referenceMonth.toString().padStart(2, '0')}-01`;
+    const prevMtdEndDate = `${previousYear}-${referenceMonth.toString().padStart(2, '0')}-${referenceDay.toString().padStart(2, '0')}`;
 
     console.log('YTD MTD Comparison dates:', {
+      referenceDate: referenceDate.toISOString(),
       ytdStartDate, ytdEndDate,
       mtdStartDate, mtdEndDate,
       prevYtdStartDate, prevYtdEndDate,
