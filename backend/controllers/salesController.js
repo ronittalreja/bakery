@@ -772,36 +772,31 @@ const getYTDMTDComparison = async (req, res) => {
     const currentYear = year ? parseInt(year) : new Date().getFullYear();
     const previousYear = currentYear - 1;
     
-    // Find the latest sale date in the database to use as reference date
-    const [latestSale] = await db.execute(`
-      SELECT MAX(sale_date) as latest_date FROM sales
-    `);
+    // Use current date for YTD and MTD calculations
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1; // 1-12
+    const currentDay = currentDate.getDate();
     
-    const referenceDate = latestSale[0]?.latest_date ? new Date(latestSale[0].latest_date) : new Date();
-    const referenceMonth = referenceDate.getMonth() + 1; // 1-12
-    const referenceDay = referenceDate.getDate();
+    console.log('Using current date:', currentDate.toISOString(), 'Month:', currentMonth, 'Day:', currentDay);
     
-    console.log('Latest sale date from DB:', latestSale[0]?.latest_date);
-    console.log('Using reference date:', referenceDate.toISOString(), 'Month:', referenceMonth, 'Day:', referenceDay);
-    
-    // YTD: January 1st to latest sale date in the database
+    // YTD: January 1st of current year to today
     const ytdStartDate = `${currentYear}-01-01`;
-    const ytdEndDate = `${currentYear}-${referenceMonth.toString().padStart(2, '0')}-${referenceDay.toString().padStart(2, '0')}`;
+    const ytdEndDate = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
     
-    // MTD: First day of reference month to reference date
-    const mtdStartDate = `${currentYear}-${referenceMonth.toString().padStart(2, '0')}-01`;
+    // MTD: First day of current month to today
+    const mtdStartDate = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`;
     const mtdEndDate = ytdEndDate;
     
-    // Previous year YTD: Same period last year
+    // Previous year YTD: Same period last year (Jan 1 to same day last year)
     const prevYtdStartDate = `${previousYear}-01-01`;
-    const prevYtdEndDate = `${previousYear}-${referenceMonth.toString().padStart(2, '0')}-${referenceDay.toString().padStart(2, '0')}`;
+    const prevYtdEndDate = `${previousYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
     
-    // Previous year MTD: Same month last year
-    const prevMtdStartDate = `${previousYear}-${referenceMonth.toString().padStart(2, '0')}-01`;
-    const prevMtdEndDate = `${previousYear}-${referenceMonth.toString().padStart(2, '0')}-${referenceDay.toString().padStart(2, '0')}`;
+    // Previous year MTD: Same month last year (same day of month last year)
+    const prevMtdStartDate = `${previousYear}-${currentMonth.toString().padStart(2, '0')}-01`;
+    const prevMtdEndDate = `${previousYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
 
     console.log('YTD MTD Comparison dates:', {
-      referenceDate: referenceDate.toISOString(),
+      currentDate: currentDate.toISOString(),
       ytdStartDate, ytdEndDate,
       mtdStartDate, mtdEndDate,
       prevYtdStartDate, prevYtdEndDate,
@@ -817,8 +812,8 @@ const getYTDMTDComparison = async (req, res) => {
         COALESCE(SUM(s.total_cost), 0) as totalCost
       FROM sales s
       LEFT JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE(s.sale_date) BETWEEN ? AND ?
-    `, [ytdStartDate, ytdEndDate]);
+      WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
+    `, [ytdStartDate, ytdEndDate, currentYear]);
 
     // Get current MTD sales
     const [currentMTD] = await db.execute(`
@@ -829,8 +824,8 @@ const getYTDMTDComparison = async (req, res) => {
         COALESCE(SUM(s.total_cost), 0) as totalCost
       FROM sales s
       LEFT JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE(s.sale_date) BETWEEN ? AND ?
-    `, [mtdStartDate, mtdEndDate]);
+      WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
+    `, [mtdStartDate, mtdEndDate, currentYear]);
 
     // Get previous year YTD sales
     const [previousYTD] = await db.execute(`
@@ -841,8 +836,8 @@ const getYTDMTDComparison = async (req, res) => {
         COALESCE(SUM(s.total_cost), 0) as totalCost
       FROM sales s
       LEFT JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE(s.sale_date) BETWEEN ? AND ?
-    `, [prevYtdStartDate, prevYtdEndDate]);
+      WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
+    `, [prevYtdStartDate, prevYtdEndDate, previousYear]);
 
     // Get previous year MTD sales
     const [previousMTD] = await db.execute(`
@@ -853,8 +848,8 @@ const getYTDMTDComparison = async (req, res) => {
         COALESCE(SUM(s.total_cost), 0) as totalCost
       FROM sales s
       LEFT JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE(s.sale_date) BETWEEN ? AND ?
-    `, [prevMtdStartDate, prevMtdEndDate]);
+      WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
+    `, [prevMtdStartDate, prevMtdEndDate, previousYear]);
 
     // Calculate growth percentages
     const ytdRevenueGrowth = previousYTD[0].totalSales > 0 
