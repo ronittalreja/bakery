@@ -15,7 +15,7 @@ import { formatDisplayDate } from "@/lib/dateUtils";
 
 interface Invoice {
   id: number;
-  invoice_no: string;
+  invoice_number: string;
   invoice_date: string;
   store: string;
   total_amount: number;
@@ -533,7 +533,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                   return (
                     <div key={invoice.id} className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg hover:shadow-xl transition-shadow p-4 sm:p-6">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-lg font-bold text-slate-900">#{invoice.invoice_no}</h3>
+                        <h3 className="text-lg font-bold text-slate-900">#{invoice.invoice_number}</h3>
                         <Badge className={getStatusColor(invoice.status || 'pending')}>
                           <StatusIcon className="h-3 w-3 mr-1" />
                           {invoice.status || 'pending'}
@@ -995,7 +995,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-slate-600">Invoice #:</span>
-                      <span className="font-mono font-medium">{selectedInvoiceDetails.invoice_no}</span>
+                      <span className="font-mono font-medium">{selectedInvoiceDetails.invoice_number}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600">Store:</span>
