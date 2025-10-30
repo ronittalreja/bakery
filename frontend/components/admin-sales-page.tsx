@@ -100,18 +100,6 @@ interface YTDMTDData {
       items: number;
     };
   };
-  comparisons: {
-    [year: number]: {
-      ytd: {
-        totalTransactions: number;
-        totalSales: number;
-      };
-      mtd: {
-        totalTransactions: number;
-        totalSales: number;
-      };
-    };
-  };
 }
 
 interface AdminSalesPageProps {
@@ -127,12 +115,6 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
   const [comparisonYear, setComparisonYear] = useState(new Date().getFullYear() - 1); // Previous year
   const [summaryAccurate, setSummaryAccurate] = useState<{ totalTransactions: number, totalSales: number } | null>(null);
-  const [ytdComparisonYear, setYtdComparisonYear] = useState(new Date().getFullYear() - 1);
-  const [mtdComparisonYear, setMtdComparisonYear] = useState(new Date().getFullYear() - 1);
-
-  // Compute the available comparison years = last 3 (before current)
-  const thisYear = new Date().getFullYear();
-  const comparisonOptions = [1,2,3].map(inc => thisYear - inc);
 
   useEffect(() => {
     const fetchSales = async () => {
@@ -214,20 +196,23 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
         if (!token) {
           throw new Error('No authentication token found');
         }
-        // pass ?years=selectedYear
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/ytd-mtd/${thisYear}?years=${ytdComparisonYear}`, {
+        const currentYear = new Date().getFullYear();
+        console.log('Fetching YTD MTD data for year:', currentYear);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/ytd-mtd/${currentYear}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
         const data = await response.json();
+        console.log('YTD MTD API response:', data);
         if (!response.ok || !data.success) {
           throw new Error(data.error || 'Failed to fetch YTD MTD data');
         }
         setYtdMtdData(data.data);
-      } catch (err) {
-        setYtdMtdData(null);
+      } catch (err: any) {
+        console.error('Error fetching YTD MTD data:', err.message);
+        // Don't show error for YTD MTD as it's not critical
       }
     };
 
@@ -256,7 +241,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
     fetchAnalytics();
     fetchYTDMTD();
     fetchSummaryAccurate();
-  }, [selectedMonth, comparisonYear, ytdComparisonYear]);
+  }, [selectedMonth, comparisonYear]);
 
   // Reset admin date back to today when leaving Admin Sales page
   useEffect(() => {
@@ -490,101 +475,6 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
 
         <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg">
           <div className="p-6 border-b border-slate-200">
-            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              YTD & MTD Sales Comparison
-            </h2>
-            <p className="text-slate-600 mt-1">
-              Comparing {thisYear} with
-              <select value={ytdComparisonYear} onChange={(e) => setYtdComparisonYear(Number(e.target.value))} className="ml-2 px-2 py-1 border border-slate-300 rounded">
-                {comparisonOptions.map((year) => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-            </p>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* YTD Comparison */}
-              <div className="space-y-4">
-                <h3 className="text-md font-semibold text-slate-800 flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-blue-600" />
-                  Year-to-Date (YTD)
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* YTD Revenue */}
-                  <div className="text-center p-4 bg-white rounded-lg border border-slate-200 hover:shadow-md transition-all duration-200">
-                    <div className="text-sm text-slate-600 mb-2">Revenue</div>
-                    <div className="text-xl font-bold text-slate-900 mb-1">
-                      ₹{ytdMtdData?.ytd.current.totalSales.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-slate-600 mb-2">
-                      vs ₹{ytdMtdData?.ytd.comparisons[ytdComparisonYear]?.ytd.totalSales?.toLocaleString?.() ?? '0'} ({ytdComparisonYear})
-                    </div>
-                    <div className={`flex items-center justify-center gap-1 text-sm font-medium ${ytdMtdData?.ytd.growth.revenue > 0 ? 'text-green-600' : ytdMtdData?.ytd.growth.revenue < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                      {ytdMtdData?.ytd.growth.revenue > 0 ? (<TrendingUp className="h-4 w-4" />) : ytdMtdData?.ytd.growth.revenue < 0 ? (<TrendingDown className="h-4 w-4" />) : (<span className="h-4 w-4">—</span>)}
-                      {Math.abs(ytdMtdData?.ytd.growth.revenue)}%
-                    </div>
-                  </div>
-                  {/* YTD Transactions */}
-                  <div className="text-center p-4 bg-white rounded-lg border border-slate-200 hover:shadow-md transition-all duration-200">
-                    <div className="text-sm text-slate-600 mb-2">Transactions</div>
-                    <div className="text-xl font-bold text-slate-900 mb-1">
-                      {ytdMtdData?.ytd.current.totalTransactions}
-                    </div>
-                    <div className="text-sm text-slate-600 mb-2">
-                      vs {ytdMtdData?.ytd.comparisons[ytdComparisonYear]?.ytd.totalTransactions ?? 0} ({ytdComparisonYear})
-                    </div>
-                    <div className={`flex items-center justify-center gap-1 text-sm font-medium ${ytdMtdData?.ytd.growth.transactions > 0 ? 'text-green-600' : ytdMtdData?.ytd.growth.transactions < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                      {ytdMtdData?.ytd.growth.transactions > 0 ? (<TrendingUp className="h-4 w-4" />) : ytdMtdData?.ytd.growth.transactions < 0 ? (<TrendingDown className="h-4 w-4" />) : (<span className="h-4 w-4">—</span>)}
-                      {Math.abs(ytdMtdData?.ytd.growth.transactions)}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* MTD Comparison */}
-              <div className="space-y-4">
-                <h3 className="text-md font-semibold text-slate-800 flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-purple-600" />
-                  Month-to-Date (MTD)
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* MTD Revenue */}
-                  <div className="text-center p-4 bg-white rounded-lg border border-slate-200 hover:shadow-md transition-all duration-200">
-                    <div className="text-sm text-slate-600 mb-2">Revenue</div>
-                    <div className="text-xl font-bold text-slate-900 mb-1">
-                      ₹{ytdMtdData?.mtd.current.totalSales.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-slate-600 mb-2">
-                      vs ₹{ytdMtdData?.mtd.comparisons[ytdComparisonYear]?.mtd.totalSales?.toLocaleString?.() ?? '0'} ({ytdComparisonYear})
-                    </div>
-                    <div className={`flex items-center justify-center gap-1 text-sm font-medium ${ytdMtdData?.mtd.growth.revenue > 0 ? 'text-green-600' : ytdMtdData?.mtd.growth.revenue < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                      {ytdMtdData?.mtd.growth.revenue > 0 ? (<TrendingUp className="h-4 w-4" />) : ytdMtdData?.mtd.growth.revenue < 0 ? (<TrendingDown className="h-4 w-4" />) : (<span className="h-4 w-4">—</span>)}
-                      {Math.abs(ytdMtdData?.mtd.growth.revenue)}%
-                    </div>
-                  </div>
-                  {/* MTD Transactions */}
-                  <div className="text-center p-4 bg-white rounded-lg border border-slate-200 hover:shadow-md transition-all duration-200">
-                    <div className="text-sm text-slate-600 mb-2">Transactions</div>
-                    <div className="text-xl font-bold text-slate-900 mb-1">
-                      {ytdMtdData?.mtd.current.totalTransactions}
-                    </div>
-                    <div className="text-sm text-slate-600 mb-2">
-                      vs {ytdMtdData?.mtd.comparisons[ytdComparisonYear]?.mtd.totalTransactions ?? 0} ({ytdComparisonYear})
-                    </div>
-                    <div className={`flex items-center justify-center gap-1 text-sm font-medium ${ytdMtdData?.mtd.growth.transactions > 0 ? 'text-green-600' : ytdMtdData?.mtd.growth.transactions < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                      {ytdMtdData?.mtd.growth.transactions > 0 ? (<TrendingUp className="h-4 w-4" />) : ytdMtdData?.mtd.growth.transactions < 0 ? (<TrendingDown className="h-4 w-4" />) : (<span className="h-4 w-4">—</span>)}
-                      {Math.abs(ytdMtdData?.mtd.growth.transactions)}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg">
-          <div className="p-6 border-b border-slate-200">
             <h2 className="text-lg font-bold text-slate-900">Payment Method Breakdown</h2>
           </div>
           <div className="p-6">
@@ -637,6 +527,134 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
             </div>
           </div>
         </div>
+
+        {/* YTD and MTD Comparison */}
+        {ytdMtdData && (
+          <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg">
+            <div className="p-6 border-b border-slate-200">
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                YTD & MTD Sales Comparison
+              </h2>
+              <p className="text-slate-600 mt-1">
+                Comparing {ytdMtdData.currentYear} with {ytdMtdData.previousYear} performance
+              </p>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* YTD Comparison */}
+                <div className="space-y-4">
+                  <h3 className="text-md font-semibold text-slate-800 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-blue-600" />
+                    Year-to-Date (YTD)
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* YTD Revenue */}
+                    <div className="text-center p-4 bg-white rounded-lg border border-slate-200 hover:shadow-md transition-all duration-200">
+                      <div className="text-sm text-slate-600 mb-2">Revenue</div>
+                      <div className="text-xl font-bold text-slate-900 mb-1">
+                        ₹{ytdMtdData.ytd.current.totalSales.toLocaleString()}
+                      </div>
+                      <div className="text-sm text-slate-600 mb-2">
+                        vs ₹{ytdMtdData.ytd.previous.totalSales.toLocaleString()}
+                      </div>
+                      <div className={`flex items-center justify-center gap-1 text-sm font-medium ${
+                        ytdMtdData.ytd.growth.revenue > 0 ? 'text-green-600' : ytdMtdData.ytd.growth.revenue < 0 ? 'text-red-600' : 'text-gray-500'
+                      }`}>
+                        {ytdMtdData.ytd.growth.revenue > 0 ? (
+                          <TrendingUp className="h-4 w-4" />
+                        ) : ytdMtdData.ytd.growth.revenue < 0 ? (
+                          <TrendingDown className="h-4 w-4" />
+                        ) : (
+                          <span className="h-4 w-4">—</span>
+                        )}
+                        {Math.abs(ytdMtdData.ytd.growth.revenue)}%
+                      </div>
+                    </div>
+
+                    {/* YTD Transactions */}
+                    <div className="text-center p-4 bg-white rounded-lg border border-slate-200 hover:shadow-md transition-all duration-200">
+                      <div className="text-sm text-slate-600 mb-2">Transactions</div>
+                      <div className="text-xl font-bold text-slate-900 mb-1">
+                        {ytdMtdData.ytd.current.totalTransactions}
+                      </div>
+                      <div className="text-sm text-slate-600 mb-2">
+                        vs {ytdMtdData.ytd.previous.totalTransactions}
+                      </div>
+                      <div className={`flex items-center justify-center gap-1 text-sm font-medium ${
+                        ytdMtdData.ytd.growth.transactions > 0 ? 'text-green-600' : ytdMtdData.ytd.growth.transactions < 0 ? 'text-red-600' : 'text-gray-500'
+                      }`}>
+                        {ytdMtdData.ytd.growth.transactions > 0 ? (
+                          <TrendingUp className="h-4 w-4" />
+                        ) : ytdMtdData.ytd.growth.transactions < 0 ? (
+                          <TrendingDown className="h-4 w-4" />
+                        ) : (
+                          <span className="h-4 w-4">—</span>
+                        )}
+                        {Math.abs(ytdMtdData.ytd.growth.transactions)}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* MTD Comparison */}
+                <div className="space-y-4">
+                  <h3 className="text-md font-semibold text-slate-800 flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-purple-600" />
+                    Month-to-Date (MTD)
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* MTD Revenue */}
+                    <div className="text-center p-4 bg-white rounded-lg border border-slate-200 hover:shadow-md transition-all duration-200">
+                      <div className="text-sm text-slate-600 mb-2">Revenue</div>
+                      <div className="text-xl font-bold text-slate-900 mb-1">
+                        ₹{ytdMtdData.mtd.current.totalSales.toLocaleString()}
+                      </div>
+                      <div className="text-sm text-slate-600 mb-2">
+                        vs ₹{ytdMtdData.mtd.previous.totalSales.toLocaleString()}
+                      </div>
+                      <div className={`flex items-center justify-center gap-1 text-sm font-medium ${
+                        ytdMtdData.mtd.growth.revenue > 0 ? 'text-green-600' : ytdMtdData.mtd.growth.revenue < 0 ? 'text-red-600' : 'text-gray-500'
+                      }`}>
+                        {ytdMtdData.mtd.growth.revenue > 0 ? (
+                          <TrendingUp className="h-4 w-4" />
+                        ) : ytdMtdData.mtd.growth.revenue < 0 ? (
+                          <TrendingDown className="h-4 w-4" />
+                        ) : (
+                          <span className="h-4 w-4">—</span>
+                        )}
+                        {Math.abs(ytdMtdData.mtd.growth.revenue)}%
+                      </div>
+                    </div>
+
+                    {/* MTD Transactions */}
+                    <div className="text-center p-4 bg-white rounded-lg border border-slate-200 hover:shadow-md transition-all duration-200">
+                      <div className="text-sm text-slate-600 mb-2">Transactions</div>
+                      <div className="text-xl font-bold text-slate-900 mb-1">
+                        {ytdMtdData.mtd.current.totalTransactions}
+                      </div>
+                      <div className="text-sm text-slate-600 mb-2">
+                        vs {ytdMtdData.mtd.previous.totalTransactions}
+                      </div>
+                      <div className={`flex items-center justify-center gap-1 text-sm font-medium ${
+                        ytdMtdData.mtd.growth.transactions > 0 ? 'text-green-600' : ytdMtdData.mtd.growth.transactions < 0 ? 'text-red-600' : 'text-gray-500'
+                      }`}>
+                        {ytdMtdData.mtd.growth.transactions > 0 ? (
+                          <TrendingUp className="h-4 w-4" />
+                        ) : ytdMtdData.mtd.growth.transactions < 0 ? (
+                          <TrendingDown className="h-4 w-4" />
+                        ) : (
+                          <span className="h-4 w-4">—</span>
+                        )}
+                        {Math.abs(ytdMtdData.mtd.growth.transactions)}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
