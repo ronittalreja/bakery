@@ -851,6 +851,34 @@ const getYTDMTDComparison = async (req, res) => {
       WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
     `, [prevMtdStartDate, prevMtdEndDate, previousYear]);
 
+    // Debug: Print all sales being summed for YTD
+    const [debugSalesYTD] = await db.execute(
+      `SELECT id, sale_date, total_amount FROM sales WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ? ORDER BY sale_date`,
+      [ytdStartDate, ytdEndDate, currentYear]
+    );
+    let debugSumYTD = 0;
+    console.log('=== YTD SALES ===');
+    debugSalesYTD.forEach(row => {
+      debugSumYTD += Number(row.total_amount || 0);
+      console.log(`${row.sale_date}: ₹${row.total_amount} (id: ${row.id})`);
+    });
+    console.log('YTD Sum:', debugSumYTD);
+    console.log('=== END YTD SALES ===');
+    
+    // Debug: Print all sales being summed for MTD
+    const [debugSalesMTD] = await db.execute(
+      `SELECT id, sale_date, total_amount FROM sales WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ? ORDER BY sale_date`,
+      [mtdStartDate, mtdEndDate, currentYear]
+    );
+    let debugSumMTD = 0;
+    console.log('=== MTD SALES ===');
+    debugSalesMTD.forEach(row => {
+      debugSumMTD += Number(row.total_amount || 0);
+      console.log(`${row.sale_date}: ₹${row.total_amount} (id: ${row.id})`);
+    });
+    console.log('MTD Sum:', debugSumMTD);
+    console.log('=== END MTD SALES ===');
+
     // Calculate growth percentages
     const ytdRevenueGrowth = previousYTD[0].totalSales > 0 
       ? ((currentYTD[0].totalSales - previousYTD[0].totalSales) / previousYTD[0].totalSales) * 100 
