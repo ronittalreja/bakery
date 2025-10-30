@@ -803,53 +803,91 @@ const getYTDMTDComparison = async (req, res) => {
       prevMtdStartDate, prevMtdEndDate
     });
 
-    // Get current YTD sales
+    // YTD from sales table only (no join)
     const [currentYTD] = await db.execute(`
-      SELECT 
-        COUNT(DISTINCT s.id) as totalTransactions,
-        COALESCE(SUM(s.total_amount), 0) as totalSales,
-        COALESCE(SUM(si.quantity), 0) as totalItems,
-        COALESCE(SUM(s.total_cost), 0) as totalCost
+      SELECT COUNT(*) as totalTransactions,
+             COALESCE(SUM(total_amount), 0) as totalSales,
+             COALESCE(SUM(total_cost), 0) as totalCost
+      FROM sales
+      WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ?
+    `, [ytdStartDate, ytdEndDate, currentYear]);
+    // Items
+    const [itemsYTD] = await db.execute(`
+      SELECT COALESCE(SUM(si.quantity), 0) as totalItems
       FROM sales s
       LEFT JOIN sale_items si ON s.id = si.sale_id
       WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
     `, [ytdStartDate, ytdEndDate, currentYear]);
-
-    // Get current MTD sales
+    // MTD, same
     const [currentMTD] = await db.execute(`
-      SELECT 
-        COUNT(DISTINCT s.id) as totalTransactions,
-        COALESCE(SUM(s.total_amount), 0) as totalSales,
-        COALESCE(SUM(si.quantity), 0) as totalItems,
-        COALESCE(SUM(s.total_cost), 0) as totalCost
+      SELECT COUNT(*) as totalTransactions,
+             COALESCE(SUM(total_amount), 0) as totalSales,
+             COALESCE(SUM(total_cost), 0) as totalCost
+      FROM sales
+      WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ?
+    `, [mtdStartDate, mtdEndDate, currentYear]);
+    const [itemsMTD] = await db.execute(`
+      SELECT COALESCE(SUM(si.quantity), 0) as totalItems
       FROM sales s
       LEFT JOIN sale_items si ON s.id = si.sale_id
       WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
     `, [mtdStartDate, mtdEndDate, currentYear]);
 
-    // Get previous year YTD sales
+    // Previous year YTD
     const [previousYTD] = await db.execute(`
-      SELECT 
-        COUNT(DISTINCT s.id) as totalTransactions,
-        COALESCE(SUM(s.total_amount), 0) as totalSales,
-        COALESCE(SUM(si.quantity), 0) as totalItems,
-        COALESCE(SUM(s.total_cost), 0) as totalCost
+      SELECT COUNT(*) as totalTransactions,
+             COALESCE(SUM(total_amount), 0) as totalSales,
+             COALESCE(SUM(total_cost), 0) as totalCost
+      FROM sales
+      WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ?
+    `, [prevYtdStartDate, prevYtdEndDate, previousYear]);
+    const [itemsPrevYTD] = await db.execute(`
+      SELECT COALESCE(SUM(si.quantity), 0) as totalItems
       FROM sales s
       LEFT JOIN sale_items si ON s.id = si.sale_id
       WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
     `, [prevYtdStartDate, prevYtdEndDate, previousYear]);
 
-    // Get previous year MTD sales
+    // Previous year MTD
     const [previousMTD] = await db.execute(`
-      SELECT 
-        COUNT(DISTINCT s.id) as totalTransactions,
-        COALESCE(SUM(s.total_amount), 0) as totalSales,
-        COALESCE(SUM(si.quantity), 0) as totalItems,
-        COALESCE(SUM(s.total_cost), 0) as totalCost
+      SELECT COUNT(*) as totalTransactions,
+             COALESCE(SUM(total_amount), 0) as totalSales,
+             COALESCE(SUM(total_cost), 0) as totalCost
+      FROM sales
+      WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ?
+    `, [prevMtdStartDate, prevMtdEndDate, previousYear]);
+    const [itemsPrevMTD] = await db.execute(`
+      SELECT COALESCE(SUM(si.quantity), 0) as totalItems
       FROM sales s
       LEFT JOIN sale_items si ON s.id = si.sale_id
       WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
     `, [prevMtdStartDate, prevMtdEndDate, previousYear]);
+
+    // Populate actual response with correct item totals
+    const fixedYtdCurrent = {
+      totalTransactions: Number(currentYTD[0].totalTransactions),
+      totalSales: Number(currentYTD[0].totalSales),
+      totalItems: Number(itemsYTD[0].totalItems),
+      totalCost: Number(currentYTD[0].totalCost),
+    };
+    const fixedMtdCurrent = {
+      totalTransactions: Number(currentMTD[0].totalTransactions),
+      totalSales: Number(currentMTD[0].totalSales),
+      totalItems: Number(itemsMTD[0].totalItems),
+      totalCost: Number(currentMTD[0].totalCost),
+    };
+    const fixedYtdPrevious = {
+      totalTransactions: Number(previousYTD[0].totalTransactions),
+      totalSales: Number(previousYTD[0].totalSales),
+      totalItems: Number(itemsPrevYTD[0].totalItems),
+      totalCost: Number(previousYTD[0].totalCost),
+    };
+    const fixedMtdPrevious = {
+      totalTransactions: Number(previousMTD[0].totalTransactions),
+      totalSales: Number(previousMTD[0].totalSales),
+      totalItems: Number(itemsPrevMTD[0].totalItems),
+      totalCost: Number(previousMTD[0].totalCost),
+    };
 
     // Debug: Print all sales being summed for YTD
     const [debugSalesYTD] = await db.execute(
@@ -910,18 +948,8 @@ const getYTDMTDComparison = async (req, res) => {
         currentYear,
         previousYear,
         ytd: {
-          current: {
-            totalTransactions: Number(currentYTD[0].totalTransactions),
-            totalSales: Number(currentYTD[0].totalSales),
-            totalItems: Number(currentYTD[0].totalItems),
-            totalCost: Number(currentYTD[0].totalCost)
-          },
-          previous: {
-            totalTransactions: Number(previousYTD[0].totalTransactions),
-            totalSales: Number(previousYTD[0].totalSales),
-            totalItems: Number(previousYTD[0].totalItems),
-            totalCost: Number(previousYTD[0].totalCost)
-          },
+          current: fixedYtdCurrent,
+          previous: fixedYtdPrevious,
           growth: {
             revenue: Math.round(ytdRevenueGrowth * 100) / 100,
             transactions: Math.round(ytdTransactionGrowth * 100) / 100,
@@ -929,18 +957,8 @@ const getYTDMTDComparison = async (req, res) => {
           }
         },
         mtd: {
-          current: {
-            totalTransactions: Number(currentMTD[0].totalTransactions),
-            totalSales: Number(currentMTD[0].totalSales),
-            totalItems: Number(currentMTD[0].totalItems),
-            totalCost: Number(currentMTD[0].totalCost)
-          },
-          previous: {
-            totalTransactions: Number(previousMTD[0].totalTransactions),
-            totalSales: Number(previousMTD[0].totalSales),
-            totalItems: Number(previousMTD[0].totalItems),
-            totalCost: Number(previousMTD[0].totalCost)
-          },
+          current: fixedMtdCurrent,
+          previous: fixedMtdPrevious,
           growth: {
             revenue: Math.round(mtdRevenueGrowth * 100) / 100,
             transactions: Math.round(mtdTransactionGrowth * 100) / 100,
@@ -963,6 +981,21 @@ router.get('/analytics/:date', getSalesAnalytics);
 router.get('/monthly/:month', getMonthlySales);
 router.get('/analytics/monthly/:month/:year', getMonthlySalesAnalytics);
 router.get('/ytd-mtd/:year', getYTDMTDComparison);
+router.get('/summary-accurate/:month', async (req, res) => {
+  try {
+    const { month } = req.params; // YYYY-MM
+    if (!/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ success: false, error: 'Invalid month format' });
+    }
+    const [rows] = await db.execute(
+      `SELECT COUNT(*) as totalTransactions, COALESCE(SUM(total_amount), 0) as totalSales FROM sales WHERE YEAR(sale_date) = ? AND MONTH(sale_date) = ?`,
+      [month.slice(0, 4), month.slice(5, 7)]
+    );
+    res.json({ success: true, ...rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 router.get('/:date', getSalesByDate);
 
 module.exports = { router, recordSale, getSalesSummary, getSalesByDate, getSalesAnalytics, getMonthlySales, getMonthlySalesAnalytics, getYTDMTDComparison };

@@ -114,6 +114,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
   const [error, setError] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
   const [comparisonYear, setComparisonYear] = useState(new Date().getFullYear() - 1); // Previous year
+  const [summaryAccurate, setSummaryAccurate] = useState<{ totalTransactions: number, totalSales: number } | null>(null);
 
   useEffect(() => {
     const fetchSales = async () => {
@@ -215,9 +216,31 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
       }
     };
 
+    const fetchSummaryAccurate = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) throw new Error('No authentication token found');
+        const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/summary-accurate/${selectedMonth}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+          setSummaryAccurate({
+            totalTransactions: data.totalTransactions,
+            totalSales: Number(data.totalSales || 0)
+          });
+        } else {
+          setSummaryAccurate(null);
+        }
+      } catch (e) {
+        setSummaryAccurate(null);
+      }
+    };
+
     fetchSales();
     fetchAnalytics();
     fetchYTDMTD();
+    fetchSummaryAccurate();
   }, [selectedMonth, comparisonYear]);
 
   // Reset admin date back to today when leaving Admin Sales page
@@ -246,8 +269,9 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
     }
   };
 
-  const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0);
-  const totalTransactions = sales.length;
+  // Replace front-end calculated revenue & transactions by summaryAccurate if available
+  const totalRevenue = summaryAccurate ? summaryAccurate.totalSales : sales.reduce((sum, sale) => sum + sale.total, 0);
+  const totalTransactions = summaryAccurate ? summaryAccurate.totalTransactions : sales.length;
   const totalItems = sales.reduce((sum, sale) => sum + sale.quantity, 0);
   const averageOrderValue = totalTransactions ? totalRevenue / totalTransactions : 0;
   
