@@ -6,6 +6,24 @@ const pdf = require('pdf-parse');
 class CreditNoteParser {
   constructor() {
     this.supportedFormats = ['pdf', 'txt'];
+    // Debug log file to trace parsing decisions (best-effort)
+    try {
+      const debugDir = path.join(__dirname, '../Uploads/CreditNotes');
+      if (!fs.existsSync(debugDir)) fs.mkdirSync(debugDir, { recursive: true });
+      this.debugFile = path.join(debugDir, 'debugtext.txt');
+    } catch (_) {
+      this.debugFile = null;
+    }
+  }
+
+  logDebug(message) {
+    try {
+      if (!this.debugFile) return;
+      const line = `[${new Date().toISOString()}] ${message}\n`;
+      fs.appendFileSync(this.debugFile, line);
+    } catch (_) {
+      // ignore logging failures
+    }
   }
 
   /**
@@ -25,6 +43,12 @@ class CreditNoteParser {
         console.log(`${index + 1}: ${line}`);
       });
       console.log('=== END DEBUG ===');
+      // Reset debug file and write preface
+      try {
+        if (this.debugFile) fs.writeFileSync(this.debugFile, 'Credit Note Parsing Debug\n');
+        this.logDebug(`Total lines: ${lines.length}`);
+        lines.slice(0, 20).forEach((line, idx) => this.logDebug(`L${idx + 1}: ${line}`));
+      } catch (_) {}
       
       // Split into multiple credit notes if present
       const creditNotes = this.splitIntoMultipleCreditNotes(lines);
@@ -431,6 +455,7 @@ class CreditNoteParser {
     // Get the main credit note date (fallback for all items)
     const mainDate = this.extractDate(lines);
     console.log(`Main credit note date: ${mainDate}`);
+    this.logDebug(`Main credit note date: ${mainDate}`);
     
     // First pass: collect all item-specific dates (if any)
     for (let i = 0; i < lines.length; i++) {
@@ -441,6 +466,7 @@ class CreditNoteParser {
         const date = this.formatDate(dateMatch[1]);
         itemDates.set(itemIndex, date);
         console.log(`Found item-specific date for item ${itemIndex}: ${date}`);
+        this.logDebug(`Item ${itemIndex} date -> ${date}`);
       }
     }
     
@@ -512,6 +538,7 @@ class CreditNoteParser {
           const parsedItem = this.parseSingleLineItem(line, itemDates, mainDate);
           if (parsedItem) {
             console.log(`✓ Parsed item: ${parsedItem.itemCode} - ${parsedItem.description} - Qty: ${parsedItem.quantity} - RTD: ${parsedItem.rtd} - Return Date: ${parsedItem.returnDate}`);
+            this.logDebug(`ITEM ${parsedItem.sl} ${parsedItem.itemCode} -> ${parsedItem.description} | Qty ${parsedItem.quantity} | RTD ${parsedItem.rtd} | ReturnDate ${parsedItem.returnDate}`);
             items.push(parsedItem);
           }
         } catch (error) {
