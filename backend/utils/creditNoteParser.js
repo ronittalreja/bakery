@@ -449,6 +449,7 @@ class CreditNoteParser {
     const items = [];
     let inItemsSection = false;
     const itemDates = new Map(); // Store dates by item index
+    let currentReturnDate = null; // Tracks the latest encountered return date within items
     
     console.log('=== ITEMS EXTRACTION DEBUG ===');
     
@@ -484,6 +485,8 @@ class CreditNoteParser {
       if (dateMatch) {
         const currentDate = this.formatDate(dateMatch[1]);
         console.log(`Found date line: ${line} -> ${currentDate}`);
+        // Also update rolling currentReturnDate for subsequent items
+        currentReturnDate = currentDate;
         
         // Look for the next item line after this date line
         for (let j = i + 1; j < lines.length; j++) {
@@ -524,6 +527,16 @@ class CreditNoteParser {
         break;
       }
       
+      // If we encounter a standalone date line while inside the items section, update currentReturnDate
+      if (inItemsSection) {
+        const standaloneDateMatch = line.match(/Date\s*:\s*(\d{1,2}\/\d{1,2}\/\d{4})/);
+        if (standaloneDateMatch && !/^\d+/.test(line)) {
+          currentReturnDate = this.formatDate(standaloneDateMatch[1]);
+          console.log(`Updated currentReturnDate within items to ${currentReturnDate} from line: ${line}`);
+          continue; // Move to next line; this line is just a date marker
+        }
+      }
+
       if (inItemsSection) {
         // Check if this line starts with a digit (serial number) - this is the start of an item
         if (!/^\d+/.test(line)) {
@@ -535,7 +548,7 @@ class CreditNoteParser {
         
         try {
           // Parse single-line item format
-          const parsedItem = this.parseSingleLineItem(line, itemDates, mainDate);
+          const parsedItem = this.parseSingleLineItem(line, itemDates, mainDate, currentReturnDate);
           if (parsedItem) {
             console.log(`✓ Parsed item: ${parsedItem.itemCode} - ${parsedItem.description} - Qty: ${parsedItem.quantity} - RTD: ${parsedItem.rtd} - Return Date: ${parsedItem.returnDate}`);
             this.logDebug(`ITEM ${parsedItem.sl} ${parsedItem.itemCode} -> ${parsedItem.description} | Qty ${parsedItem.quantity} | RTD ${parsedItem.rtd} | ReturnDate ${parsedItem.returnDate}`);
@@ -560,7 +573,7 @@ class CreditNoteParser {
    * @param {Map} itemDates - Map of item indices to dates
    * @returns {Object|null} Parsed item object or null if parsing fails
    */
-  parseSingleLineItem(line, itemDates, mainDate = null) {
+  parseSingleLineItem(line, itemDates, mainDate = null, currentReturnDate = null) {
     console.log(`Parsing single-line item: ${line}`);
     
     // Extract serial number (starts with digit)
@@ -572,8 +585,8 @@ class CreditNoteParser {
     const sl = parseInt(slMatch[1]);
     console.log(`Serial: ${sl}`);
     
-    // Get the date for this item (use item-specific date if available, otherwise main date)
-    const returnDate = itemDates.get(sl) || mainDate || null;
+    // Get the date for this item (prefer rolling currentReturnDate, then item-specific, then main)
+    const returnDate = currentReturnDate || itemDates.get(sl) || mainDate || null;
     console.log(`Return Date: ${returnDate}`);
     
     // Extract item code (5 characters after serial, no space)
