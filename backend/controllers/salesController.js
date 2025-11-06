@@ -24,8 +24,15 @@ const recordSale = async (req, res) => {
     } = req.body;
     const staffId = req.user?.id || 0;
 
-    // Validate required fields
-    if (!saleDate || !items || !Array.isArray(items) || items.length === 0 || !paymentType || !totalAmount) {
+    // Validate required fields (allow totalAmount = 0)
+    const amountNum = Number(totalAmount);
+    if (
+      !saleDate ||
+      !Array.isArray(items) ||
+      items.length === 0 ||
+      !paymentType ||
+      !Number.isFinite(amountNum)
+    ) {
       await connection.rollback();
       return res.status(400).json({ success: false, error: 'Missing required fields' });
     }
