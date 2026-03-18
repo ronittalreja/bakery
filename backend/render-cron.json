@@ -1,0 +1,20 @@
+{
+  "services": {
+    "email-cron": {
+      "type": "cron",
+      "schedule": "*/5 * * * *",
+      "name": "monginis-email-processor",
+      "env": "node",
+      "buildCommand": "npm install",
+      "startCommand": "node emailCronScheduler.js",
+      "healthCheckPath": "/health",
+      "envVars": {
+        "GMAIL_EMAIL": "@gmail-email",
+        "GMAIL_APP_PASSWORD": "@gmail-app-password",
+        "BACKEND_URL": "@backend-url",
+        "API_TOKEN": "@api-token",
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}

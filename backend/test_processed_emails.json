@@ -1,0 +1,12 @@
+{
+  "<CAAqxo7q-t8SaERXe3tocG8CAVe0noczoRtcGC_0kV86+fwaEzQ@mail.gmail.com>": {
+    "type": "crdr",
+    "status": "test-success",
+    "processedAt": "2026-03-18T20:59:23.361Z"
+  },
+  "<CAAqxo7rWJ8+XcF4HHfjC-pf0Aa97Wqk8QBErAPoXMFDQw+G+JQ@mail.gmail.com>": {
+    "type": "invoice",
+    "status": "test-success",
+    "processedAt": "2026-03-18T20:59:24.913Z"
+  }
+}
