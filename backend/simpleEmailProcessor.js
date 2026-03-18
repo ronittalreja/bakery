@@ -70,6 +70,57 @@ class SimpleEmailProcessor {
     return 'unknown';
   }
 
+  async uploadToBackend(emailData, attachments) {
+    try {
+      const FormData = require('form-data');
+      const axios = require('axios');
+      const formData = new FormData();
+      
+      // Add email metadata
+      formData.append('subject', emailData.subject);
+      formData.append('from', emailData.from);
+      formData.append('date', emailData.date);
+      formData.append('messageId', emailData.messageId);
+      
+      // Add attachments if any
+      if (attachments && attachments.length > 0) {
+        attachments.forEach((attachment, index) => {
+          formData.append(`file`, attachment.content, attachment.filename);
+        });
+      }
+
+      let endpoint;
+      switch (emailData.type) {
+        case 'invoice':
+          endpoint = '/api/invoices/upload';
+          break;
+        case 'crdr':
+          endpoint = '/api/credit-notes/upload';
+          break;
+        case 'rosreceipt':
+          endpoint = '/api/ros-receipts/upload';
+          break;
+        default:
+          throw new Error(`Unknown email type: ${emailData.type}`);
+      }
+
+      const response = await axios.post(`${this.backendUrl}${endpoint}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${process.env.API_TOKEN}`
+        },
+        timeout: 30000
+      });
+
+      console.log(`✅ Successfully uploaded ${emailData.type} email: ${emailData.subject}`);
+      return response.data;
+
+    } catch (error) {
+      console.error(`❌ Failed to upload ${emailData.type} email:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
   async processEmailStructure(msg, seqno) {
     return new Promise((resolve, reject) => {
       let buffer = Buffer.alloc(0);
@@ -146,9 +197,15 @@ class SimpleEmailProcessor {
         return;
       }
 
-      // Production mode would upload to backend here
-      console.log(`✅ Would upload ${emailType} to backend`);
-      this.markEmailAsProcessed(messageId, emailType, 'success');
+      // Production mode - upload to backend
+      try {
+        await this.uploadToBackend(emailData, attachments);
+        console.log(`✅ Successfully uploaded ${emailType} to backend`);
+        this.markEmailAsProcessed(messageId, emailType, 'success');
+      } catch (error) {
+        console.error(`❌ Failed to upload ${emailType}:`, error);
+        this.markEmailAsProcessed(messageId, emailType, 'upload-failed');
+      }
 
     } catch (error) {
       console.error(`❌ Error processing email:`, error);
