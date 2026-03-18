@@ -1,0 +1,29 @@
+name: Email Processor
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: |
+          cd backend
+          npm install
+      - name: Run email processor
+        run: |
+          cd backend
+          node simpleEmailProcessor.js --test
+        env:
+          GMAIL_EMAIL: ${{ secrets.GMAIL_EMAIL }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          TEST_SENDER_EMAIL: talrejaronit16@gmail.com
