@@ -26,4 +26,4 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
-          TEST_SENDER_EMAIL: talrejaronit16@gmail.com
+          TEST_SENDER_EMAIL: receipt5@mongini.in
