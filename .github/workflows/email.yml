@@ -20,7 +20,7 @@ jobs:
       - name: Run email processor
         run: |
           cd backend
-          node simpleEmailProcessor.js --test
+          node simpleEmailProcessor.js
         env:
           GMAIL_EMAIL: ${{ secrets.GMAIL_EMAIL }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
