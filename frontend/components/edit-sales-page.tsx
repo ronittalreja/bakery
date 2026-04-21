@@ -123,7 +123,7 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
         mrp: Number(p.sale_price || 0),
         invoicePrice: Number(p.invoice_price || 0),
         icon: "default",
-        stock: Number(p.available_quantity || 0),
+        stock: Number(p.quantity || 0),
         batchId: String(p.id),
         imageUrl: p.image_url || "/placeholder.svg",
         category: p.category || undefined,

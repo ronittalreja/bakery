@@ -7,7 +7,8 @@ const getStock = async (req, res) => {
     const { date } = req.query;
     const targetDate = date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
 
-    // Fetch all stock available on the target date (including items expiring on that date)
+    // For historical sales, we need to show all stock that existed on the target date
+    // This includes items that were available even if they expired on that date
     const [rows] = await db.execute(
       `SELECT 
         sb.id,
@@ -26,7 +27,7 @@ const getStock = async (req, res) => {
         sb.quantity AS available_quantity
       FROM stock_batches sb
       JOIN products p ON sb.product_id = p.id
-      WHERE sb.expiry_date >= ? AND p.is_active = 1
+      WHERE sb.invoice_date <= ? AND p.is_active = 1
       HAVING available_quantity > 0
       ORDER BY p.name`,
       [targetDate]
