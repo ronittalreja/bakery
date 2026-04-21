@@ -43,7 +43,7 @@ interface EditSalesPageProps {
   onBack: () => void;
 }
 
-export function EditSalesPage({ onBack }: EditSalesPageProps) {
+export function AddSalesPage({ onBack }: EditSalesPageProps) {
   const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [addonProducts, setAddonProducts] = useState<Product[]>([]);
@@ -65,6 +65,36 @@ export function EditSalesPage({ onBack }: EditSalesPageProps) {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showCategoryMenu, setShowCategoryMenu] = useState<boolean>(false);
   const [mobileView, setMobileView] = useState<'products' | 'cart'>('products');
+
+  // Convert 24hr time to 12hr format for display
+  const formatTime12Hour = (time24: string) => {
+    const [hours, minutes] = time24.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
+  };
+
+  // Convert 12hr time to 24hr format for storage
+  const formatTime24Hour = (time12: string) => {
+    const [time, ampm] = time12.split(' ');
+    if (!ampm) return time12; // Already in 24hr format
+    const [hours, minutes] = time.split(':');
+    let hour = parseInt(hours);
+    if (ampm === 'PM' && hour !== 12) hour += 12;
+    if (ampm === 'AM' && hour === 12) hour = 0;
+    return `${hour.toString().padStart(2, '0')}:${minutes}`;
+  };
+
+  // Format expiry date to DD-MM-YYYY
+  const formatExpiryDate = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
 
   // Get max date (today)
   const maxDate = new Date().toISOString().split('T')[0];
@@ -124,8 +154,18 @@ export function EditSalesPage({ onBack }: EditSalesPageProps) {
           expiryDate: p.expiry_date || undefined,
         }));
         
-        // Combine available stock with expired items
-        setProducts([...mappedProducts, ...expiredProducts]);
+        // Combine available stock with expired items, but remove duplicates
+        const combinedProducts = [...mappedProducts];
+        
+        // Add expired items only if not already in combined products
+        expiredProducts.forEach((expiredProduct: Product) => {
+          const exists = combinedProducts.find(p => p.id === expiredProduct.id);
+          if (!exists) {
+            combinedProducts.push(expiredProduct);
+          }
+        });
+        
+        setProducts(combinedProducts);
       }
     } catch (err: any) {
       console.error("Error fetching products:", err);
@@ -355,7 +395,7 @@ export function EditSalesPage({ onBack }: EditSalesPageProps) {
                 Back
               </Button>
               <div>
-                <h1 className="text-xl font-bold text-slate-900">Edit Sales</h1>
+                <h1 className="text-xl font-bold text-slate-900">Add Sales</h1>
                 <p className="text-sm text-slate-600">Add historical sales</p>
               </div>
             </div>
@@ -372,7 +412,7 @@ export function EditSalesPage({ onBack }: EditSalesPageProps) {
               Select Date & Time
             </CardTitle>
             <CardDescription>
-              Choose the date and time for the historical sale
+              Choose date and time for historical sale
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -389,12 +429,13 @@ export function EditSalesPage({ onBack }: EditSalesPageProps) {
                 />
               </div>
               <div>
-                <Label htmlFor="sale-time">Time</Label>
+                <Label htmlFor="sale-time">Time (12-hour)</Label>
                 <Input
                   id="sale-time"
-                  type="time"
-                  value={selectedTime}
-                  onChange={(e) => setSelectedTime(e.target.value)}
+                  type="text"
+                  value={formatTime12Hour(selectedTime)}
+                  onChange={(e) => setSelectedTime(formatTime24Hour(e.target.value))}
+                  placeholder="2:30 PM"
                   className="mt-1"
                 />
               </div>
@@ -456,7 +497,7 @@ export function EditSalesPage({ onBack }: EditSalesPageProps) {
                               <p className="text-sm text-slate-600">₹{product.mrp.toFixed(2)}</p>
                               {product.expiryDate && (
                                 <p className="text-xs text-amber-600">
-                                  Expires: {new Date(product.expiryDate).toLocaleDateString()}
+                                  Expires: {formatExpiryDate(product.expiryDate)}
                                 </p>
                               )}
                             </div>

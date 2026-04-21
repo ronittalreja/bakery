@@ -31,7 +31,7 @@ import { ManageDecorationsPage } from "@/components/manage-decorations-page";
 import { AdminStockManagementPage } from "@/components/admin-stock-management-page";
 import { ExpensesTrackingPage } from "@/components/expenses-tracking-page";
 import { PaymentsPage } from "@/components/payments-page";
-import { EditSalesPage } from "@/components/edit-sales-page";
+import { AddSalesPage } from "@/components/edit-sales-page";
 
 type AdminPage =
   | "dashboard"
@@ -161,7 +161,7 @@ export function AdminDashboard() {
                       <Edit3 className="h-6 w-6 text-white" />
                     </div>
                     <h3 className="text-sm font-medium text-slate-900 leading-tight">
-                      Edit Sales
+                      Add Sales
                     </h3>
                   </div>
                 </div>
@@ -176,7 +176,7 @@ export function AdminDashboard() {
       case "manage-stock":
         return <AdminStockManagementPage onBack={() => setCurrentPage("admin")} />;
       case "edit-sales":
-        return <EditSalesPage onBack={() => setCurrentPage("admin")} />;
+        return <AddSalesPage onBack={() => setCurrentPage("admin")} />;
       case "expenses":
         return <ExpensesTrackingPage onBack={() => setCurrentPage("dashboard")} />;
       case "insights":
