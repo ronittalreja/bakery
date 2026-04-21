@@ -20,7 +20,8 @@ const recordSale = async (req, res) => {
       decorationMRPTotal = 0,
       productCostTotal = 0,
       decorationCostTotal = 0,
-      totalCost = 0
+      totalCost = 0,
+      isHistorical = false
     } = req.body;
     const staffId = req.user?.id || 0;
 
@@ -80,8 +81,10 @@ const recordSale = async (req, res) => {
       // Handle regular product items
       // If batchId provided, validate availability in that batch only
       if (item.batchId) {
+      // For historical sales, allow expired items; for regular sales, only allow unexpired
+      const expiryCondition = isHistorical ? 'expiry_date >= ?' : 'expiry_date > ?';
       const [batchRows] = await connection.execute(
-          'SELECT id, quantity, expiry_date FROM stock_batches WHERE id = ? AND product_id = ? AND expiry_date > ?',
+          `SELECT id, quantity, expiry_date FROM stock_batches WHERE id = ? AND product_id = ? AND ${expiryCondition}`,
           [item.batchId, item.productId, referenceDate]
         );
         if (!batchRows.length || Number(batchRows[0].quantity) < Number(item.quantity)) {
@@ -108,11 +111,13 @@ const recordSale = async (req, res) => {
         continue;
       }
 
-      // No batchId: allocate across unexpired batches by earliest expiry (FEFO)
+      // No batchId: allocate across batches by earliest expiry (FEFO)
+      // For historical sales, include expired items; for regular sales, only include unexpired
+      const expiryCondition = isHistorical ? 'expiry_date >= ?' : 'expiry_date > ?';
       const [batches] = await connection.execute(
         `SELECT id, quantity, expiry_date 
          FROM stock_batches 
-         WHERE product_id = ? AND quantity > 0 AND expiry_date > ?
+         WHERE product_id = ? AND quantity > 0 AND ${expiryCondition}
          ORDER BY expiry_date ASC, invoice_date ASC, id ASC`,
         [item.productId, referenceDate]
       );
@@ -120,7 +125,8 @@ const recordSale = async (req, res) => {
       let remaining = Number(item.quantity);
       if (!batches.length) {
         await connection.rollback();
-        return res.status(400).json({ success: false, error: `No unexpired stock available for product ${item.name || item.productId}` });
+        const stockType = isHistorical ? 'stock' : 'unexpired stock';
+        return res.status(400).json({ success: false, error: `No ${stockType} available for product ${item.name || item.productId}` });
       }
 
       const unitPrice = Number(item.unitPrice);
@@ -152,7 +158,11 @@ const recordSale = async (req, res) => {
     }
 
     // Create sale record with cost tracking - use MySQL compatible datetime format
-    const currentDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    // For historical sales, use the provided saleDate; for regular sales, use current time
+    const saleDateTime = isHistorical 
+      ? new Date(saleDate).toISOString().slice(0, 19).replace('T', ' ')
+      : new Date().toISOString().slice(0, 19).replace('T', ' ');
+    
     const [saleResult] = await connection.execute(
       `INSERT INTO sales (
         sale_date, 
@@ -166,7 +176,7 @@ const recordSale = async (req, res) => {
         total_cost
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        currentDateTime,
+        saleDateTime,
         totalAmount,
         paymentType,
         staffId,
@@ -207,6 +217,47 @@ const recordSale = async (req, res) => {
         'UPDATE decorations SET stock_quantity = stock_quantity - ? WHERE id = ? AND is_active = 1',
         [item.quantity, item.decorationId]
       );
+    }
+
+    // Handle returns adjustment for historical sales
+    if (isHistorical) {
+      for (const item of allocatedItems) {
+        // Check if this item exists in returns for the same date
+        const saleDate = new Date(saleDateTime).toISOString().split('T')[0];
+        const [returnRows] = await connection.execute(
+          `SELECT id, quantity FROM returns 
+           WHERE product_id = ? AND return_date = ? AND type IN ('GRM', 'GVN')
+           ORDER BY id ASC`,
+          [item.productId, saleDate]
+        );
+
+        if (returnRows.length > 0) {
+          // Reduce the return quantity
+          let remainingQuantity = item.quantity;
+          for (const returnRow of returnRows) {
+            if (remainingQuantity <= 0) break;
+            
+            const returnQuantity = Number(returnRow.quantity);
+            const reduction = Math.min(remainingQuantity, returnQuantity);
+            
+            if (reduction >= returnQuantity) {
+              // Remove the entire return record
+              await connection.execute(
+                'DELETE FROM returns WHERE id = ?',
+                [returnRow.id]
+              );
+            } else {
+              // Reduce the return quantity
+              await connection.execute(
+                'UPDATE returns SET quantity = quantity - ? WHERE id = ?',
+                [reduction, returnRow.id]
+              );
+            }
+            
+            remainingQuantity -= reduction;
+          }
+        }
+      }
     }
 
     await connection.commit();

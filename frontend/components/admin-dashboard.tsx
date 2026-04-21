@@ -21,6 +21,7 @@ import {
   Calendar,
   Users,
   CreditCard,
+  Edit3,
 } from "lucide-react";
 import { AdminSalesPage } from "@/components/admin-sales-page";
 import { ManageProductsPage } from "@/components/manage-products-page";
@@ -30,6 +31,7 @@ import { ManageDecorationsPage } from "@/components/manage-decorations-page";
 import { AdminStockManagementPage } from "@/components/admin-stock-management-page";
 import { ExpensesTrackingPage } from "@/components/expenses-tracking-page";
 import { PaymentsPage } from "@/components/payments-page";
+import { EditSalesPage } from "@/components/edit-sales-page";
 
 type AdminPage =
   | "dashboard"
@@ -38,6 +40,7 @@ type AdminPage =
   | "manage-products"
   | "manage-decorations"
   | "manage-stock"
+  | "edit-sales"
   | "expenses"
   | "insights"
   | "returns-summary"
@@ -148,6 +151,21 @@ export function AdminDashboard() {
                   </div>
                 </div>
               </div>
+              <div
+                onClick={() => setCurrentPage("edit-sales")}
+                className="group cursor-pointer"
+              >
+                <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-orange-200 flex items-center justify-center">
+                      <Edit3 className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                      Edit Sales
+                    </h3>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -157,6 +175,8 @@ export function AdminDashboard() {
         return <ManageDecorationsPage onBack={() => setCurrentPage("admin")} />;
       case "manage-stock":
         return <AdminStockManagementPage onBack={() => setCurrentPage("admin")} />;
+      case "edit-sales":
+        return <EditSalesPage onBack={() => setCurrentPage("admin")} />;
       case "expenses":
         return <ExpensesTrackingPage onBack={() => setCurrentPage("dashboard")} />;
       case "insights":

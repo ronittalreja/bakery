@@ -15,5 +15,6 @@ router.get('/processed-for-credit-note', returnsController.getProcessedReturnsFo
 router.put('/update-credit-status', returnsController.updateCreditStatus);
 router.post('/process-credit-note', returnsController.processCreditNote);
 router.get('/pending', returnsController.getPendingReturns);
+router.get('/', returnsController.getReturnsByDate);
 
 module.exports = router;

@@ -1014,6 +1014,65 @@ const getPendingReturns = async (req, res) => {
   }
 };
 
+// Get returns for a specific date (for historical sales editing)
+const getReturnsByDate = async (req, res) => {
+  try {
+    const { date } = req.query;
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ success: false, error: 'Invalid date format. Use YYYY-MM-DD' });
+    }
+
+    const [rows] = await db.execute(
+      `SELECT 
+        r.id,
+        r.product_id,
+        r.quantity,
+        r.invoice_price,
+        r.return_date,
+        r.type,
+        p.name,
+        p.item_code,
+        p.category,
+        p.shelf_life_days,
+        p.image_url,
+        sb.id as batch_id,
+        sb.expiry_date
+       FROM returns r
+       JOIN products p ON r.product_id = p.id
+       LEFT JOIN stock_batches sb ON r.batch_id = sb.id
+       WHERE r.return_date = ? AND r.type IN ('GRM', 'GVN')
+       ORDER BY r.id ASC`,
+      [date]
+    );
+
+    res.json({
+      success: true,
+      data: rows.map(row => ({
+        id: row.id,
+        product_id: row.product_id,
+        quantity: Number(row.quantity),
+        invoice_price: Number(row.invoice_price),
+        return_date: row.return_date,
+        type: row.type,
+        name: row.name,
+        item_code: row.item_code,
+        category: row.category,
+        shelf_life_days: row.shelf_life_days,
+        image_url: row.image_url,
+        batch_id: row.batch_id,
+        expiry_date: row.expiry_date
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error fetching returns by date:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch returns' 
+    });
+  }
+};
+
 module.exports = {
   getGrmReturns,
   processGrmReturn,
@@ -1027,4 +1086,5 @@ module.exports = {
   updateCreditStatus,
   processCreditNote,
   getPendingReturns,
+  getReturnsByDate,
 };
