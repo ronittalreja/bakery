@@ -81,18 +81,32 @@ const recordSale = async (req, res) => {
       // Handle regular product items
       // If batchId provided, validate availability in that batch only
       if (item.batchId) {
-      // For historical sales, check if stock existed on that date; for regular sales, only allow unexpired
-      const dateCondition = isHistorical ? 'invoice_date <= ?' : 'expiry_date > ?';
-      const [batchRows] = await connection.execute(
-          `SELECT id, quantity, expiry_date FROM stock_batches WHERE id = ? AND product_id = ? AND ${dateCondition}`,
-          [item.batchId, item.productId, referenceDate]
-        );
-        if (!batchRows.length || Number(batchRows[0].quantity) < Number(item.quantity)) {
-          await connection.rollback();
-          return res.status(400).json({ 
-            success: false, 
-            error: `Insufficient stock for product ${item.name || item.productId} in selected batch. Available: ${batchRows[0]?.quantity || 0}, Requested: ${item.quantity}` 
-          });
+        // For historical sales, skip stock validation since we're recording past sales
+        if (!isHistorical) {
+          const [batchRows] = await connection.execute(
+            `SELECT id, quantity, expiry_date FROM stock_batches WHERE id = ? AND product_id = ? AND expiry_date > ?`,
+            [item.batchId, item.productId, referenceDate]
+          );
+          if (!batchRows.length || Number(batchRows[0].quantity) < Number(item.quantity)) {
+            await connection.rollback();
+            return res.status(400).json({ 
+              success: false, 
+              error: `Insufficient stock for product ${item.name || item.productId} in selected batch. Available: ${batchRows[0]?.quantity || 0}, Requested: ${item.quantity}` 
+            });
+          }
+        } else {
+          // For historical sales, just verify the batch exists
+          const [batchRows] = await connection.execute(
+            `SELECT id, quantity, expiry_date FROM stock_batches WHERE id = ? AND product_id = ?`,
+            [item.batchId, item.productId]
+          );
+          if (!batchRows.length) {
+            await connection.rollback();
+            return res.status(400).json({ 
+              success: false, 
+              error: `Batch ${item.batchId} not found for product ${item.name || item.productId}` 
+            });
+          }
         }
         const unitPrice = Number(item.unitPrice);
         const totalPrice = Number(item.totalPrice ?? unitPrice * Number(item.quantity));
@@ -112,51 +126,81 @@ const recordSale = async (req, res) => {
       }
 
       // No batchId: allocate across batches by earliest expiry (FEFO)
-      // For historical sales, include all stock that existed on that date; for regular sales, only include unexpired
-      const dateCondition = isHistorical ? 'invoice_date <= ?' : 'expiry_date > ?';
-      const orderClause = isHistorical ? 'expiry_date ASC, invoice_date ASC, id ASC' : 'expiry_date ASC, invoice_date ASC, id ASC';
-      const [batches] = await connection.execute(
-        `SELECT id, quantity, expiry_date 
-         FROM stock_batches 
-         WHERE product_id = ? AND quantity > 0 AND ${dateCondition}
-         ORDER BY ${orderClause}`,
-        [item.productId, referenceDate]
-      );
-
-      let remaining = Number(item.quantity);
-      if (!batches.length) {
-        await connection.rollback();
-        const stockType = isHistorical ? 'stock' : 'unexpired stock';
-        return res.status(400).json({ success: false, error: `No ${stockType} available for product ${item.name || item.productId}` });
-      }
-
-      const unitPrice = Number(item.unitPrice);
-      if (!unitPrice || unitPrice <= 0) {
-        await connection.rollback();
-        return res.status(400).json({ success: false, error: 'unitPrice is required when batchId is not specified' });
-      }
-
-      for (const batch of batches) {
-        if (remaining <= 0) break;
-        const available = Number(batch.quantity);
-        if (available <= 0) continue;
-        const useQty = Math.min(available, remaining);
+      if (isHistorical) {
+        // For historical sales, just find any batch for this product
+        const [batches] = await connection.execute(
+          `SELECT id, quantity, expiry_date 
+           FROM stock_batches 
+           WHERE product_id = ?
+           ORDER BY expiry_date ASC, invoice_date ASC, id ASC
+           LIMIT 1`,
+          [item.productId]
+        );
+        
+        if (!batches.length) {
+          await connection.rollback();
+          return res.status(400).json({ success: false, error: `No stock found for product ${item.name || item.productId}` });
+        }
+        
+        const batch = batches[0];
+        const unitPrice = Number(item.unitPrice);
+        const totalPrice = Number(item.totalPrice ?? unitPrice * Number(item.quantity));
+        if (!unitPrice || totalPrice <= 0) {
+          await connection.rollback();
+          return res.status(400).json({ success: false, error: 'Invalid pricing for item' });
+        }
         allocatedItems.push({
           productId: item.productId,
           batchId: batch.id,
-          quantity: useQty,
+          quantity: Number(item.quantity),
           unitPrice,
-          totalPrice: Number((unitPrice * useQty).toFixed(2)),
+          totalPrice,
           name: item.name || ''
         });
-        remaining -= useQty;
-      }
+        continue;
+      } else {
+        // Regular sales - use FEFO allocation
+        const [batches] = await connection.execute(
+          `SELECT id, quantity, expiry_date 
+           FROM stock_batches 
+           WHERE product_id = ? AND quantity > 0 AND expiry_date > ?
+           ORDER BY expiry_date ASC, invoice_date ASC, id ASC`,
+          [item.productId, referenceDate]
+        );
 
-      if (remaining > 0) {
-        await connection.rollback();
-        return res.status(400).json({ success: false, error: `Insufficient unexpired stock for product ${item.name || item.productId}. Missing: ${remaining}` });
+        let remaining = Number(item.quantity);
+        if (!batches.length) {
+          await connection.rollback();
+          return res.status(400).json({ success: false, error: `No unexpired stock available for product ${item.name || item.productId}` });
+        }
+
+        const unitPrice = Number(item.unitPrice);
+        if (!unitPrice || unitPrice <= 0) {
+          await connection.rollback();
+          return res.status(400).json({ success: false, error: 'unitPrice is required when batchId is not specified' });
+        }
+
+        for (const batch of batches) {
+          if (remaining <= 0) break;
+          const available = Number(batch.quantity);
+          if (available <= 0) continue;
+          const useQty = Math.min(available, remaining);
+          allocatedItems.push({
+            productId: item.productId,
+            batchId: batch.id,
+            quantity: useQty,
+            unitPrice,
+            totalPrice: Number((unitPrice * useQty).toFixed(2)),
+            name: item.name || ''
+          });
+          remaining -= useQty;
+        }
+
+        if (remaining > 0) {
+          await connection.rollback();
+          return res.status(400).json({ success: false, error: `Insufficient unexpired stock for product ${item.name || item.productId}. Missing: ${remaining}` });
+        }
       }
-    }
 
     // Create sale record with cost tracking - use MySQL compatible datetime format
     // For historical sales, use the provided saleDate; for regular sales, use current time
@@ -259,6 +303,7 @@ const recordSale = async (req, res) => {
           }
         }
       }
+    }
     }
 
     await connection.commit();
