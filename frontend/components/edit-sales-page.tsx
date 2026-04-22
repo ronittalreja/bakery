@@ -331,21 +331,26 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
         }),
       });
 
-      if (!response.success) {
-        throw new Error(response.error || "Failed to record sale");
+      const data = await response.json();
+      console.log("Sale response:", JSON.stringify(data, null, 2));
+      if (!response.success || !data.success) {
+        throw new Error(data.error || "Failed to record sale");
       }
 
       setSaleCompleted(true);
-      setCart([]);
-      setPaymentMethod("");
-      setDiscount(0);
-      
-      // Refresh products to update stock
-      fetchProducts(selectedDate);
+      setTimeout(() => {
+        setCart([]);
+        setPaymentMethod("");
+        setDiscount(0);
+        setSaleCompleted(false);
+        // Refresh products to update stock
+        fetchProducts(selectedDate);
+      }, 300);
       
     } catch (err: any) {
-      console.error("Error recording sale:", err);
+      console.error("Error recording sale:", err.message, err.stack);
       setError(err.message || "Failed to record sale");
+      setTimeout(() => setError(""), 5000);
     } finally {
       setIsProcessing(false);
     }
