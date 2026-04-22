@@ -333,7 +333,7 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
 
       const data = await response.json();
       console.log("Sale response:", JSON.stringify(data, null, 2));
-      if (!response.success || !data.success) {
+      if (!data.success) {
         throw new Error(data.error || "Failed to record sale");
       }
 
