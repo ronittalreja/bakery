@@ -126,7 +126,7 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
       }
       
       const mappedProducts = response.data.map((p: any) => ({
-        id: String(p.id),
+        id: String(p.product_id),
         name: p.name || "Unknown Product",
         mrp: Number(p.sale_price || 0),
         invoicePrice: Number(p.invoice_price || 0),
