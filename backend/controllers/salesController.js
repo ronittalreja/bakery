@@ -81,10 +81,10 @@ const recordSale = async (req, res) => {
       // Handle regular product items
       // If batchId provided, validate availability in that batch only
       if (item.batchId) {
-      // For historical sales, allow expired items; for regular sales, only allow unexpired
-      const expiryCondition = isHistorical ? 'expiry_date >= ?' : 'expiry_date > ?';
+      // For historical sales, check if stock existed on that date; for regular sales, only allow unexpired
+      const dateCondition = isHistorical ? 'invoice_date <= ?' : 'expiry_date > ?';
       const [batchRows] = await connection.execute(
-          `SELECT id, quantity, expiry_date FROM stock_batches WHERE id = ? AND product_id = ? AND ${expiryCondition}`,
+          `SELECT id, quantity, expiry_date FROM stock_batches WHERE id = ? AND product_id = ? AND ${dateCondition}`,
           [item.batchId, item.productId, referenceDate]
         );
         if (!batchRows.length || Number(batchRows[0].quantity) < Number(item.quantity)) {
@@ -112,13 +112,14 @@ const recordSale = async (req, res) => {
       }
 
       // No batchId: allocate across batches by earliest expiry (FEFO)
-      // For historical sales, include expired items; for regular sales, only include unexpired
-      const expiryCondition = isHistorical ? 'expiry_date >= ?' : 'expiry_date > ?';
+      // For historical sales, include all stock that existed on that date; for regular sales, only include unexpired
+      const dateCondition = isHistorical ? 'invoice_date <= ?' : 'expiry_date > ?';
+      const orderClause = isHistorical ? 'expiry_date ASC, invoice_date ASC, id ASC' : 'expiry_date ASC, invoice_date ASC, id ASC';
       const [batches] = await connection.execute(
         `SELECT id, quantity, expiry_date 
          FROM stock_batches 
-         WHERE product_id = ? AND quantity > 0 AND ${expiryCondition}
-         ORDER BY expiry_date ASC, invoice_date ASC, id ASC`,
+         WHERE product_id = ? AND quantity > 0 AND ${dateCondition}
+         ORDER BY ${orderClause}`,
         [item.productId, referenceDate]
       );
 

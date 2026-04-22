@@ -96,6 +96,14 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
     return `${day}-${month}-${year}`;
   };
 
+  const paymentMethods = [
+    { id: "cash", name: "Cash", icon: "Cash" },
+    { id: "hdfc", name: "HDFC", icon: "HDFC" },
+    { id: "gpay", name: "GPay", icon: "GPay" },
+    { id: "swiggy", name: "Swiggy", icon: "Swiggy" },
+    { id: "zomato", name: "Zomato", icon: "Zomato" },
+  ];
+
   // Get max date (today)
   const maxDate = new Date().toISOString().split('T')[0];
 
@@ -303,28 +311,25 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
         batchId: item.product.batchId
       }));
 
-      const response: any = await apiClient(
-        "/api/sales",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            saleDate: saleDateTime,
-            items,
-            paymentType: paymentMethod,
-            totalAmount: calculateTotal(),
-            productMRPTotal: calculateSubtotal(),
-            decorationMRPTotal: 0,
-            productCostTotal: cart.reduce((sum, item) => sum + (item.product.invoicePrice * item.quantity), 0),
-            decorationCostTotal: 0,
-            totalCost: cart.reduce((sum, item) => sum + (item.product.invoicePrice * item.quantity), 0),
-            isHistorical: true // Flag to indicate this is a historical sale
-          }),
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await apiClient("/api/sales", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          saleDate: saleDateTime,
+          items,
+          paymentType: paymentMethod,
+          totalAmount: calculateTotal(),
+          productMRPTotal: calculateSubtotal(),
+          decorationMRPTotal: 0,
+          productCostTotal: 0,
+          decorationCostTotal: 0,
+          totalCost: 0,
+          isHistorical: true,
+        }),
+      });
 
       if (!response.success) {
         throw new Error(response.error || "Failed to record sale");
@@ -622,19 +627,21 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
                     </div>
 
                     {/* Payment Method */}
-                    <div>
-                      <Label className="text-sm font-medium">Payment Method</Label>
-                      <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select payment method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="cash">Cash</SelectItem>
-                          <SelectItem value="card">Card</SelectItem>
-                          <SelectItem value="upi">UPI</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-slate-700">Payment Method</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {paymentMethods.map((method) => (
+                          <Button
+                            key={method.id}
+                            variant={paymentMethod === method.id ? "default" : "outline"}
+                            onClick={() => setPaymentMethod(method.id)}
+                            className="flex items-center gap-2 h-10"
+                          >
+                            <span className="text-sm">{method.icon}</span>
+                            <span className="text-sm">{method.name}</span>
+                          </Button>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Total */}
@@ -659,7 +666,7 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
                     <Button
                       onClick={handleSale}
                       disabled={isProcessing || cart.length === 0 || !paymentMethod}
-                      className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
+                      className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 rounded-lg transition-all duration-200"
                     >
                       {isProcessing ? (
                         <>
@@ -669,7 +676,7 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
                       ) : (
                         <>
                           <Check className="h-4 w-4 mr-2" />
-                          Record Historical Sale
+                          Complete Sale
                         </>
                       )}
                     </Button>
