@@ -311,11 +311,14 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
         batchId: item.product.batchId
       }));
 
-      const response = await apiClient("/api/sales", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
         },
         body: JSON.stringify({
           saleDate: saleDateTime,
@@ -333,7 +336,7 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
 
       const data = await response.json();
       console.log("Sale response:", JSON.stringify(data, null, 2));
-      if (!data.success) {
+      if (!response.ok || !data.success) {
         throw new Error(data.error || "Failed to record sale");
       }
 
