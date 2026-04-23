@@ -311,6 +311,21 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
         batchId: item.product.batchId
       }));
 
+      // Calculate decoration totals separately
+      let decorationMRPTotal = 0;
+      let decorationCostTotal = 0;
+      let totalCost = 0;
+      
+      cart.forEach(item => {
+        const isDecoration = decorations.find(d => d.id === item.product.id);
+        if (isDecoration) {
+          decorationMRPTotal += item.product.mrp * item.quantity;
+          decorationCostTotal += (item.product.invoicePrice || 0) * item.quantity;
+        } else {
+          totalCost += (item.product.invoicePrice || 0) * item.quantity;
+        }
+      });
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales`, {
         method: "POST",
         headers: {
@@ -326,10 +341,9 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
           paymentType: paymentMethod,
           totalAmount: calculateTotal(),
           productMRPTotal: calculateSubtotal(),
-          decorationMRPTotal: 0,
-          productCostTotal: 0,
-          decorationCostTotal: 0,
-          totalCost: 0,
+          decorationMRPTotal,
+          decorationCostTotal,
+          totalCost,
           isHistorical: true,
         }),
       });
@@ -563,6 +577,76 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
               </CardContent>
             </Card>
           </div>
+
+          {/* Decorations Section */}
+          {decorations.length > 0 && (
+            <Card className="bg-gradient-to-br from-white via-slate-50 to-slate-100 border border-slate-200 shadow-lg">
+              <CardContent className="p-4">
+                <div className="mb-3 font-semibold text-slate-800">Decorations</div>
+                <div className="grid grid-cols-2 gap-3">
+                  {decorations.map((product) => {
+                    const cartItem = cart.find(item => item.product.id === product.id);
+                    const IconComponent = iconMap[product.icon as keyof typeof iconMap] || iconMap.default;
+                    return (
+                      <Card key={product.id} className="group hover:shadow-lg transition-all duration-200 border border-slate-200 bg-white rounded-lg overflow-hidden">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+                              <IconComponent />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-medium text-slate-900 truncate">{product.name}</h3>
+                              <p className="text-sm text-slate-600">₹{product.mrp.toFixed(2)}</p>
+                            </div>
+                          </div>
+                          <Badge variant={product.stock > 0 ? "default" : "secondary"}>
+                            Stock: {product.stock}
+                          </Badge>
+                        </div>
+                        
+                        {cartItem ? (
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}
+                                disabled={cartItem.quantity <= 1}
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="w-8 text-center font-medium">{cartItem.quantity}</span>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}
+                                disabled={cartItem.quantity >= product.stock}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            <span className="text-sm font-medium text-slate-900">
+                              ₹{(product.mrp * cartItem.quantity).toFixed(2)}
+                            </span>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => addToCart(product)}
+                            disabled={product.stock <= 0}
+                            className="w-full"
+                          >
+                            <ShoppingCart className="h-3 w-3 mr-2" />
+                            Add to Cart
+                          </Button>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Cart Section */}
           <div className="lg:col-span-1">
