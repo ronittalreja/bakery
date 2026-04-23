@@ -237,7 +237,9 @@ const recordSale = async (req, res) => {
     );
     
     console.log('Sale result:', saleResult);
+    console.log('Sale result insertId:', saleResult.insertId);
     saleId = saleResult.insertId;
+    console.log('Assigned saleId:', saleId);
     
     if (!saleId) {
       await connection.rollback();
@@ -317,8 +319,10 @@ const recordSale = async (req, res) => {
     }
 
     await connection.commit();
-    res.json({ success: true, saleId });
+    res.json({ success: true });
   } catch (error) {
+    console.log('Error occurred, saleId value:', saleId);
+    console.log('Error details:', error);
     await connection.rollback();
     res.status(500).json({ success: false, error: error.message || 'Failed to record sale' });
   } finally {
