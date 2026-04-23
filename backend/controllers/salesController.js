@@ -232,7 +232,14 @@ const recordSale = async (req, res) => {
         totalCost
       ]
     );
+    
+    console.log('Sale result:', saleResult);
     const saleId = saleResult.insertId;
+    
+    if (!saleId) {
+      await connection.rollback();
+      return res.status(500).json({ success: false, error: 'Failed to create sale record' });
+    }
 
     // Add sale items for regular products and update stock
     for (const item of allocatedItems) {
