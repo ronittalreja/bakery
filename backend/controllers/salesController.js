@@ -25,6 +25,9 @@ const recordSale = async (req, res) => {
     } = req.body;
     const staffId = req.user?.id || 0;
 
+    // Initialize saleId to prevent undefined error
+    let saleId = null;
+
     // Validate required fields (allow totalAmount = 0)
     const amountNum = Number(totalAmount);
     if (
@@ -207,8 +210,6 @@ const recordSale = async (req, res) => {
     const saleDateTime = isHistorical 
       ? new Date(saleDate).toISOString().slice(0, 19).replace('T', ' ')
       : new Date().toISOString().slice(0, 19).replace('T', ' ');
-    
-    let saleId;
     
     const [saleResult] = await connection.execute(
       `INSERT INTO sales (
