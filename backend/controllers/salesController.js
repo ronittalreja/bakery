@@ -207,9 +207,13 @@ const recordSale = async (req, res) => {
 
     // Create sale record with cost tracking - use MySQL compatible datetime format
     // For historical sales, use the provided saleDate; for regular sales, use current time
-    const saleDateTime = isHistorical 
-      ? new Date(saleDate).toISOString().slice(0, 19).replace('T', ' ')
-      : new Date().toISOString().slice(0, 19).replace('T', ' ');
+    let saleDateTime;
+    if (isHistorical) {
+      // Frontend sends ISO string, convert to MySQL datetime format
+      saleDateTime = new Date(saleDate).toISOString().slice(0, 19).replace('T', ' ');
+    } else {
+      saleDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    }
     
     const [saleResult] = await connection.execute(
       `INSERT INTO sales (
@@ -254,11 +258,13 @@ const recordSale = async (req, res) => {
         [saleId, item.productId, item.batchId, item.quantity, item.unitPrice, item.totalPrice, item.name || '', 'product']
       );
       
-      // Update stock batch quantity
-      await connection.execute(
-        'UPDATE stock_batches SET quantity = quantity - ? WHERE id = ?',
-        [item.quantity, item.batchId]
-      );
+      // Only update stock for current sales, not historical sales
+      if (!isHistorical) {
+        await connection.execute(
+          'UPDATE stock_batches SET quantity = quantity - ? WHERE id = ?',
+          [item.quantity, item.batchId]
+        );
+      }
     }
 
     // Handle decoration items separately (no batch_id for decorations)
@@ -269,11 +275,13 @@ const recordSale = async (req, res) => {
         [saleId, item.decorationId, null, item.quantity, item.unitPrice, item.totalPrice, item.name || '', 'decoration']
       );
       
-      // Update decoration stock directly in the same transaction
-      await connection.execute(
-        'UPDATE decorations SET stock_quantity = stock_quantity - ? WHERE id = ? AND is_active = 1',
-        [item.quantity, item.decorationId]
-      );
+      // Update decoration stock directly in the same transaction (only for current sales)
+      if (!isHistorical) {
+        await connection.execute(
+          'UPDATE decorations SET stock_quantity = stock_quantity - ? WHERE id = ?',
+          [item.quantity, item.decorationId]
+        );
+      }
     }
 
     // Handle returns adjustment for historical sales
