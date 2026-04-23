@@ -208,6 +208,8 @@ const recordSale = async (req, res) => {
       ? new Date(saleDate).toISOString().slice(0, 19).replace('T', ' ')
       : new Date().toISOString().slice(0, 19).replace('T', ' ');
     
+    let saleId;
+    
     const [saleResult] = await connection.execute(
       `INSERT INTO sales (
         sale_date, 
@@ -234,7 +236,7 @@ const recordSale = async (req, res) => {
     );
     
     console.log('Sale result:', saleResult);
-    const saleId = saleResult.insertId;
+    saleId = saleResult.insertId;
     
     if (!saleId) {
       await connection.rollback();
