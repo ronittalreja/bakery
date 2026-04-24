@@ -38,6 +38,8 @@ export function DateProvider({ children, userRole }: DateProviderProps) {
     const updateDate = () => {
       const newToday = getCurrentDate()
       console.log(`Date check: current today=${today}, new today=${newToday}`)
+      
+      // Force update if date is stale or changed
       if (newToday !== today) {
         console.log(`Date changed from ${today} to ${newToday}`)
         setToday(newToday)
@@ -49,17 +51,28 @@ export function DateProvider({ children, userRole }: DateProviderProps) {
         } else {
           setAdminMainDate(newToday)
         }
+      } else if (today !== newToday) {
+        // Force refresh if there's a mismatch
+        console.log(`Forcing date refresh from ${today} to ${newToday}`)
+        setToday(newToday)
+        if (userRole === "staff") {
+          setSelectedDate(newToday)
+          setCurrentWorkingDate(newToday)
+          setAdminControlledStaffDate(newToday)
+        } else {
+          setAdminMainDate(newToday)
+        }
       }
     }
 
-    // Check every 30 seconds for more responsive date changes
-    const interval = setInterval(updateDate, 30000)
+    // Check every 10 seconds for more responsive date changes
+    const interval = setInterval(updateDate, 10000)
     
     // Also check immediately
     updateDate()
 
     return () => clearInterval(interval)
-  }, [today, userRole])
+  }, [today, userRole, setSelectedDate, setCurrentWorkingDate, setAdminControlledStaffDate, setAdminMainDate])
 
   const isToday = selectedDate === today
   const canEdit = userRole === "admin" || (selectedDate === currentWorkingDate && !isDayEnded)

@@ -256,8 +256,11 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
   const filteredProducts = products.filter(product => {
     const hasStock = product.stock > 0;
     const matchesSearch = searchQuery === '' || product.name.toLowerCase().includes(searchQuery.toLowerCase());
+    console.log(`🔍 Filtering product: ${product.name}, stock=${product.stock}, hasStock=${hasStock}, matchesSearch=${matchesSearch}`);
     return hasStock && matchesSearch;
   });
+  
+  console.log(`📊 Filtered products count: ${filteredProducts.length} (from ${products.length} total)`);
 
   const filteredDecorations = decorations.filter(decoration =>
     decoration.name.toLowerCase().includes(searchQuery.toLowerCase())
