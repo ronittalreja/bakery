@@ -108,102 +108,155 @@ router.post('/record', async (req, res) => {
 
     // Process each item
     for (const item of items) {
-      const { productId, quantity, batchId, unitPrice, totalPrice, name } = item;
+      const { productId, quantity, batchId, unitPrice, totalPrice, name, itemType = 'product' } = item;
 
-      // Check if this is a GRM processed item
-      const [grmCheck] = await connection.execute(`
-        SELECT SUM(r.quantity) as total_grm_quantity
-        FROM returns r
-        WHERE r.type = 'GRM' AND r.product_id = ? AND r.batch_id = ? AND r.return_date = DATE(?)
-      `, [productId, batchId, saleDate]);
+      if (itemType === 'decoration') {
+        // Handle decoration items
+        const [decorationCheck] = await connection.execute(`
+          SELECT stock_quantity
+          FROM decorations
+          WHERE id = ?
+        `, [productId]);
 
-      const totalGrmQuantity = Number(grmCheck[0]?.total_grm_quantity || 0);
+        const availableStock = Number(decorationCheck[0]?.stock_quantity || 0);
 
-      // Get available stock quantity
-      const [stockCheck] = await connection.execute(`
-        SELECT quantity
-        FROM stock_batches
-        WHERE id = ? AND product_id = ?
-      `, [batchId, productId]);
+        // Get already sold quantity for this decoration on this date
+        const [soldCheck] = await connection.execute(`
+          SELECT SUM(si.quantity) as sold_quantity
+          FROM sales s
+          JOIN sale_items si ON s.id = si.sale_id
+          WHERE si.item_id = ? AND si.item_type = 'decoration' AND DATE(s.sale_date) = DATE(?)
+        `, [productId, saleDate]);
 
-      const availableStock = Number(stockCheck[0]?.quantity || 0);
+        const soldQuantity = Number(soldCheck[0]?.sold_quantity || 0);
+        const remainingStock = availableStock - soldQuantity;
 
-      // Get already sold quantity for this batch on this date
-      const [soldCheck] = await connection.execute(`
-        SELECT SUM(si.quantity) as sold_quantity
-        FROM sales s
-        JOIN sale_items si ON s.id = si.sale_id
-        WHERE si.batch_id = ? AND si.item_id = ? AND DATE(s.sale_date) = DATE(?)
-      `, [batchId, productId, saleDate]);
+        // Validate stock availability
+        if (quantity > remainingStock) {
+          await connection.rollback();
+          return res.status(400).json({ 
+            success: false, 
+            error: `Insufficient stock for ${name}. Available: ${remainingStock}, Required: ${quantity}` 
+          });
+        }
 
-      const soldQuantity = Number(soldCheck[0]?.sold_quantity || 0);
+        // Create sale item record
+        await Sale.createSaleItem({
+          saleId,
+          productId,
+          batchId: null,
+          quantity,
+          unitPrice,
+          totalPrice,
+          name,
+          itemType: 'decoration'
+        }, connection);
 
-      // Calculate remaining stock after previous sales
-      const remainingStock = availableStock - soldQuantity;
+        // Update decoration stock
+        await connection.execute(`
+          UPDATE decorations
+          SET stock_quantity = stock_quantity - ?
+          WHERE id = ?
+        `, [quantity, productId]);
 
-      // Determine if we need to reduce GRM and how much to deduct from stock
-      let grmReduction = 0;
-      let stockDeduction = quantity;
-
-      if (totalGrmQuantity > 0) {
-        // We have GRM processed items, reduce GRM first
-        grmReduction = Math.min(quantity, totalGrmQuantity);
-        stockDeduction = quantity - grmReduction;
-      }
-
-      // Validate stock availability
-      if (stockDeduction > remainingStock) {
-        await connection.rollback();
-        return res.status(400).json({ 
-          success: false, 
-          error: `Insufficient stock for ${name}. Available: ${remainingStock}, Required: ${stockDeduction}` 
-        });
-      }
-
-      // Create sale item record
-      await Sale.createSaleItem({
-        saleId,
-        productId,
-        batchId,
-        quantity,
-        unitPrice,
-        totalPrice,
-        name
-      }, connection);
-
-      // Reduce stock if needed
-      if (stockDeduction > 0) {
-        await StockBatch.deductQuantity(batchId, stockDeduction, connection);
-      }
-
-      // Reduce GRM if needed
-      if (grmReduction > 0) {
-        // Find and update GRM records
-        const [grmRecords] = await connection.execute(`
-          SELECT id, quantity
-          FROM returns
-          WHERE type = 'GRM' AND product_id = ? AND batch_id = ? AND return_date = DATE(?)
-          ORDER BY id ASC
+      } else {
+        // Handle product items
+        // Check if this is a GRM processed item
+        const [grmCheck] = await connection.execute(`
+          SELECT SUM(r.quantity) as total_grm_quantity
+          FROM returns r
+          WHERE r.type = 'GRM' AND r.product_id = ? AND r.batch_id = ? AND r.return_date = DATE(?)
         `, [productId, batchId, saleDate]);
 
-        let remainingReduction = grmReduction;
-        for (const record of grmRecords) {
-          if (remainingReduction <= 0) break;
+        const totalGrmQuantity = Number(grmCheck[0]?.total_grm_quantity || 0);
 
-          const reduction = Math.min(remainingReduction, record.quantity);
-          await connection.execute(`
-            UPDATE returns
-            SET quantity = quantity - ?,
-            loss_amount = loss_amount - (? * invoice_price * 0.15)
-            WHERE id = ?
-          `, [reduction, reduction, record.id]);
+        // Get available stock quantity
+        const [stockCheck] = await connection.execute(`
+          SELECT quantity
+          FROM stock_batches
+          WHERE id = ? AND product_id = ?
+        `, [batchId, productId]);
 
-          // Delete record if quantity becomes 0
-          await connection.execute(`
-            DELETE FROM returns WHERE quantity <= 0 AND id = ?
-          `, [record.id]);
+        const availableStock = Number(stockCheck[0]?.quantity || 0);
 
-          remainingReduction -= reduction;
+        // Get already sold quantity for this batch on this date
+        const [soldCheck] = await connection.execute(`
+          SELECT SUM(si.quantity) as sold_quantity
+          FROM sales s
+          JOIN sale_items si ON s.id = si.sale_id
+          WHERE si.batch_id = ? AND si.item_id = ? AND si.item_type = 'product' AND DATE(s.sale_date) = DATE(?)
+        `, [batchId, productId, saleDate]);
+
+        const soldQuantity = Number(soldCheck[0]?.sold_quantity || 0);
+
+        // Calculate remaining stock after previous sales
+        const remainingStock = availableStock - soldQuantity;
+
+        // Determine if we need to reduce GRM and how much to deduct from stock
+        let grmReduction = 0;
+        let stockDeduction = quantity;
+
+        if (totalGrmQuantity > 0) {
+          // We have GRM processed items, reduce GRM first
+          grmReduction = Math.min(quantity, totalGrmQuantity);
+          stockDeduction = quantity - grmReduction;
+        }
+
+        // Validate stock availability
+        if (stockDeduction > remainingStock) {
+          await connection.rollback();
+          return res.status(400).json({ 
+            success: false, 
+            error: `Insufficient stock for ${name}. Available: ${remainingStock}, Required: ${stockDeduction}` 
+          });
+        }
+
+        // Create sale item record
+        await Sale.createSaleItem({
+          saleId,
+          productId,
+          batchId,
+          quantity,
+          unitPrice,
+          totalPrice,
+          name,
+          itemType: 'product'
+        }, connection);
+
+        // Reduce stock if needed
+        if (stockDeduction > 0) {
+          await StockBatch.deductQuantity(batchId, stockDeduction, connection);
+        }
+
+        // Reduce GRM if needed
+        if (grmReduction > 0) {
+          // Find and update GRM records
+          const [grmRecords] = await connection.execute(`
+            SELECT id, quantity
+            FROM returns
+            WHERE type = 'GRM' AND r.product_id = ? AND r.batch_id = ? AND r.return_date = DATE(?)
+            ORDER BY id ASC
+          `, [productId, batchId, saleDate]);
+
+          let remainingReduction = grmReduction;
+          for (const record of grmRecords) {
+            if (remainingReduction <= 0) break;
+
+            const reduction = Math.min(remainingReduction, record.quantity);
+            await connection.execute(`
+              UPDATE returns
+              SET quantity = quantity - ?,
+              loss_amount = loss_amount - (? * invoice_price * 0.15)
+              WHERE id = ?
+            `, [reduction, reduction, record.id]);
+
+            // Delete record if quantity becomes 0
+            await connection.execute(`
+              DELETE FROM returns WHERE quantity <= 0 AND id = ?
+            `, [record.id]);
+
+            remainingReduction -= reduction;
+          }
         }
       }
     }

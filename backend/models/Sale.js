@@ -74,7 +74,7 @@ class Sale {
   static async createSaleItem(itemData, connection = db) {
     try {
       await connection.execute(
-        'INSERT INTO sale_items (sale_id, item_id, batch_id, quantity, unit_price, total_price, name) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO sale_items (sale_id, item_id, batch_id, quantity, unit_price, total_price, name, item_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         [
           itemData.saleId,
           itemData.productId,
@@ -82,7 +82,8 @@ class Sale {
           itemData.quantity,
           itemData.unitPrice,
           itemData.totalPrice,
-          itemData.name
+          itemData.name,
+          itemData.itemType || 'product'
         ]
       );
     } catch (error) {

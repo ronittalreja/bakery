@@ -280,11 +280,12 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
 
       const items = cart.map(item => ({
         productId: item.product.id,
+        batchId: item.product.batchId || null,
         quantity: item.quantity,
         unitPrice: item.product.mrp,
         totalPrice: item.product.mrp * item.quantity,
         name: item.product.name,
-        batchId: item.product.batchId
+        itemType: decorations.find(d => d.id === item.product.id) ? 'decoration' : 'product'
       }));
 
       // Calculate decoration totals separately
@@ -342,7 +343,7 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
   };
 
   const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+    product.name.toLowerCase().includes(searchQuery.toLowerCase()) && product.stock > 0
   );
 
   if (saleCompleted) {
