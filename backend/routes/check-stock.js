@@ -6,35 +6,29 @@ router.get('/check-stock/:productId', async (req, res) => {
   try {
     const { productId } = req.params;
     
-    // Get current stock for the specific product
+    // Simple stock query - just get basic stock quantity
     const [stockRows] = await db.execute(`
-      SELECT 
-        s.quantity as stock_quantity,
-        COALESCE(SUM(si.quantity), 0) as sold_quantity,
-        COALESCE(SUM(r.quantity), 0) as grm_quantity
+      SELECT s.quantity as stock_quantity
       FROM stock s
-      LEFT JOIN sale_items si ON s.id = si.batch_id AND si.item_type = 'product'
-      LEFT JOIN returns r ON s.id = r.batch_id AND r.type = 'GRM'
       WHERE s.item_id = ? AND s.item_type = 'product'
-      GROUP BY s.id, s.quantity
     `, [productId]);
 
     if (stockRows.length === 0) {
+      console.log(`🔍 No stock found for product ${productId}: 0 available`);
       return res.json({ success: true, stock: 0 });
     }
 
-    // Calculate available stock
-    let totalAvailable = 0;
+    // Calculate total stock (sum of all batches)
+    let totalStock = 0;
     stockRows.forEach(row => {
-      const available = row.stock_quantity - (row.sold_quantity || 0) - (row.grm_quantity || 0);
-      totalAvailable += Math.max(0, available);
+      totalStock += row.stock_quantity || 0;
     });
 
-    console.log(`🔍 Real-time stock check for product ${productId}: ${totalAvailable} available`);
+    console.log(`🔍 Real-time stock check for product ${productId}: ${totalStock} available`);
     
     res.json({ 
       success: true, 
-      stock: totalAvailable 
+      stock: totalStock 
     });
     
   } catch (error) {
