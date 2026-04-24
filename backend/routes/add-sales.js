@@ -18,11 +18,11 @@ router.get('/available-stock', async (req, res) => {
     
     // Get already sold items for that date to exclude them
     const [soldItems] = await db.execute(`
-      SELECT si.product_id, si.batch_id, SUM(si.quantity) as sold_quantity
+      SELECT si.item_id as product_id, si.batch_id, SUM(si.quantity) as sold_quantity
       FROM sales s
       JOIN sale_items si ON s.id = si.sale_id
       WHERE DATE(s.sale_date) = ?
-      GROUP BY si.product_id, si.batch_id
+      GROUP BY si.item_id, si.batch_id
     `, [date]);
 
     // Get GRM processed items for that date to include them
@@ -130,7 +130,7 @@ router.post('/record', async (req, res) => {
         SELECT SUM(si.quantity) as sold_quantity
         FROM sales s
         JOIN sale_items si ON s.id = si.sale_id
-        WHERE si.batch_id = ? AND si.product_id = ? AND DATE(s.sale_date) = DATE(?)
+        WHERE si.batch_id = ? AND si.item_id = ? AND DATE(s.sale_date) = DATE(?)
       `, [batchId, productId, saleDate]);
 
       const soldQuantity = Number(soldCheck[0]?.sold_quantity || 0);

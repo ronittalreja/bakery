@@ -193,7 +193,7 @@ const getDecorationsForAddSales = async (req, res) => {
           SELECT SUM(si.quantity) as sold_quantity
           FROM sales s
           JOIN sale_items si ON s.id = si.sale_id
-          WHERE si.product_id = ? AND DATE(s.sale_date) = ?
+          WHERE si.item_id = ? AND DATE(s.sale_date) = ?
         `, [decoration.id, date]);
 
         const soldQuantity = Number(soldData[0]?.sold_quantity || 0);
