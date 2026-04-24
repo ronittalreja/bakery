@@ -93,8 +93,10 @@ router.post('/record', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Missing required fields' });
     }
 
-    // Convert ISO datetime to MySQL DATETIME format
-    const mysqlDateTime = new Date(saleDate).toISOString().slice(0, 19).replace('T', ' ');
+    // Convert ISO datetime to MySQL DATETIME format (preserve local date)
+    const dateObj = new Date(saleDate);
+    const mysqlDateTime = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}:${String(dateObj.getSeconds()).padStart(2, '0')}`;
+    console.log(`🕐 add-sales converting ${saleDate} to ${mysqlDateTime}`);
     
     // Create sale record
     const saleResult = await Sale.create({
