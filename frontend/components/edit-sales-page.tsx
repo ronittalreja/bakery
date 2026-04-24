@@ -67,7 +67,7 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
   const [error, setError] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showCategoryMenu, setShowCategoryMenu] = useState<boolean>(false);
-  const [mobileView, setMobileView] = useState<'products' | 'cart' | 'payment'>('products');
+  const [mobileView, setMobileView] = useState<'products' | 'payment'>('products');
 
   // Convert 24hr time to 12hr format for display
   const formatTime12Hour = (time24: string) => {
@@ -102,6 +102,16 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
     if (ampm === 'AM' && hour === 12) hour = 0;
     
     return `${hour.toString().padStart(2, '0')}:${(minutes || '00').padStart(2, '0')}`;
+  };
+
+  // Format expiry date to DD-MM-YYYY
+  const formatExpiryDate = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
   };
 
   const fetchProducts = useCallback(async (date: string) => {
@@ -417,7 +427,8 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
     );
   }
 
-  if (mobileView === 'cart') {
+  
+  if (mobileView === 'payment') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 p-4">
         <div className="max-w-4xl mx-auto pt-20">
@@ -429,111 +440,6 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Products
-            </Button>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-bold text-slate-900">Shopping Cart</CardTitle>
-                <CardDescription>Review your items before checkout</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {cart.length === 0 ? (
-                  <div className="text-center py-8">
-                    <ShoppingCart className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                    <p className="text-slate-600">Your cart is empty</p>
-                    <Button
-                      onClick={() => setMobileView('products')}
-                      className="mt-4"
-                    >
-                      Add Items
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {/* Cart Items */}
-                    <div className="space-y-3">
-                      {cart.map((item) => (
-                        <div key={item.product.id} className="bg-white border border-slate-200 rounded-lg p-3">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="flex-1 truncate font-medium text-slate-900 text-sm">{item.product.name}</span>
-                            <span className="text-slate-600 text-sm">₹{item.product.mrp.toFixed(2)}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Minus className="h-3 w-3" />
-                              </Button>
-                              <span className="w-8 text-center font-medium">{item.quantity}</span>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                                className="h-8 w-8 p-0"
-                                disabled={item.quantity >= item.product.stock}
-                              >
-                                <Plus className="h-3 w-3" />
-                              </Button>
-                            </div>
-                            <span className="font-semibold text-slate-900">₹{(item.product.mrp * item.quantity).toFixed(2)}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Price Summary */}
-                    <div className="border-t border-slate-200 pt-4 space-y-3">
-                      <div className="flex justify-between text-slate-700">
-                        <span>Subtotal:</span>
-                        <span>₹{getSubtotal().toFixed(2)}</span>
-                      </div>
-
-                      {discount > 0 && (
-                        <div className="flex justify-between text-green-600">
-                          <span>Discount:</span>
-                          <span>-₹{getDiscountAmount().toFixed(2)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between font-bold text-lg text-slate-900">
-                        <span>Total:</span>
-                        <span>₹{getTotalAmount().toFixed(2)}</span>
-                      </div>
-                    </div>
-
-                    {/* Checkout Button */}
-                    <Button
-                      onClick={() => setMobileView('payment')}
-                      className="w-full bg-green-600 hover:bg-green-700"
-                      size="lg"
-                    >
-                      Proceed to Payment
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (mobileView === 'payment') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 p-4">
-        <div className="max-w-4xl mx-auto pt-20">
-          <div className="mb-6">
-            <Button
-              variant="ghost"
-              onClick={() => setMobileView('cart')}
-              className="mb-4"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Cart
             </Button>
             
             <Card>
@@ -770,6 +676,9 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
                                   <div className="flex flex-col">
                                     <span className="text-lg font-bold text-slate-900">₹{product.mrp.toFixed(2)}</span>
                                     <span className="text-xs text-slate-500">MRP</span>
+                                    {product.expiryDate && (
+                                      <span className="text-xs text-orange-600">Expiry: {formatExpiryDate(product.expiryDate)}</span>
+                                    )}
                                   </div>
                                   <div className="text-right">
                                     <Badge variant={product.stock > 0 ? "default" : "secondary"}>
@@ -794,10 +703,31 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
                                 <Plus className="h-3 w-3 mr-1" />
                                 Add
                               </Button>
-                              {cartItem && (
+                              {cartItem ? (
+                                <div className="ml-2 flex items-center gap-1">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <Minus className="h-3 w-3" />
+                                  </Button>
+                                  <span className="w-6 text-center font-medium text-sm">{cartItem.quantity}</span>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}
+                                    className="h-6 w-6 p-0"
+                                    disabled={cartItem.quantity >= product.stock}
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ) : (
                                 <div className="ml-2 flex items-center gap-1">
                                   <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
-                                    {cartItem.quantity}
+                                    0
                                   </span>
                                 </div>
                               )}
@@ -934,7 +864,7 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
               </div>
             </div>
             <Button
-              onClick={() => setMobileView('cart')}
+              onClick={() => setMobileView('payment')}
               className="bg-green-600 hover:bg-green-700 text-white relative"
             >
               <ShoppingCart className="h-4 w-4 mr-2" />

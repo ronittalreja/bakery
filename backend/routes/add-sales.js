@@ -57,6 +57,8 @@ router.get('/available-stock', async (req, res) => {
       // Add GRM quantity back if items were processed
       const availableQty = remainingQty + grmQty;
       
+      console.log(`🔍 Processing stock ${stock.name}: stock=${stock.quantity}, sold=${soldQty}, grm=${grmQty}, available=${availableQty}`);
+      
       if (availableQty > 0) {
         processedStock.push({
           ...stock,
