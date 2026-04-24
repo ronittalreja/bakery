@@ -1,11 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { getDB } = require('../database/database');
+const db = require('../config/database');
 
 router.get('/check-stock/:productId', async (req, res) => {
   try {
     const { productId } = req.params;
-    const db = getDB();
     
     // Get current stock for the specific product
     const [stockRows] = await db.execute(`
