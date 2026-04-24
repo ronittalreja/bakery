@@ -152,6 +152,7 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
         grmQuantity: Number(p.grm_quantity || 0),
       }));
       
+      console.log('📦 Frontend received products:', mappedProducts);
       setProducts(mappedProducts);
     } catch (err: any) {
       console.error("Error fetching products:", err);
