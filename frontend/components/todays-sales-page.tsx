@@ -55,6 +55,7 @@ export function TodaysSalesPage({ onBack }: SalesTimelinePageProps) {
         }
 
         // Fetch transactions
+        console.log(`🔍 TodaysSalesPage requesting sales for date: ${selectedDate}`);
         const salesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/${selectedDate}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -62,6 +63,7 @@ export function TodaysSalesPage({ onBack }: SalesTimelinePageProps) {
           },
         })
         const salesData = await salesResponse.json()
+        console.log(`📊 TodaysSalesPage received response:`, salesData);
         if (!salesResponse.ok || !salesData.success) {
           throw new Error(salesData.error || "Failed to fetch sales transactions")
         }

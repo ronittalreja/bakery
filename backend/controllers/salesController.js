@@ -389,6 +389,8 @@ const getSalesByDate = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid date format. Use YYYY-MM-DD' });
     }
 
+    console.log(`🔍 getSalesByDate called with date: ${date}`);
+
     const query = `
       SELECT
         s.id as sale_id,
@@ -416,6 +418,10 @@ const getSalesByDate = async (req, res) => {
     `;
     
     const [rows] = await db.execute(query, [date]);
+    console.log(`📊 Found ${rows.length} sales rows for date ${date}`);
+    if (rows.length > 0) {
+      console.log(`📅 Sample sale_date from database: ${rows[0].sale_date}`);
+    }
 
     if (!rows.length) {
       return res.json({ 
