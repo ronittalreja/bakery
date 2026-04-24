@@ -252,10 +252,12 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
     return getSubtotal() - getDiscountAmount();
   };
 
-  // Filter products based on search query
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) && product.stock > 0
-  );
+  // Filter products based on search query and available stock
+  const filteredProducts = products.filter(product => {
+    const hasStock = product.stock > 0;
+    const matchesSearch = searchQuery === '' || product.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return hasStock && matchesSearch;
+  });
 
   const filteredDecorations = decorations.filter(decoration =>
     decoration.name.toLowerCase().includes(searchQuery.toLowerCase())
