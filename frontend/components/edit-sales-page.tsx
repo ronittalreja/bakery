@@ -275,8 +275,16 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
       
-      // Combine date and time for saleDateTime
-      const saleDateTime = new Date(`${selectedDate}T${selectedTime}:00`).toISOString();
+      // Combine date and time for saleDateTime (avoid timezone conversion)
+      const dateObj = new Date(`${selectedDate}T${selectedTime}:00`);
+      // Create ISO string in local timezone to avoid date shift
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const hours = String(dateObj.getHours()).padStart(2, '0');
+      const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+      const seconds = String(dateObj.getSeconds()).padStart(2, '0');
+      const saleDateTime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000Z`;
 
       const items = cart.map(item => ({
         productId: item.product.id,
