@@ -214,18 +214,55 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
     }
   }, [selectedDate, fetchProducts, fetchDecorations]);
 
-  const addToCart = (product: Product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.product.id === product.id);
-      if (existing) {
-        return prev.map(item =>
-          item.product.id === product.id
-            ? { ...item, quantity: Math.min(item.quantity + 1, product.stock) }
-            : item
-        );
+  const addToCart = async (product: Product) => {
+    // Real-time stock validation before adding to cart
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/add-sales/check-stock/${product.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) {
+        console.error(`❌ Failed to check stock for ${product.name}`);
+        return;
       }
-      return [...prev, { product, quantity: 1 }];
-    });
+      
+      const stockData = await response.json();
+      const currentStock = stockData.stock || 0;
+      
+      console.log(`🔍 Real-time stock check for ${product.name}: frontend=${product.stock}, backend=${currentStock}`);
+      
+      if (currentStock <= 0) {
+        console.error(`❌ ${product.name} is out of stock (backend: ${currentStock})`);
+        // Remove from frontend products list if out of stock
+        setProducts(prev => prev.filter(p => p.id !== product.id));
+        return;
+      }
+      
+      // Update frontend stock with real-time data
+      setProducts(prev => prev.map(p => 
+        p.id === product.id ? { ...p, stock: currentStock } : p
+      ));
+      
+      const existingItem = cart.find(item => item.product.id === product.id);
+      const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
+      
+      if (newQuantity > currentStock) {
+        console.error(`❌ Insufficient stock for ${product.name}. Available: ${currentStock}, Requested: ${newQuantity}`);
+        return;
+      }
+      
+      if (existingItem) {
+        updateQuantity(product.id, newQuantity);
+      } else {
+        setCart([...cart, { product: { ...product, stock: currentStock }, quantity: 1 }]);
+      }
+    } catch (error) {
+      console.error(`❌ Error checking stock for ${product.name}:`, error);
+    }
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
