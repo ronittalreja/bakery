@@ -93,9 +93,12 @@ router.post('/record', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Missing required fields' });
     }
 
+    // Convert ISO datetime to MySQL DATETIME format
+    const mysqlDateTime = new Date(saleDate).toISOString().slice(0, 19).replace('T', ' ');
+    
     // Create sale record
     const saleResult = await Sale.create({
-      saleDate,
+      saleDate: mysqlDateTime,
       totalAmount,
       paymentType,
       staffId
