@@ -11,10 +11,10 @@ router.get('/check-stock/:productId', async (req, res) => {
       SELECT 
         s.quantity as stock_quantity,
         COALESCE(SUM(si.quantity), 0) as sold_quantity,
-        COALESCE(SUM(g.quantity), 0) as grm_quantity
+        COALESCE(SUM(r.quantity), 0) as grm_quantity
       FROM stock s
       LEFT JOIN sale_items si ON s.id = si.batch_id AND si.item_type = 'product'
-      LEFT JOIN grm_items g ON s.id = g.batch_id
+      LEFT JOIN returns r ON s.id = r.batch_id AND r.type = 'GRM'
       WHERE s.item_id = ? AND s.item_type = 'product'
       GROUP BY s.id, s.quantity
     `, [productId]);
