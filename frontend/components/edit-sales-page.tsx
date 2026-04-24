@@ -49,7 +49,6 @@ interface AddSalesPageProps {
 
 export function AddSalesPage({ onBack }: AddSalesPageProps) {
   const { user } = useAuth();
-  const { selectedDate, setSelectedDate } = useDateContext();
   const { setRefreshSales } = useSaleContext();
   const [products, setProducts] = useState<Product[]>([]);
   const [addonProducts, setAddonProducts] = useState<Product[]>([]);
@@ -69,6 +68,12 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
   const [showCategoryMenu, setShowCategoryMenu] = useState<boolean>(false);
   const [mobileView, setMobileView] = useState<'products' | 'payment'>('products');
 
+  // Simple manual date selection - bypass complex date context
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
+  
   // Convert 24hr time to 12hr format for display
   const formatTime12Hour = (time24: string) => {
     const [hours, minutes] = time24.split(':');
@@ -604,7 +609,6 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
                   className="mt-1"
                 />
               </div>
@@ -612,10 +616,9 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
                 <Label htmlFor="sale-time">Time</Label>
                 <Input
                   id="sale-time"
-                  type="text"
-                  value={formatTime12Hour(selectedTime)}
-                  onChange={(e) => setSelectedTime(formatTime24Hour(e.target.value))}
-                  placeholder="2:30 PM"
+                  type="time"
+                  value={selectedTime}
+                  onChange={(e) => setSelectedTime(e.target.value)}
                   className="mt-1"
                 />
               </div>
