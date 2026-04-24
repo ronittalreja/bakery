@@ -172,6 +172,57 @@ const getDecorationForSale = async (decorationId) => {
   }
 };
 
+const getDecorationsForAddSales = async (req, res) => {
+  try {
+    const { date } = req.query;
+    
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ success: false, error: 'Valid date is required' });
+    }
+
+    // Get all active decorations
+    const [decorations] = await db.execute(
+      'SELECT id, sku, name, category, sale_price, stock_quantity, image_url FROM decorations WHERE is_active = 1'
+    );
+
+    // For each decoration, calculate available stock considering sales on that date
+    const decorationsWithAvailability = await Promise.all(
+      decorations.map(async (decoration) => {
+        // Get total sold quantity for this decoration on the specific date
+        const [soldData] = await db.execute(`
+          SELECT SUM(si.quantity) as sold_quantity
+          FROM sales s
+          JOIN sale_items si ON s.id = si.sale_id
+          WHERE si.product_id = ? AND DATE(s.sale_date) = ?
+        `, [decoration.id, date]);
+
+        const soldQuantity = Number(soldData[0]?.sold_quantity || 0);
+        const availableQuantity = Math.max(0, decoration.stock_quantity - soldQuantity);
+
+        return {
+          ...decoration,
+          stock_quantity: availableQuantity,
+          original_stock: decoration.stock_quantity,
+          sold_quantity: soldQuantity
+        };
+      })
+    );
+
+    // Filter decorations that have available stock
+    const availableDecorations = decorationsWithAvailability.filter(
+      d => d.stock_quantity > 0
+    );
+
+    res.json({
+      success: true,
+      decorations: availableDecorations
+    });
+  } catch (error) {
+    console.error('Error in getDecorationsForAddSales:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 module.exports = {
   getAllDecorations,
   getDecoration,
@@ -180,5 +231,6 @@ module.exports = {
   updateDecoration,
   deleteDecoration,
   updateDecorationStock,
-  getDecorationForSale
+  getDecorationForSale,
+  getDecorationsForAddSales
 };

@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { getAllDecorations, getDecoration, createDecoration, updateDecoration, deleteDecoration, getDecorationBySkuOrName } = require('../controllers/decorationsController');
+const { getAllDecorations, getDecoration, createDecoration, updateDecoration, deleteDecoration, getDecorationBySkuOrName, getDecorationsForAddSales } = require('../controllers/decorationsController');
 
 router.get('/', getAllDecorations);
+router.get('/add-sales', getDecorationsForAddSales);
 router.get('/search/:identifier', getDecorationBySkuOrName);
 router.get('/:id', getDecoration);
 router.post('/', createDecoration);

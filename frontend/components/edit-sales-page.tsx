@@ -32,6 +32,11 @@ interface Product {
   category?: string;
   shelfLifeDays?: number | null;
   expiryDate?: string;
+  isGrmRestored?: boolean;
+  originalQuantity?: number;
+  soldQuantity?: number;
+  grmQuantity?: number;
+  originalStock?: number;
 }
 
 interface CartItem {
@@ -115,9 +120,9 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
         return;
       }
 
-      // Fetch stock for specific date
+      // Fetch available stock for add sales (excludes already sold items, includes GRM processed)
       const response: any = await apiClient(
-        `/api/stock?date=${date}`,
+        `/api/add-sales/available-stock?date=${date}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -137,44 +142,13 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
         category: p.category || undefined,
         shelfLifeDays: p.shelf_life_days || null,
         expiryDate: p.expiry_date || undefined,
+        isGrmRestored: p.is_grm_restored || false,
+        originalQuantity: Number(p.original_quantity || 0),
+        soldQuantity: Number(p.sold_quantity || 0),
+        grmQuantity: Number(p.grm_quantity || 0),
       }));
       
       setProducts(mappedProducts);
-
-      // Also fetch expired/returned items for this date to allow selling them
-      const expiredResponse: any = await apiClient(
-        `/api/returns?date=${date}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (expiredResponse.success && expiredResponse.data) {
-        const expiredProducts = expiredResponse.data.map((p: any) => ({
-          id: String(p.product_id),
-          name: p.name || "Unknown Product",
-          mrp: Number(p.invoice_price || 0),
-          invoicePrice: Number(p.invoice_price || 0),
-          icon: "default",
-          stock: Number(p.quantity || 0),
-          batchId: String(p.batch_id || p.id),
-          imageUrl: p.image_url || "/placeholder.svg",
-          category: p.category || undefined,
-          shelfLifeDays: p.shelf_life_days || null,
-          expiryDate: p.expiry_date || undefined,
-        }));
-        
-        // Combine available stock with expired items, but remove duplicates
-        const combinedProducts = [...mappedProducts];
-        
-        // Add expired items only if not already in combined products
-        expiredProducts.forEach((expiredProduct: Product) => {
-          const exists = combinedProducts.find(p => p.id === expiredProduct.id);
-          if (!exists) {
-            combinedProducts.push(expiredProduct);
-          }
-        });
-        
-        setProducts(combinedProducts);
-      }
     } catch (err: any) {
       console.error("Error fetching products:", err);
       setError(err.message || "Failed to fetch products");
@@ -182,7 +156,7 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
     }
   }, []);
 
-  const fetchDecorations = useCallback(async () => {
+  const fetchDecorations = useCallback(async (date: string) => {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
       if (!token) {
@@ -191,7 +165,7 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
       }
 
       const response: any = await apiClient(
-        "/api/decorations",
+        `/api/decorations/add-sales?date=${date}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -212,6 +186,8 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
         imageUrl: d.image_url || "/placeholder.svg",
         category: d.category || undefined,
         shelfLifeDays: null,
+        originalStock: Number(d.original_stock || 0),
+        soldQuantity: Number(d.sold_quantity || 0),
       }));
       
       setDecorations(mappedDecorations.filter((d: Product) => d.stock > 0));
@@ -224,8 +200,8 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
   useEffect(() => {
     if (selectedDate) {
       fetchProducts(selectedDate);
+      fetchDecorations(selectedDate);
     }
-    fetchDecorations();
   }, [selectedDate, fetchProducts, fetchDecorations]);
 
   const addToCart = (product: Product) => {
@@ -326,31 +302,23 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
         }
       });
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
+      const response = await apiClient(
+        '/api/add-sales/record',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            saleDate: saleDateTime,
+            items,
+            paymentType: paymentMethod,
+            totalAmount: calculateTotal(),
+          }),
         },
-        body: JSON.stringify({
-          saleDate: saleDateTime,
-          items,
-          paymentType: paymentMethod,
-          totalAmount: calculateTotal(),
-          productMRPTotal: calculateSubtotal(),
-          decorationMRPTotal,
-          decorationCostTotal,
-          totalCost,
-          isHistorical: true,
-        }),
-      });
+        token
+      );
 
-      const data = await response.json();
+      const data = response;
       console.log("Sale response:", JSON.stringify(data, null, 2));
-      if (!response.ok || !data.success) {
+      if (!data.success) {
         throw new Error(data.error || "Failed to record sale");
       }
 
@@ -489,7 +457,7 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
                       Products
                     </CardTitle>
                     <CardDescription>
-                      Available stock for {selectedDate} (including expired items)
+                      Available stock for {selectedDate} (excluding already sold items, including GRM restored)
                     </CardDescription>
                   </div>
                   <div className="relative">
@@ -527,10 +495,23 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
                                   Expires: {formatExpiryDate(product.expiryDate)}
                                 </p>
                               )}
+                              {product.isGrmRestored && (
+                                <p className="text-xs text-green-600 font-medium">
+                                  +{product.grmQuantity} GRM restored
+                                </p>
+                              )}
+                              {product.soldQuantity && product.soldQuantity > 0 && (
+                                <p className="text-xs text-slate-500">
+                                  {product.soldQuantity} already sold
+                                </p>
+                              )}
                             </div>
                           </div>
                           <Badge variant={product.stock > 0 ? "default" : "secondary"}>
                             Stock: {product.stock}
+                            {product.isGrmRestored && (
+                              <span className="ml-1 text-green-600">*</span>
+                            )}
                           </Badge>
                         </div>
                         
@@ -597,6 +578,11 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
                             <div className="min-w-0 flex-1">
                               <h3 className="font-medium text-slate-900 truncate">{product.name}</h3>
                               <p className="text-sm text-slate-600">₹{product.mrp.toFixed(2)}</p>
+                              {product.soldQuantity && product.soldQuantity > 0 && (
+                                <p className="text-xs text-slate-500">
+                                  {product.soldQuantity} already sold
+                                </p>
+                              )}
                             </div>
                           </div>
                           <Badge variant={product.stock > 0 ? "default" : "secondary"}>
