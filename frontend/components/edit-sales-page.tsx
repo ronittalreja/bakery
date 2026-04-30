@@ -32,6 +32,7 @@ interface Product {
   category?: string;
   shelfLifeDays?: number | null;
   expiryDate?: string;
+  invoiceDate?: string;
   isGrmRestored?: boolean;
   originalQuantity?: number;
   soldQuantity?: number;
@@ -695,6 +696,9 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
                                     <Badge variant={product.stock > 0 ? "default" : "secondary"}>
                                       Stock: {product.stock}
                                     </Badge>
+                                    {product.invoiceDate && (
+                                      <span className="text-xs text-blue-600 block">Inv: {product.invoiceDate}</span>
+                                    )}
                                     {product.isGrmRestored && (
                                       <span className="ml-1 text-xs text-green-600">GRM</span>
                                     )}
