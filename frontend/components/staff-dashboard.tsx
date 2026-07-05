@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useDateContext } from "@/hooks/use-date-context";
@@ -13,6 +14,7 @@ import {
   ArrowLeft,
   RotateCcw,
   CreditCard,
+  Shield,
 } from "lucide-react";
 import { UploadInvoicePage } from "@/components/upload-invoice-page";
 import { RecordSalePage } from "@/components/record-sale-page";
@@ -27,6 +29,7 @@ type StaffPage = "dashboard" | "upload-invoice" | "record-sale" | "stock" | "sal
 
 export function StaffDashboard() {
   const { user, logout } = useAuth();
+  const router = useRouter();
   const { selectedDate, isToday, isDayEnded } = useDateContext();
   const [currentPage, setCurrentPage] = useState<StaffPage>("dashboard");
   const [selectedCreditNoteId, setSelectedCreditNoteId] = useState<number | null>(null);
@@ -216,6 +219,17 @@ export function StaffDashboard() {
               <div className="flex-1 sm:flex-none">
                 <DateSelector selectedDate={selectedDate} onDateChange={() => {}} disabled={true} />
               </div>
+              {user?.isDemo && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => router.push('/admin-dashboard')}
+                  className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white border-purple-600 transition-all duration-200 flex-shrink-0"
+                >
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden sm:inline">Admin</span>
+                  <span className="sm:hidden">Admin</span>
+                </Button>
+              )}
               <Button 
                 variant="outline" 
                 onClick={logout} 

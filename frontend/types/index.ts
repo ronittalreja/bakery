@@ -2,6 +2,7 @@ export interface User {
   id: string;
   username: string;
   role: "staff" | "admin";
+  isDemo?: boolean;
 }
 
 export interface Product {

@@ -9,6 +9,7 @@ interface TokenPayload {
   id: string;
   username: string;
   role: "staff" | "admin";
+  isDemo?: boolean;
   iat: number;
   exp: number;
 }
@@ -101,6 +102,7 @@ export const useAuth = () => {
           id: userData.id,
           username: userData.username,
           role: userData.role,
+          isDemo: userData.isDemo || false,
         };
         setUser(user);
         localStorage.setItem("bakery_user", JSON.stringify(user));
@@ -182,6 +184,7 @@ export const useAuth = () => {
             id: decodedPayload.id,
             username: decodedPayload.username,
             role: decodedPayload.role,
+            isDemo: decodedPayload.isDemo || false,
           };
 
           localStorage.setItem("token", data.token);
