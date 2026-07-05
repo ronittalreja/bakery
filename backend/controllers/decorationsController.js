@@ -1,8 +1,15 @@
 const Decoration = require('../models/Decoration');
 const db = require('../config/database');
+const { getDemoData } = require('../middleware/demoMode');
 
 const getAllDecorations = async (req, res) => {
   try {
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoDecorations = getDemoData('decorations');
+      return res.json({ success: true, decorations: demoDecorations });
+    }
+    
     const decorations = await Decoration.findAll();
     res.json({ success: true, decorations });
   } catch (error) {

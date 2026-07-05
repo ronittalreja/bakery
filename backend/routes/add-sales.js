@@ -4,6 +4,7 @@ const router = express.Router();
 const StockBatch = require('../models/StockBatch');
 const Sale = require('../models/Sale');
 const db = require('../config/database');
+const { getDemoData } = require('../middleware/demoMode');
 
 // Get available stock for add sales (excluding already sold items, including GRM processed items)
 router.get('/available-stock', async (req, res) => {
@@ -11,6 +12,36 @@ router.get('/available-stock', async (req, res) => {
     const { date } = req.query;
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return res.status(400).json({ success: false, error: 'Valid date is required' });
+    }
+
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoProducts = getDemoData('products');
+      const demoStockBatches = getDemoData('stockBatches');
+      
+      // Map demo data to match the expected format
+      const processedStock = demoProducts.map(product => {
+        const stockBatch = demoStockBatches.find(sb => sb.product_id === product.id);
+        return {
+          id: stockBatch?.id || product.id,
+          product_id: product.id,
+          name: product.name,
+          item_code: product.item_code,
+          hsn_code: product.hsn_code,
+          invoice_price: product.invoice_price,
+          sale_price: product.sale_price,
+          grm_value: product.grm_value,
+          category: product.category,
+          image_url: product.image_url,
+          shelf_life_days: 30,
+          quantity: stockBatch?.quantity || 50,
+          expiry_date: stockBatch?.expiry_date || '2026-08-05',
+          invoice_date: stockBatch?.invoice_date || '2026-07-05',
+          invoice_reference: stockBatch?.invoice_reference || 'DEMO-INV-001'
+        };
+      });
+
+      return res.json({ success: true, data: processedStock });
     }
 
     // Get available stock for the specific date

@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const morgan = require('morgan');
 const db = require('./config/database');
 const { creditNoteUpload } = require('./utils/cloudinary');
+const { demoModeMiddleware } = require('./middleware/demoMode');
 
 dotenv.config();
 
@@ -56,12 +57,13 @@ const authMiddleware = (roles = []) => (req, res, next) => {
   }
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
-    if (roles.length && !roles.includes(decoded.role)) {
+    if (roles.length && !roles.includes(decoded.role) && !decoded.isDemo) {
       console.error('Forbidden: Invalid role:', decoded.role, req.method, req.url);
       return res.status(403).json({ error: 'Forbidden' });
     }
     req.user = decoded;
-    next();
+    // Apply demo mode middleware
+    demoModeMiddleware(req, res, next);
   } catch (error) {
     console.error('Auth middleware error:', error.message, req.method, req.url);
     res.status(401).json({ error: 'Invalid token' });

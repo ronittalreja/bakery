@@ -5,6 +5,17 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 
+// Initialize demo user
+router.post("/init-demo", async (req, res) => {
+  try {
+    await User.createDemoUser();
+    res.json({ success: true, message: "Demo user initialized" });
+  } catch (err) {
+    console.error("Demo user initialization error:", err);
+    res.status(500).json({ success: false, error: "Failed to initialize demo user" });
+  }
+});
+
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -15,12 +26,13 @@ router.post("/login", async (req, res) => {
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
+    const isDemo = user.username === 'demo';
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role },
+      { id: user.id, username: user.username, role: user.role, isDemo },
       process.env.JWT_SECRET || "your_jwt_secret",
       { expiresIn: "365d" } // 1 year for persistent sessions
     );
-    res.json({ success: true, token, role: user.role });
+    res.json({ success: true, token, role: user.role, isDemo });
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({ success: false, error: "Server error" });
@@ -37,7 +49,7 @@ router.get("/validate", (req, res) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret");
-    res.json({ success: true, id: decoded.id, username: decoded.username, role: decoded.role });
+    res.json({ success: true, id: decoded.id, username: decoded.username, role: decoded.role, isDemo: decoded.isDemo || false });
   } catch (err) {
     console.error("Token validation error:", err);
     res.status(401).json({ success: false, error: "Invalid token" });

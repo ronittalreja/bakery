@@ -4,6 +4,7 @@ const Sale = require('../models/Sale');
 const StockBatch = require('../models/StockBatch');
 const { updateDecorationStock, getDecorationForSale } = require('./decorationsController');
 const db = require('../config/database');
+const { getDemoData } = require('../middleware/demoMode');
 
 // Record a Sale (supports FEFO allocation when batchId not provided)
 const recordSale = async (req, res) => {
@@ -390,6 +391,23 @@ const getSalesByDate = async (req, res) => {
     }
 
     console.log(`🔍 getSalesByDate called with date: ${date}`);
+
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoSales = getDemoData('sales');
+      const filteredSales = demoSales.filter(sale => {
+        const saleDate = new Date(sale.sale_date).toISOString().split('T')[0];
+        return saleDate === date;
+      });
+      
+      const summary = {
+        totalQuantity: filteredSales.reduce((sum, sale) => sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0),
+        totalValue: filteredSales.reduce((sum, sale) => sum + sale.total_amount, 0),
+        totalTransactions: filteredSales.length
+      };
+
+      return res.json({ success: true, data: filteredSales, summary });
+    }
 
     const query = `
       SELECT

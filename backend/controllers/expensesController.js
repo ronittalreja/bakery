@@ -1,8 +1,15 @@
 const Expense = require('../models/Expense');
+const { getDemoData } = require('../middleware/demoMode');
 
 const getExpenses = async (req, res) => {
   try {
     const { month, year } = req.query;
+    
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoExpenses = getDemoData('expenses');
+      return res.json({ success: true, expenses: demoExpenses });
+    }
     
     const expenses = await Expense.findAll(month, year);
     res.json({ success: true, expenses });
