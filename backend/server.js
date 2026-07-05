@@ -119,11 +119,15 @@ app.post('/api/migrate', async (req, res) => {
     `);
     console.log('✅ Created users table');
 
-    // Insert default users (password is 'admin123' and 'staff123' hashed)
+    // Insert default users (password is 'admin123', 'staff123', and 'demo123' hashed)
     await connection.execute(`
-      INSERT IGNORE INTO users (username, password, role) VALUES 
+      INSERT INTO users (username, password, role) VALUES 
       ('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin'),
-      ('R3309', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'staff')
+      ('R3309', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'staff'),
+      ('demo', '$2a$10$t8.p/6qXM0Vfa8FHOT6kNenLFU15RJ1IQYyjZ7qBr.ChR774v/UnC', 'staff')
+      ON DUPLICATE KEY UPDATE 
+      password = VALUES(password),
+      role = VALUES(role)
     `);
     console.log('✅ Inserted default users');
 
