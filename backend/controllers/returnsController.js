@@ -8,24 +8,26 @@ const getGrmReturns = async (req, res) => {
   try {
     // Return demo data if demo user
     if (req.isDemo) {
+      const demoReturns = getDemoData('returns');
       const demoProducts = getDemoData('products');
       const demoStockBatches = getDemoData('stockBatches');
       
-      const demoReturns = demoProducts.slice(0, 3).map((product, index) => {
-        const stockBatch = demoStockBatches.find(sb => sb.product_id === product.id);
+      const demoGrmReturns = demoReturns.filter(r => r.type === 'GRM').map((ret) => {
+        const product = demoProducts.find(p => p.id === ret.product_id);
+        const stockBatch = demoStockBatches.find(sb => sb.id === ret.batch_id);
         return {
-          batch_id: stockBatch?.id || product.id,
-          product_id: product.id,
-          name: product.name,
-          item_code: product.item_code,
-          batch_quantity: stockBatch?.quantity || 50,
-          expiry_date: stockBatch?.expiry_date || '2026-08-05',
-          available_quantity: Math.floor((stockBatch?.quantity || 50) * 0.3),
+          batch_id: ret.batch_id,
+          product_id: ret.product_id,
+          name: product?.name || 'Demo Product',
+          item_code: product?.item_code || 'DEMO',
+          batch_quantity: stockBatch?.quantity || 200,
+          expiry_date: ret.expiry_date,
+          available_quantity: ret.quantity,
           shelf_life_days: 30
         };
       });
 
-      return res.json({ success: true, data: demoReturns });
+      return res.json({ success: true, data: demoGrmReturns });
     }
 
     const { date } = req.query;
@@ -399,17 +401,30 @@ const getReturnsSummary = async (req, res) => {
 
     // Return demo data if demo user
     if (req.isDemo) {
+      const demoReturns = getDemoData('returns');
+      const filteredReturns = demoReturns.filter(r => r.return_date === targetDate);
+      
+      const grmReturns = filteredReturns.filter(r => r.type === 'GRM');
+      const gvnReturns = filteredReturns.filter(r => r.type === 'GVN');
+      
+      const grmTotalReturns = grmReturns.length;
+      const grmTotalQuantity = grmReturns.reduce((sum, r) => sum + r.quantity, 0);
+      const grmTotalLoss = grmReturns.reduce((sum, r) => sum + (r.loss_amount || 0), 0);
+      
+      const gvnTotalDamages = gvnReturns.length;
+      const gvnTotalQuantity = gvnReturns.reduce((sum, r) => sum + r.quantity, 0);
+      
       return res.json({
         success: true,
         date: targetDate,
         grm: {
-          totalReturns: 3,
-          totalQuantity: 15,
-          totalLoss: 750
+          totalReturns: grmTotalReturns,
+          totalQuantity: grmTotalQuantity,
+          totalLoss: grmTotalLoss
         },
         gvn: {
-          totalDamages: 2,
-          totalQuantity: 10
+          totalDamages: gvnTotalDamages,
+          totalQuantity: gvnTotalQuantity
         }
       });
     }
@@ -1064,23 +1079,30 @@ const getReturnsByDate = async (req, res) => {
 
     // Return demo data if demo user
     if (req.isDemo) {
+      const demoReturns = getDemoData('returns');
       const demoProducts = getDemoData('products');
-      const demoReturns = demoProducts.slice(0, 2).map((product, index) => ({
-        id: 1000 + index,
-        product_id: product.id,
-        quantity: 5,
-        invoice_price: product.invoice_price,
-        return_date: date,
-        type: index === 0 ? 'GRM' : 'GVN',
-        name: product.name,
-        item_code: product.item_code,
-        category: product.category,
-        shelf_life_days: 30,
-        image_url: product.image_url,
-        batch_id: 2000 + index,
-        expiry_date: '2026-08-05'
-      }));
-      return res.json({ success: true, data: demoReturns });
+      const demoStockBatches = getDemoData('stockBatches');
+      
+      const filteredReturns = demoReturns.filter(r => r.return_date === date).map((ret) => {
+        const product = demoProducts.find(p => p.id === ret.product_id);
+        const stockBatch = demoStockBatches.find(sb => sb.id === ret.batch_id);
+        return {
+          id: ret.id,
+          product_id: ret.product_id,
+          quantity: ret.quantity,
+          invoice_price: ret.invoice_price,
+          return_date: ret.return_date,
+          type: ret.type,
+          name: product?.name || 'Demo Product',
+          item_code: product?.item_code || 'DEMO',
+          category: product?.category || 'Demo',
+          shelf_life_days: 30,
+          image_url: product?.image_url || null,
+          batch_id: ret.batch_id,
+          expiry_date: ret.expiry_date
+        };
+      });
+      return res.json({ success: true, data: filteredReturns });
     }
 
     const [rows] = await db.execute(

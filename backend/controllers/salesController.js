@@ -347,6 +347,30 @@ const getSalesSummary = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid date format. Use YYYY-MM-DD' });
     }
 
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoSales = getDemoData('sales');
+      const filteredSales = demoSales.filter(sale => new Date(sale.sale_date).toISOString().split('T')[0] === date);
+      
+      const totalTransactions = filteredSales.length;
+      const totalSales = filteredSales.reduce((sum, sale) => sum + sale.total_amount, 0);
+      const totalItems = filteredSales.reduce((sum, sale) => sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0);
+      const cashSales = filteredSales.filter(s => s.payment_type === 'cash').reduce((sum, s) => sum + s.total_amount, 0);
+      const upiSales = filteredSales.filter(s => s.payment_type === 'upi').reduce((sum, s) => sum + s.total_amount, 0);
+
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+      return res.json({
+        success: true,
+        summary: {
+          totalTransactions,
+          totalItems,
+          totalSales,
+          cashSales,
+          upiSales
+        }
+      });
+    }
+
     const [summaryRows] = await db.execute(
       `SELECT 
         COUNT(*) AS totalTransactions, 

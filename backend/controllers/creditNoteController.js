@@ -923,6 +923,13 @@ const getCreditNoteDetails = async (req, res) => {
   try {
     const { id } = req.params;
     
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoCreditNotes = getDemoData('creditNotes');
+      const creditNote = demoCreditNotes[0];
+      return res.json({ success: true, creditNote });
+    }
+    
     const [rows] = await db.execute(
       `SELECT 
         id,

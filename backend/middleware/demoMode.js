@@ -10,11 +10,11 @@ const demoData = {
     { id: 1005, item_code: 'DEMO005', name: 'Demo Bread', hsn_code: '19059010', invoice_price: 50, sale_price: 60, grm_value: 25, category: 'Bread', is_active: 1, image_url: null },
   ],
   stockBatches: [
-    { id: 2001, product_id: 1001, quantity: 50, expiry_date: '2026-08-05', invoice_date: '2026-07-05', invoice_reference: 'DEMO-INV-001' },
-    { id: 2002, product_id: 1002, quantity: 40, expiry_date: '2026-08-05', invoice_date: '2026-07-05', invoice_reference: 'DEMO-INV-002' },
-    { id: 2003, product_id: 1003, quantity: 30, expiry_date: '2026-08-05', invoice_date: '2026-07-05', invoice_reference: 'DEMO-INV-003' },
-    { id: 2004, product_id: 1004, quantity: 25, expiry_date: '2026-08-05', invoice_date: '2026-07-05', invoice_reference: 'DEMO-INV-004' },
-    { id: 2005, product_id: 1005, quantity: 100, expiry_date: '2026-08-05', invoice_date: '2026-07-05', invoice_reference: 'DEMO-INV-005' },
+    { id: 2001, product_id: 1001, quantity: 200, expiry_date: '2026-08-05', invoice_date: '2026-07-05', invoice_reference: 'DEMO-INV-001' },
+    { id: 2002, product_id: 1002, quantity: 200, expiry_date: '2026-08-05', invoice_date: '2026-07-05', invoice_reference: 'DEMO-INV-002' },
+    { id: 2003, product_id: 1003, quantity: 200, expiry_date: '2026-08-05', invoice_date: '2026-07-05', invoice_reference: 'DEMO-INV-003' },
+    { id: 2004, product_id: 1004, quantity: 200, expiry_date: '2026-08-05', invoice_date: '2026-07-05', invoice_reference: 'DEMO-INV-004' },
+    { id: 2005, product_id: 1005, quantity: 200, expiry_date: '2026-08-05', invoice_date: '2026-07-05', invoice_reference: 'DEMO-INV-005' },
   ],
   decorations: [
     { id: 3001, sku: 'DECO001', name: 'Demo Ribbon', category: 'Ribbons', cost: 50, sale_price: 80, stock_quantity: 100, is_active: 1 },
@@ -25,6 +25,93 @@ const demoData = {
   expenses: [
     { id: 4001, expense_date: '2026-07-05', category: 'Utilities', description: 'Demo electricity bill', amount: 5000, staff_id: 0 },
     { id: 4002, expense_date: '2026-07-04', category: 'Supplies', description: 'Demo flour purchase', amount: 3000, staff_id: 0 },
+  ],
+  returns: [
+    {
+      id: 7001,
+      product_id: 1001,
+      quantity: 5,
+      invoice_price: 500,
+      return_date: '2026-07-05',
+      type: 'GRM',
+      loss_amount: 250,
+      batch_id: 2001,
+      expiry_date: '2026-08-05'
+    },
+    {
+      id: 7002,
+      product_id: 1002,
+      quantity: 3,
+      invoice_price: 400,
+      return_date: '2026-07-05',
+      type: 'GVN',
+      loss_amount: 120,
+      batch_id: 2002,
+      expiry_date: '2026-08-05'
+    },
+    {
+      id: 7003,
+      product_id: 1003,
+      quantity: 4,
+      invoice_price: 150,
+      return_date: '2026-07-04',
+      type: 'GRM',
+      loss_amount: 60,
+      batch_id: 2003,
+      expiry_date: '2026-08-05'
+    }
+  ],
+  creditNotes: [
+    {
+      id: 1,
+      credit_note_number: 'DEMO-CN-001',
+      date: '2026-07-05',
+      return_date: '2026-07-05',
+      receiver_name: 'Demo Customer Pvt Ltd',
+      receiver_gstin: 'DEMO123456ABCDE',
+      reason: 'Quality Issues',
+      total_items: 5,
+      gross_value: 2500,
+      net_value: 2000,
+      file_name: 'demo-cn-001.pdf',
+      original_name: 'demo-cn-001.pdf',
+      items: [
+        { item_id: 1001, name: 'Demo Chocolate Cake', quantity: 2, rate: 500, amount: 1000 },
+        { item_id: 1002, name: 'Demo Vanilla Cake', quantity: 3, rate: 500, amount: 1500 }
+      ],
+      created_at: '2026-07-05',
+      status: 'processed'
+    }
+  ],
+  payments: [
+    {
+      id: 1,
+      invoice_number: 'DEMO-INV-001',
+      invoice_date: '2026-07-05',
+      customer_name: 'Demo Customer',
+      total_amount: 5000,
+      paid_amount: 3000,
+      balance: 2000,
+      payment_type: 'partial'
+    },
+    {
+      id: 2,
+      credit_note_number: 'DEMO-CN-001',
+      credit_note_date: '2026-07-05',
+      customer_name: 'Demo Customer Pvt Ltd',
+      refund_amount: 2000,
+      payment_type: 'refund'
+    },
+    {
+      id: 3,
+      ros_receipt_number: 'ROS-001',
+      ros_date: '2026-07-05',
+      customer_name: 'Demo Shop',
+      total_amount: 3500,
+      paid_amount: 3500,
+      balance: 0,
+      payment_type: 'full'
+    }
   ]
 };
 
@@ -41,9 +128,14 @@ const generateDemoSales = () => {
     const sale = {
       id: 5000 + i,
       sale_date: saleDateTime,
-      total_amount: Math.floor(Math.random() * 5000) + 1000,
+      total_amount: 0,
       payment_type: ['cash', 'card', 'upi'][Math.floor(Math.random() * 3)],
       staff_id: 0,
+      product_mrp_total: 0,
+      decoration_mrp_total: 0,
+      product_cost_total: 0,
+      decoration_cost_total: 0,
+      total_cost: 0,
       items: []
     };
     
@@ -52,7 +144,11 @@ const generateDemoSales = () => {
     for (let j = 0; j < numItems; j++) {
       const randomProduct = demoData.products[Math.floor(Math.random() * demoData.products.length)];
       const quantity = Math.floor(Math.random() * 5) + 1;
-      const unitPrice = 100 + Math.floor(Math.random() * 200);
+      const unitPrice = randomProduct.sale_price;
+      const costPrice = randomProduct.invoice_price;
+      
+      const itemTotal = quantity * unitPrice;
+      const itemCost = quantity * costPrice;
       
       sale.items.push({
         id: 6000 + i * 10 + j,
@@ -61,9 +157,15 @@ const generateDemoSales = () => {
         batch_id: randomProduct.id,
         quantity: quantity,
         unit_price: unitPrice,
-        total_price: quantity * unitPrice,
-        name: randomProduct.name
+        total_price: itemTotal,
+        name: randomProduct.name,
+        item_code: randomProduct.item_code
       });
+      
+      sale.total_amount += itemTotal;
+      sale.product_mrp_total += itemTotal;
+      sale.product_cost_total += itemCost;
+      sale.total_cost += itemCost;
     }
     
     sales.push(sale);
