@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { DateProvider } from "@/hooks/use-date-context"
 import { LoginForm } from "@/components/login-form"
@@ -8,9 +9,10 @@ import { AdminDashboard } from "@/components/admin-dashboard"
 
 export default function HomePage() {
   const { user, loading } = useAuth()
+  const [showAdmin, setShowAdmin] = useState(false)
 
   // Debug logging
-  console.log("HomePage render:", { user, loading })
+  console.log("HomePage render:", { user, loading, showAdmin })
 
   if (loading) {
     return (
@@ -27,10 +29,17 @@ export default function HomePage() {
     return <LoginForm />
   }
 
+  // Demo users can toggle between staff and admin views
+  const shouldShowAdmin = user.role === "admin" || (user.isDemo && showAdmin)
+
   // Force re-render by using a key that changes with user state
   return (
-    <DateProvider key={`${user.id}-${user.role}`} userRole={user.role}>
-      {user.role === "admin" ? <AdminDashboard /> : <StaffDashboard />}
+    <DateProvider key={`${user.id}-${user.role}-${showAdmin}`} userRole={shouldShowAdmin ? "admin" : "staff"}>
+      {shouldShowAdmin ? (
+        <AdminDashboard onBackToStaff={() => setShowAdmin(false)} />
+      ) : (
+        <StaffDashboard onSwitchToAdmin={() => setShowAdmin(true)} />
+      )}
     </DateProvider>
   )
 }

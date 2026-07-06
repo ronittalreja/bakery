@@ -22,6 +22,7 @@ import {
   Users,
   CreditCard,
   Edit3,
+  Shield,
 } from "lucide-react";
 import { AdminSalesPage } from "@/components/admin-sales-page";
 import { ManageProductsPage } from "@/components/manage-products-page";
@@ -46,7 +47,11 @@ type AdminPage =
   | "returns-summary"
   | "payments";
 
-export function AdminDashboard() {
+interface AdminDashboardProps {
+  onBackToStaff?: () => void;
+}
+
+export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
   const { user, logout } = useAuth();
   const { adminMainDate, setAdminMainDate, isToday } = useDateContext();
   const [currentPage, setCurrentPage] = useState<AdminPage>("dashboard");
@@ -250,6 +255,17 @@ export function AdminDashboard() {
               <div className="flex-1 sm:flex-none">
                 <DateSelector selectedDate={adminMainDate} onDateChange={setAdminMainDate} />
               </div>
+              {user?.isDemo && onBackToStaff && (
+                <Button 
+                  variant="outline" 
+                  onClick={onBackToStaff}
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border-blue-600 transition-all duration-200 flex-shrink-0"
+                >
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden sm:inline">Staff</span>
+                  <span className="sm:hidden">Staff</span>
+                </Button>
+              )}
               <Button variant="outline" onClick={logout} className="flex items-center gap-2 bg-white hover:bg-white text-gray-600 hover:text-black border border-gray-300 hover:border-black transition-all duration-200 flex-shrink-0">
                 <LogOut className="h-4 w-4" />
                 <span className="hidden sm:inline">Sign Out</span>

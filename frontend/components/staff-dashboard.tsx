@@ -27,7 +27,11 @@ import { DateSelector } from "@/components/date-selector";
 
 type StaffPage = "dashboard" | "upload-invoice" | "record-sale" | "stock" | "sales-summary" | "returns" | "credit-notes" | "credit-note-details";
 
-export function StaffDashboard() {
+interface StaffDashboardProps {
+  onSwitchToAdmin?: () => void;
+}
+
+export function StaffDashboard({ onSwitchToAdmin }: StaffDashboardProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const { selectedDate, isToday, isDayEnded } = useDateContext();
@@ -222,7 +226,7 @@ export function StaffDashboard() {
               {user?.isDemo && (
                 <Button 
                   variant="outline" 
-                  onClick={() => router.push('/admin-dashboard')}
+                  onClick={onSwitchToAdmin}
                   className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white border-purple-600 transition-all duration-200 flex-shrink-0"
                 >
                   <Shield className="h-4 w-4" />

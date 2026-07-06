@@ -1,7 +1,14 @@
 const Product = require('../models/Product');
+const { getDemoData } = require('../middleware/demoMode');
 
 const getAllProducts = async (req, res) => {
   try {
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoProducts = getDemoData('products');
+      return res.json({ success: true, products: demoProducts });
+    }
+    
     const products = await Product.findAll();
     res.json({ success: true, products });
   } catch (error) {

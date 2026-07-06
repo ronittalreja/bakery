@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('../config/database');
+const { getDemoData } = require('../middleware/demoMode');
 
 const router = express.Router();
 
@@ -12,6 +13,39 @@ const getMonthlyInsights = async (req, res) => {
     }
 
     console.log(`Fetching insights for month: ${month}`);
+
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoSales = getDemoData('sales');
+      const demoExpenses = getDemoData('expenses');
+      
+      const totalSales = demoSales.reduce((sum, sale) => sum + sale.total_amount, 0);
+      const totalCost = totalSales * 0.6; // 60% cost
+      const totalLoss = totalSales * 0.05; // 5% loss
+      const totalExpenses = demoExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+      const totalProfit = totalSales - totalCost - totalLoss - totalExpenses;
+      const totalMargin = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
+
+      const insightsData = {
+        month,
+        totalSales,
+        productMRPTotal: totalSales * 0.8,
+        decorationMRPTotal: totalSales * 0.2,
+        productCostTotal: totalCost * 0.8,
+        decorationCostTotal: totalCost * 0.2,
+        totalCost,
+        productProfit: totalSales * 0.8 - totalCost * 0.8,
+        decorationProfit: totalSales * 0.2 - totalCost * 0.2,
+        totalProfit,
+        productMargin: 25,
+        decorationMargin: 30,
+        totalMargin,
+        totalLoss,
+        totalExpenses
+      };
+
+      return res.json({ success: true, data: insightsData });
+    }
 
     // Get total sales and cost breakdown for the month using new cost tracking columns
     const [salesData] = await db.execute(`

@@ -2,9 +2,32 @@ const Return = require('../models/Return');
 const Damage = require('../models/Damage');
 const StockBatch = require('../models/StockBatch');
 const db = require('../config/database');
+const { getDemoData } = require('../middleware/demoMode');
 
 const getGrmReturns = async (req, res) => {
   try {
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoProducts = getDemoData('products');
+      const demoStockBatches = getDemoData('stockBatches');
+      
+      const demoReturns = demoProducts.slice(0, 3).map((product, index) => {
+        const stockBatch = demoStockBatches.find(sb => sb.product_id === product.id);
+        return {
+          batch_id: stockBatch?.id || product.id,
+          product_id: product.id,
+          name: product.name,
+          item_code: product.item_code,
+          batch_quantity: stockBatch?.quantity || 50,
+          expiry_date: stockBatch?.expiry_date || '2026-08-05',
+          available_quantity: Math.floor((stockBatch?.quantity || 50) * 0.3),
+          shelf_life_days: 30
+        };
+      });
+
+      return res.json({ success: true, data: demoReturns });
+    }
+
     const { date } = req.query;
     const toLocalYMD = (d) => {
       const dt = new Date(d);
@@ -373,6 +396,23 @@ const getReturnsSummary = async (req, res) => {
   try {
     const { date } = req.params;
     const targetDate = date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+
+    // Return demo data if demo user
+    if (req.isDemo) {
+      return res.json({
+        success: true,
+        date: targetDate,
+        grm: {
+          totalReturns: 3,
+          totalQuantity: 15,
+          totalLoss: 750
+        },
+        gvn: {
+          totalDamages: 2,
+          totalQuantity: 10
+        }
+      });
+    }
 
     // Get GRM returns summary
     const [grmSummary] = await db.execute(
@@ -1020,6 +1060,27 @@ const getReturnsByDate = async (req, res) => {
     const { date } = req.query;
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return res.status(400).json({ success: false, error: 'Invalid date format. Use YYYY-MM-DD' });
+    }
+
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoProducts = getDemoData('products');
+      const demoReturns = demoProducts.slice(0, 2).map((product, index) => ({
+        id: 1000 + index,
+        product_id: product.id,
+        quantity: 5,
+        invoice_price: product.invoice_price,
+        return_date: date,
+        type: index === 0 ? 'GRM' : 'GVN',
+        name: product.name,
+        item_code: product.item_code,
+        category: product.category,
+        shelf_life_days: 30,
+        image_url: product.image_url,
+        batch_id: 2000 + index,
+        expiry_date: '2026-08-05'
+      }));
+      return res.json({ success: true, data: demoReturns });
     }
 
     const [rows] = await db.execute(

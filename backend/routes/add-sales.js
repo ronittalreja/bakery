@@ -114,6 +114,11 @@ router.get('/available-stock', async (req, res) => {
 
 // Record sale with GRM reduction logic
 router.post('/record', async (req, res) => {
+  // Prevent demo users from recording real sales
+  if (req.isDemo) {
+    return res.json({ success: true, message: 'Demo sale recorded (not saved to database)' });
+  }
+
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();

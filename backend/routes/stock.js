@@ -6,6 +6,8 @@ const Product = require('../models/Product');
 const auth = require('../middleware/auth');
 const StockBatch = require('../models/StockBatch');
 const { v4: uuidv4 } = require('uuid');
+const { getDemoData } = require('../middleware/demoMode');
+const db = require('../config/database');
 
 router.get('/', async (req, res) => {
   try {
@@ -15,6 +17,43 @@ router.get('/', async (req, res) => {
     }
 
     console.log("Received /api/stock request with date:", date, "productId:", productId, "expired:", expired, "group:", group);
+
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoProducts = getDemoData('products');
+      const demoStockBatches = getDemoData('stockBatches');
+      
+      const processedStock = demoProducts.map(product => {
+        const stockBatch = demoStockBatches.find(sb => sb.product_id === product.id);
+        return {
+          id: stockBatch?.id || product.id,
+          product_id: product.id,
+          name: product.name,
+          item_code: product.item_code,
+          hsn_code: product.hsn_code,
+          invoice_price: product.invoice_price,
+          sale_price: product.sale_price,
+          grm_value: product.grm_value,
+          category: product.category,
+          image_url: product.image_url,
+          shelf_life_days: 30,
+          quantity: stockBatch?.quantity || 50,
+          expiry_date: stockBatch?.expiry_date || '2026-08-05',
+          invoice_date: stockBatch?.invoice_date || '2026-07-05',
+          invoice_reference: stockBatch?.invoice_reference || 'DEMO-INV-001'
+        };
+      });
+
+      const totalQuantity = processedStock.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+      const totalValue = processedStock.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.sale_price || 0), 0);
+
+      return res.json({ 
+        success: true, 
+        data: processedStock, 
+        totalQuantity, 
+        totalValue 
+      });
+    }
 
     if (group && String(group).toLowerCase() === 'product') {
       const rows = await StockBatch.getAggregatedAvailableStockByProduct({ date });
@@ -56,6 +95,29 @@ router.get('/aggregated', async (req, res) => {
     const { date } = req.query;
     if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return res.status(400).json({ success: false, error: 'Invalid date format' });
+    }
+
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoProducts = getDemoData('products');
+      const demoStockBatches = getDemoData('stockBatches');
+      
+      const rows = demoProducts.map(product => {
+        const stockBatch = demoStockBatches.find(sb => sb.product_id === product.id);
+        return {
+          product_id: product.id,
+          name: product.name,
+          item_code: product.item_code,
+          category: product.category,
+          sale_price: product.sale_price,
+          total_available: stockBatch?.quantity || 50
+        };
+      });
+
+      const totalQuantity = rows.reduce((sum, r) => sum + Number(r.total_available || 0), 0);
+      const totalValue = rows.reduce((sum, r) => sum + Number(r.total_available || 0) * Number(r.sale_price || 0), 0);
+
+      return res.json({ success: true, data: rows, totalQuantity, totalValue });
     }
 
     const rows = await StockBatch.getAggregatedAvailableStockByProduct({ date });
