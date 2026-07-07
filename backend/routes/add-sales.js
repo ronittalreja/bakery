@@ -114,9 +114,44 @@ router.get('/available-stock', async (req, res) => {
 
 // Record sale with GRM reduction logic
 router.post('/record', async (req, res) => {
-  // Prevent demo users from recording real sales
+  // Prevent demo users from recording real sales, but store in demo data
   if (req.isDemo) {
-    return res.json({ success: true, message: 'Demo sale recorded (not saved to database)' });
+    const { saleDate, items, paymentType, totalAmount } = req.body;
+    const { getDemoData, demoData } = require('../middleware/demoMode');
+    
+    // Store the sale in demo data
+    const newSale = {
+      id: 5000 + demoData.sales.length,
+      sale_date: saleDate,
+      total_amount: totalAmount,
+      payment_type: paymentType,
+      staff_id: 0,
+      product_mrp_total: 0,
+      decoration_mrp_total: 0,
+      product_cost_total: 0,
+      decoration_cost_total: 0,
+      total_cost: 0,
+      items: items.map((item, index) => ({
+        id: 6000 + demoData.sales.length * 10 + index,
+        sale_id: 5000 + demoData.sales.length,
+        item_id: item.productId,
+        batch_id: item.batchId,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+        total_price: item.totalPrice,
+        name: item.name,
+        item_code: item.itemCode || 'DEMO'
+      }))
+    };
+    
+    // Calculate totals
+    newSale.items.forEach(item => {
+      newSale.total_amount += item.total_price;
+      newSale.product_mrp_total += item.total_price;
+    });
+    
+    demoData.sales.push(newSale);
+    return res.json({ success: true, message: 'Demo sale recorded', saleId: newSale.id });
   }
 
   const connection = await db.getConnection();

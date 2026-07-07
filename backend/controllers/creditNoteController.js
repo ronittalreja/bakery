@@ -815,25 +815,7 @@ const getAllCreditNotes = async (req, res) => {
     
     // Return demo data if demo user
     if (req.isDemo) {
-      const demoCreditNotes = [
-        {
-          id: 1,
-          credit_note_number: 'DEMO-CN-001',
-          date: '2026-07-05',
-          return_date: '2026-07-05',
-          receiver_name: 'Demo Customer',
-          receiver_gstin: 'DEMO123456',
-          reason: 'Demo Return',
-          total_items: 5,
-          gross_value: 2500,
-          net_value: 2000,
-          file_name: 'demo-cn.pdf',
-          original_name: 'demo-cn.pdf',
-          items: [],
-          created_at: '2026-07-05',
-          status: 'processed'
-        }
-      ];
+      const demoCreditNotes = getDemoData('creditNotes');
       return res.json({ success: true, creditNotes: demoCreditNotes });
     }
     

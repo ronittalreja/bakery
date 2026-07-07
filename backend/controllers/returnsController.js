@@ -230,6 +230,36 @@ const getGvnDamages = async (req, res) => {
     const { date } = req.query;
     const targetDate = date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
 
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoReturns = getDemoData('returns');
+      const demoProducts = getDemoData('products');
+      const demoStockBatches = getDemoData('stockBatches');
+      
+      const demoGvnDamages = demoReturns.filter(r => r.type === 'GVN').map((ret) => {
+        const product = demoProducts.find(p => p.id === ret.product_id);
+        const stockBatch = demoStockBatches.find(sb => sb.id === ret.batch_id);
+        return {
+          batch_id: ret.batch_id,
+          product_id: ret.product_id,
+          name: product?.name || 'Demo Product',
+          item_code: product?.item_code || 'DEMO',
+          category: product?.category || 'Demo',
+          shelf_life_days: 30,
+          invoice_price: ret.invoice_price,
+          hsn_code: product?.hsn_code || '19059010',
+          image_url: product?.image_url || null,
+          batch_quantity: stockBatch?.quantity || 200,
+          expiry_date: ret.expiry_date,
+          invoice_date: '2026-07-05',
+          invoice_reference: 'DEMO-INV-001',
+          available_quantity: ret.quantity
+        };
+      });
+
+      return res.json({ success: true, data: demoGvnDamages });
+    }
+
     // Get stock received today that can be marked as damaged
     const [availableStock] = await db.execute(
       `SELECT 
