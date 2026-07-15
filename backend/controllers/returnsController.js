@@ -504,6 +504,56 @@ const getReturnsDetails = async (req, res) => {
     const { date } = req.params;
     const targetDate = date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
 
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoReturns = getDemoData('returns');
+      const demoProducts = getDemoData('products');
+      const demoStockBatches = getDemoData('stockBatches');
+      
+      const filteredReturns = demoReturns.filter(r => r.return_date === targetDate);
+      
+      const grmReturns = filteredReturns.filter(r => r.type === 'GRM').map((ret) => {
+        const product = demoProducts.find(p => p.id === ret.product_id);
+        const stockBatch = demoStockBatches.find(sb => sb.id === ret.batch_id);
+        return {
+          id: ret.id,
+          date: ret.return_date,
+          quantity: ret.quantity,
+          lossAmount: ret.loss_amount || 0,
+          productName: product?.name || 'Demo Product',
+          item_code: product?.item_code || 'DEMO',
+          category: product?.category || 'Demo',
+          image_url: product?.image_url || null,
+          invoice_reference: stockBatch?.invoice_reference || 'DEMO-INV-001',
+          invoice_date: stockBatch?.invoice_date || '2026-07-05',
+          expiry_date: ret.expiry_date
+        };
+      });
+      
+      const gvnDamages = filteredReturns.filter(r => r.type === 'GVN').map((ret) => {
+        const product = demoProducts.find(p => p.id === ret.product_id);
+        const stockBatch = demoStockBatches.find(sb => sb.id === ret.batch_id);
+        return {
+          id: ret.id,
+          date: ret.return_date,
+          quantity: ret.quantity,
+          lossAmount: ret.loss_amount || 0,
+          productName: product?.name || 'Demo Product',
+          item_code: product?.item_code || 'DEMO',
+          category: product?.category || 'Demo',
+          image_url: product?.image_url || null,
+          invoice_reference: stockBatch?.invoice_reference || 'DEMO-INV-001',
+          invoice_date: stockBatch?.invoice_date || '2026-07-05'
+        };
+      });
+
+      return res.json({
+        success: true,
+        grmReturns,
+        gvnDamages
+      });
+    }
+
     // Get detailed GRM returns
     const [grmReturns] = await db.execute(
       `SELECT 

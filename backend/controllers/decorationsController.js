@@ -1,6 +1,6 @@
 const Decoration = require('../models/Decoration');
 const db = require('../config/database');
-const { getDemoData } = require('../middleware/demoMode');
+const { getDemoData, demoData } = require('../middleware/demoMode');
 
 const getAllDecorations = async (req, res) => {
   try {
@@ -153,8 +153,25 @@ const updateDecorationStock = async (decorationId, quantitySold) => {
 };
 
 // Get decoration by ID for stock checking
-const getDecorationForSale = async (decorationId) => {
+const getDecorationForSale = async (decorationId, isDemo = false) => {
   try {
+    // Return demo data if demo user
+    if (isDemo) {
+      const decoration = demoData.decorations.find(d => d.id === decorationId);
+      if (!decoration) {
+        return null;
+      }
+      return {
+        id: decoration.id,
+        sku: decoration.sku,
+        name: decoration.name,
+        category: decoration.category,
+        sale_price: decoration.sale_price,
+        stock_quantity: decoration.stock_quantity,
+        image_url: decoration.image_url
+      };
+    }
+
     const [rows] = await db.execute(
       'SELECT id, sku, name, category, sale_price, stock_quantity, image_url FROM decorations WHERE id = ? AND is_active = 1',
       [decorationId]

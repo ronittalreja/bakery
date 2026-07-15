@@ -1,11 +1,39 @@
 const StockBatch = require('../models/StockBatch');
 const db = require('../config/database');
+const { demoData } = require('../middleware/demoMode');
 
 
 const getStock = async (req, res) => {
   try {
     const { date } = req.query;
     const targetDate = date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoStock = demoData.stockBatches.map(batch => {
+        const product = demoData.products.find(p => p.id === batch.product_id);
+        return {
+          id: batch.id,
+          product_id: batch.product_id,
+          quantity: batch.quantity,
+          expiry_date: batch.expiry_date,
+          invoice_date: batch.invoice_date,
+          invoice_reference: batch.invoice_reference,
+          item_code: product?.item_code || 'DEMO',
+          name: product?.name || 'Demo Product',
+          hsn_code: product?.hsn_code || '19059010',
+          invoice_price: product?.invoice_price || 0,
+          sale_price: product?.sale_price || 0,
+          grm_value: product?.grm_value || 0,
+          image_url: product?.image_url || '/placeholder.svg'
+        };
+      }).filter(item => item.quantity > 0);
+
+      return res.json({
+        success: true,
+        data: demoStock
+      });
+    }
 
     // For historical sales, we need to show all stock that existed on the target date
     // This includes items that were available even if they expired on that date

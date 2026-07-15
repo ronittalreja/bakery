@@ -18,10 +18,39 @@ router.get('/available-stock', async (req, res) => {
     if (req.isDemo) {
       const demoProducts = getDemoData('products');
       const demoStockBatches = getDemoData('stockBatches');
+      const demoSales = getDemoData('sales');
+      const demoReturns = getDemoData('returns');
+      
+      // Calculate sold quantities from demo sales for the date
+      const soldMap = new Map();
+      demoSales.forEach(sale => {
+        const saleDate = new Date(sale.sale_date).toISOString().split('T')[0];
+        if (saleDate === date) {
+          sale.items.forEach(item => {
+            const key = `${item.item_id}-${item.batch_id}`;
+            soldMap.set(key, (soldMap.get(key) || 0) + item.quantity);
+          });
+        }
+      });
+      
+      // Calculate GRM quantities from demo returns for the date
+      const grmMap = new Map();
+      demoReturns.forEach(ret => {
+        if (ret.return_date === date && ret.type === 'GRM') {
+          const key = `${ret.product_id}-${ret.batch_id}`;
+          grmMap.set(key, (grmMap.get(key) || 0) + ret.quantity);
+        }
+      });
       
       // Map demo data to match the expected format
       const processedStock = demoProducts.map(product => {
         const stockBatch = demoStockBatches.find(sb => sb.product_id === product.id);
+        const key = `${product.id}-${stockBatch?.id}`;
+        const soldQty = soldMap.get(key) || 0;
+        const grmQty = grmMap.get(key) || 0;
+        const remainingQty = Math.max(0, (stockBatch?.quantity || 200) - soldQty);
+        const availableQty = remainingQty + grmQty;
+        
         return {
           id: stockBatch?.id || product.id,
           product_id: product.id,
@@ -34,12 +63,16 @@ router.get('/available-stock', async (req, res) => {
           category: product.category,
           image_url: product.image_url,
           shelf_life_days: 30,
-          quantity: stockBatch?.quantity || 50,
+          quantity: availableQty,
+          original_quantity: stockBatch?.quantity || 200,
+          sold_quantity: soldQty,
+          grm_quantity: grmQty,
+          is_grm_restored: grmQty > 0,
           expiry_date: stockBatch?.expiry_date || '2026-08-05',
           invoice_date: stockBatch?.invoice_date || '2026-07-05',
           invoice_reference: stockBatch?.invoice_reference || 'DEMO-INV-001'
         };
-      });
+      }).filter(stock => stock.quantity > 0);
 
       return res.json({ success: true, data: processedStock });
     }

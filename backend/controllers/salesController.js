@@ -4,27 +4,182 @@ const Sale = require('../models/Sale');
 const StockBatch = require('../models/StockBatch');
 const { updateDecorationStock, getDecorationForSale } = require('./decorationsController');
 const db = require('../config/database');
-const { getDemoData } = require('../middleware/demoMode');
+const { getDemoData, demoData } = require('../middleware/demoMode');
 
 // Record a Sale (supports FEFO allocation when batchId not provided)
 const recordSale = async (req, res) => {
+  const { 
+    saleDate, 
+    items, 
+    paymentType, 
+    totalAmount,
+    productMRPTotal = 0,
+    decorationMRPTotal = 0,
+    productCostTotal = 0,
+    decorationCostTotal = 0,
+    totalCost = 0,
+    isHistorical = false
+  } = req.body;
+  const staffId = req.user?.id || 0;
+
+  // Handle demo user separately - use demo data instead of database
+  if (req.isDemo) {
+    try {
+      // Validate required fields
+      const amountNum = Number(totalAmount);
+      if (
+        !saleDate ||
+        !Array.isArray(items) ||
+        items.length === 0 ||
+        !paymentType ||
+        !Number.isFinite(amountNum)
+      ) {
+        return res.status(400).json({ success: false, error: 'Missing required fields' });
+      }
+
+      const allocatedItems = [];
+      const decorationItems = [];
+
+      for (const item of items) {
+        if (!item.productId || !item.quantity) {
+          return res.status(400).json({ success: false, error: 'Invalid item data: productId and quantity are required' });
+        }
+
+        // Check if this is a decoration item
+        const decoration = demoData.decorations.find(d => d.id === item.productId);
+        if (decoration) {
+          // Handle decoration item
+          if (decoration.stock_quantity < Number(item.quantity)) {
+            return res.status(400).json({ 
+              success: false, 
+              error: `Insufficient stock for decoration ${decoration.name}. Available: ${decoration.stock_quantity}, Requested: ${item.quantity}` 
+            });
+          }
+          
+          const unitPrice = Number(item.unitPrice);
+          const totalPrice = Number(item.totalPrice ?? unitPrice * Number(item.quantity));
+          if (!unitPrice || totalPrice <= 0) {
+            return res.status(400).json({ success: false, error: 'Invalid pricing for decoration item' });
+          }
+          
+          decorationItems.push({
+            decorationId: item.productId,
+            quantity: Number(item.quantity),
+            unitPrice,
+            totalPrice,
+            name: decoration.name
+          });
+          continue;
+        }
+
+        // Handle regular product items - validate against demo stock batches
+        const stockBatch = demoData.stockBatches.find(sb => sb.product_id === item.productId);
+        if (!stockBatch) {
+          return res.status(400).json({ success: false, error: `No stock found for product ${item.name || item.productId}` });
+        }
+
+        if (stockBatch.quantity < Number(item.quantity)) {
+          return res.status(400).json({ 
+            success: false, 
+            error: `Insufficient stock for product ${item.name || item.productId}. Available: ${stockBatch.quantity}, Requested: ${item.quantity}` 
+          });
+        }
+
+        const unitPrice = Number(item.unitPrice);
+        const totalPrice = Number(item.totalPrice ?? unitPrice * Number(item.quantity));
+        if (!unitPrice || totalPrice <= 0) {
+          return res.status(400).json({ success: false, error: 'Invalid pricing for item' });
+        }
+
+        allocatedItems.push({
+          productId: item.productId,
+          batchId: stockBatch.id,
+          quantity: Number(item.quantity),
+          unitPrice,
+          totalPrice,
+          name: item.name || ''
+        });
+      }
+
+      // Create sale record in demo data
+      let saleDateTime;
+      if (isHistorical) {
+        saleDateTime = new Date(saleDate).toISOString().slice(0, 19).replace('T', ' ');
+      } else {
+        saleDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      }
+
+      const newSaleId = 5000 + demoData.sales.length;
+      const newSale = {
+        id: newSaleId,
+        sale_date: saleDateTime,
+        total_amount: totalAmount,
+        payment_type: paymentType,
+        staff_id: staffId,
+        product_mrp_total: productMRPTotal,
+        decoration_mrp_total: decorationMRPTotal,
+        product_cost_total: productCostTotal,
+        decoration_cost_total: decorationCostTotal,
+        total_cost: totalCost,
+        items: []
+      };
+
+      // Add sale items and update demo stock
+      for (const item of allocatedItems) {
+        const newItemId = 6000 + demoData.sales.length * 10 + newSale.items.length;
+        newSale.items.push({
+          id: newItemId,
+          sale_id: newSaleId,
+          item_id: item.productId,
+          batch_id: item.batchId,
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          total_price: item.totalPrice,
+          name: item.name,
+          item_type: 'product'
+        });
+
+        // Update demo stock batch quantity
+        const stockBatch = demoData.stockBatches.find(sb => sb.id === item.batchId);
+        if (stockBatch && !isHistorical) {
+          stockBatch.quantity -= item.quantity;
+        }
+      }
+
+      // Handle decoration items
+      for (const item of decorationItems) {
+        const newItemId = 6000 + demoData.sales.length * 10 + newSale.items.length;
+        newSale.items.push({
+          id: newItemId,
+          sale_id: newSaleId,
+          item_id: item.decorationId,
+          batch_id: null,
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          total_price: item.totalPrice,
+          name: item.name,
+          item_type: 'decoration'
+        });
+
+        // Update demo decoration stock
+        const decoration = demoData.decorations.find(d => d.id === item.decorationId);
+        if (decoration && !isHistorical) {
+          decoration.stock_quantity -= item.quantity;
+        }
+      }
+
+      demoData.sales.push(newSale);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error('Demo sale error:', error);
+      return res.status(500).json({ success: false, error: error.message || 'Failed to record demo sale' });
+    }
+  }
+
+  // Regular database flow for non-demo users
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
-
-    const { 
-      saleDate, 
-      items, 
-      paymentType, 
-      totalAmount,
-      productMRPTotal = 0,
-      decorationMRPTotal = 0,
-      productCostTotal = 0,
-      decorationCostTotal = 0,
-      totalCost = 0,
-      isHistorical = false
-    } = req.body;
-    const staffId = req.user?.id || 0;
 
     // Initialize saleId to prevent undefined error
     let saleId = null;
@@ -538,6 +693,55 @@ const getMonthlySales = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid month format. Use YYYY-MM' });
     }
 
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoSales = getDemoData('sales');
+      const demoProducts = getDemoData('products');
+      
+      const filteredSales = demoSales.filter(sale => {
+        const saleMonth = new Date(sale.sale_date).toISOString().slice(0, 7);
+        return saleMonth === month;
+      });
+      
+      const salesMap = new Map();
+      filteredSales.forEach(sale => {
+        if (!salesMap.has(sale.id)) {
+          salesMap.set(sale.id, {
+            sale_id: sale.id,
+            sale_date: sale.sale_date,
+            total_amount: sale.total_amount,
+            payment_type: sale.payment_type,
+            items: []
+          });
+        }
+        sale.items.forEach(item => {
+          const product = demoProducts.find(p => p.id === item.item_id);
+          salesMap.get(sale.id).items.push({
+            item_id: item.item_id,
+            product_id: item.item_id,
+            batch_id: item.batch_id,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total_price: item.total_price,
+            name: item.name,
+            item_type: 'product',
+            item_code: product?.item_code || 'DEMO',
+            hsn_code: product?.hsn_code || '19059010'
+          });
+        });
+      });
+      
+      return res.json({ 
+        success: true, 
+        data: Array.from(salesMap.values()),
+        summary: {
+          totalQuantity: filteredSales.reduce((sum, s) => sum + s.items.reduce((is, i) => is + i.quantity, 0), 0),
+          totalValue: filteredSales.reduce((sum, s) => sum + s.total_amount, 0),
+          totalTransactions: filteredSales.length
+        }
+      });
+    }
+
     const query = `
       SELECT
         s.id as sale_id,
@@ -637,6 +841,99 @@ const getMonthlySalesAnalytics = async (req, res) => {
     const { month, year } = req.params;
     if (!/^\d{4}-\d{2}$/.test(month)) {
       return res.status(400).json({ success: false, error: 'Invalid month format. Use YYYY-MM' });
+    }
+    
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoSales = getDemoData('sales');
+      const demoProducts = getDemoData('products');
+      
+      const filteredSales = demoSales.filter(sale => {
+        const saleMonth = new Date(sale.sale_date).toISOString().slice(0, 7);
+        return saleMonth === month;
+      });
+      
+      const currentTotalTransactions = filteredSales.length;
+      const currentTotalSales = filteredSales.reduce((sum, s) => sum + s.total_amount, 0);
+      const currentTotalItems = filteredSales.reduce((sum, s) => sum + s.items.reduce((is, i) => is + i.quantity, 0), 0);
+      
+      // Calculate previous year data (mock)
+      const previousTotalTransactions = Math.floor(currentTotalTransactions * 0.8);
+      const previousTotalSales = Math.floor(currentTotalSales * 0.75);
+      const previousTotalItems = Math.floor(currentTotalItems * 0.8);
+      
+      // Calculate last month data (mock)
+      const lastMonthTotalTransactions = Math.floor(currentTotalTransactions * 0.9);
+      const lastMonthTotalSales = Math.floor(currentTotalSales * 0.85);
+      const lastMonthTotalItems = Math.floor(currentTotalItems * 0.9);
+      
+      // Calculate growth percentages
+      const revenueGrowth = previousTotalSales > 0 ? ((currentTotalSales - previousTotalSales) / previousTotalSales * 100).toFixed(1) : 0;
+      const transactionsGrowth = previousTotalTransactions > 0 ? ((currentTotalTransactions - previousTotalTransactions) / previousTotalTransactions * 100).toFixed(1) : 0;
+      const itemsGrowth = previousTotalItems > 0 ? ((currentTotalItems - previousTotalItems) / previousTotalItems * 100).toFixed(1) : 0;
+      
+      const lastMonthRevenueGrowth = lastMonthTotalSales > 0 ? ((currentTotalSales - lastMonthTotalSales) / lastMonthTotalSales * 100).toFixed(1) : 0;
+      const lastMonthTransactionsGrowth = lastMonthTotalTransactions > 0 ? ((currentTotalTransactions - lastMonthTotalTransactions) / lastMonthTotalTransactions * 100).toFixed(1) : 0;
+      const lastMonthItemsGrowth = lastMonthTotalItems > 0 ? ((currentTotalItems - lastMonthTotalItems) / lastMonthTotalItems * 100).toFixed(1) : 0;
+      
+      // Get most sold items
+      const itemStats = new Map();
+      filteredSales.forEach(sale => {
+        sale.items.forEach(item => {
+          if (!itemStats.has(item.name)) {
+            itemStats.set(item.name, {
+              productName: item.name,
+              itemCode: item.item_code || 'DEMO',
+              totalQuantity: 0,
+              totalRevenue: 0,
+              transactionCount: 0
+            });
+          }
+          const stat = itemStats.get(item.name);
+          stat.totalQuantity += item.quantity;
+          stat.totalRevenue += item.total_price;
+          stat.transactionCount += 1;
+        });
+      });
+      
+      const mostSoldItems = Array.from(itemStats.values())
+        .sort((a, b) => b.totalQuantity - a.totalQuantity)
+        .slice(0, 10);
+      
+      return res.json({
+        success: true,
+        data: {
+          current: {
+            month,
+            totalTransactions: currentTotalTransactions,
+            totalSales: currentTotalSales,
+            totalItems: currentTotalItems
+          },
+          previous: {
+            month: `${parseInt(month.split('-')[0]) - 1}-${month.split('-')[1]}`,
+            totalTransactions: previousTotalTransactions,
+            totalSales: previousTotalSales,
+            totalItems: previousTotalItems
+          },
+          lastMonth: {
+            month: lastMonthStr2 || month,
+            totalTransactions: lastMonthTotalTransactions,
+            totalSales: lastMonthTotalSales,
+            totalItems: lastMonthTotalItems
+          },
+          growth: {
+            revenue: parseFloat(revenueGrowth),
+            transactions: parseFloat(transactionsGrowth),
+            items: parseFloat(itemsGrowth)
+          },
+          lastMonthGrowth: {
+            revenue: parseFloat(lastMonthRevenueGrowth),
+            transactions: parseFloat(lastMonthTransactionsGrowth),
+            items: parseFloat(lastMonthItemsGrowth)
+          },
+          mostSoldItems
+        }
+      });
     }
     
     // Default to previous year if year not provided
