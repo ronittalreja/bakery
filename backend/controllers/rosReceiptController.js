@@ -1,10 +1,39 @@
 const db = require('../config/database');
 const { parseRosReceiptPDF, parseRosReceiptPDFFromBuffer } = require('../utils/rosReceiptParser');
+const { getDemoData } = require('../middleware/demoMode');
 
 // Get all ROS receipts with optional month filter
 const getAllRosReceipts = async (req, res) => {
   try {
     const { month } = req.query;
+    
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoRosReceipts = getDemoData('rosReceipts');
+      const filteredReceipts = month ? demoRosReceipts.filter(receipt => {
+        const receiptDate = new Date(receipt.receipt_date);
+        const monthStr = receiptDate.toISOString().slice(0, 7); // YYYY-MM
+        return monthStr === month;
+      }) : demoRosReceipts;
+      
+      const rosReceipts = filteredReceipts.map(row => ({
+        id: row.id,
+        receiptNumber: row.receipt_number,
+        receiptDate: row.receipt_date,
+        receivedFrom: row.received_from,
+        totalAmount: parseFloat(row.total_amount),
+        paymentMethod: row.payment_method,
+        bills: row.bills,
+        fileName: row.file_name,
+        originalName: row.original_name,
+        createdAt: row.created_at
+      }));
+      
+      return res.json({
+        success: true,
+        rosReceipts
+      });
+    }
     
     let query = `
       SELECT 
@@ -59,6 +88,34 @@ const getAllRosReceipts = async (req, res) => {
 const getRosReceiptById = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoRosReceipts = getDemoData('rosReceipts');
+      const receipt = demoRosReceipts.find(r => r.id === parseInt(id));
+      
+      if (!receipt) {
+        return res.status(404).json({ success: false, error: 'ROS receipt not found' });
+      }
+      
+      const rosReceipt = {
+        id: receipt.id,
+        receiptNumber: receipt.receipt_number,
+        receiptDate: receipt.receipt_date,
+        receivedFrom: receipt.received_from,
+        totalAmount: parseFloat(receipt.total_amount),
+        paymentMethod: receipt.payment_method,
+        bills: receipt.bills,
+        fileName: receipt.file_name,
+        originalName: receipt.original_name,
+        createdAt: receipt.created_at
+      };
+      
+      return res.json({
+        success: true,
+        rosReceipt
+      });
+    }
     
     const query = `
       SELECT 

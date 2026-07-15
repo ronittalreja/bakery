@@ -69,17 +69,60 @@ const demoData = {
       return_date: '2026-07-05',
       receiver_name: 'Demo Customer Pvt Ltd',
       receiver_gstin: 'DEMO123456ABCDE',
-      reason: 'Quality Issues',
+      reason: 'EXPIRED GOODS',
       total_items: 5,
       gross_value: 2500,
-      net_value: 2000,
+      net_value: 2125,
       file_name: 'demo-cn-001.pdf',
       original_name: 'demo-cn-001.pdf',
       items: [
-        { item_id: 1001, name: 'Demo Chocolate Cake', quantity: 2, rate: 500, amount: 1000 },
-        { item_id: 1002, name: 'Demo Vanilla Cake', quantity: 3, rate: 500, amount: 1500 }
+        { 
+          itemCode: 'DEMO001', 
+          itemName: 'Demo Chocolate Cake', 
+          hsnCode: '19059010',
+          quantity: 2, 
+          rate: 500, 
+          rtd: 15.00,
+          amount: 1000 
+        },
+        { 
+          itemCode: 'DEMO002', 
+          itemName: 'Demo Vanilla Cake', 
+          hsnCode: '19059010',
+          quantity: 3, 
+          rate: 500, 
+          rtd: 15.00,
+          amount: 1500 
+        }
       ],
       created_at: '2026-07-05',
+      status: 'processed'
+    },
+    {
+      id: 2,
+      credit_note_number: 'DEMO-CN-002',
+      date: '2026-07-10',
+      return_date: '2026-07-10',
+      receiver_name: 'Sample Bakery Supplies',
+      receiver_gstin: 'SAMPLE98765ZYXWV',
+      reason: 'QUALITY ISSUES',
+      total_items: 3,
+      gross_value: 1440,
+      net_value: 1224,
+      file_name: 'demo-cn-002.pdf',
+      original_name: 'demo-cn-002.pdf',
+      items: [
+        { 
+          itemCode: 'DEMO002', 
+          itemName: 'Demo Vanilla Cake', 
+          hsnCode: '19059010',
+          quantity: 3, 
+          rate: 480, 
+          rtd: 15.00,
+          amount: 1440 
+        }
+      ],
+      created_at: '2026-07-10',
       status: 'processed'
     }
   ],
@@ -111,6 +154,134 @@ const demoData = {
       paid_amount: 3500,
       balance: 0,
       payment_type: 'full'
+    }
+  ],
+  invoices: [
+    {
+      id: 1,
+      invoice_number: 'DEMO-INV-001',
+      invoice_date: '2026-07-05',
+      store: 'Demo Bakery Store',
+      total_amount: 5000,
+      tax_amount: 900,
+      discount_amount: 0,
+      status: 'pending',
+      customer_name: 'Demo Customer',
+      customer_email: 'demo@customer.com',
+      customer_phone: '9876543210',
+      notes: 'Sample invoice for demo purposes',
+      file_reference: 'demo-invoice-001.pdf',
+      created_at: '2026-07-05',
+      items: [
+        {
+          slNo: 1,
+          itemCode: 'DEMO001',
+          itemName: 'Demo Chocolate Cake',
+          hsnCode: '19059010',
+          qty: 5,
+          uom: 'PCS',
+          rate: 500,
+          total: 2500
+        },
+        {
+          slNo: 2,
+          itemCode: 'DEMO002',
+          itemName: 'Demo Vanilla Cake',
+          hsnCode: '19059010',
+          qty: 5,
+          uom: 'PCS',
+          rate: 500,
+          total: 2500
+        }
+      ]
+    },
+    {
+      id: 2,
+      invoice_number: 'DEMO-INV-002',
+      invoice_date: '2026-07-10',
+      store: 'Demo Bakery Store',
+      total_amount: 3600,
+      tax_amount: 648,
+      discount_amount: 0,
+      status: 'cleared',
+      customer_name: 'Sample Bakery Supplies',
+      customer_email: 'sample@supplies.com',
+      customer_phone: '9876543211',
+      notes: 'Sample invoice 2 for demo purposes',
+      file_reference: 'demo-invoice-002.pdf',
+      created_at: '2026-07-10',
+      items: [
+        {
+          slNo: 1,
+          itemCode: 'DEMO003',
+          itemName: 'Demo Pastries',
+          hsnCode: '19059010',
+          qty: 10,
+          uom: 'PCS',
+          rate: 180,
+          total: 1800
+        },
+        {
+          slNo: 2,
+          itemCode: 'DEMO004',
+          itemName: 'Demo Cookies',
+          hsnCode: '19059010',
+          qty: 10,
+          uom: 'PCS',
+          rate: 180,
+          total: 1800
+        }
+      ]
+    }
+  ],
+  rosReceipts: [
+    {
+      id: 1,
+      receipt_number: 'ROS-001',
+      receipt_date: '2026-07-05',
+      received_from: 'Demo Shop',
+      total_amount: 3500,
+      payment_method: 'CASH',
+      bills: [
+        {
+          doc_type: 'SR',
+          bill_number: 'DEMO-INV-001',
+          bill_date: '2026-07-05',
+          amount: 3500
+        }
+      ],
+      file_name: 'demo-ros-001.pdf',
+      original_name: 'demo-ros-001.pdf',
+      cloudinary_url: 'https://res.cloudinary.com/demo/raw/upload/v1234567890/ros/demo-ros-001.pdf',
+      cloudinary_public_id: 'ros/demo-ros-001',
+      created_at: '2026-07-05'
+    },
+    {
+      id: 2,
+      receipt_number: 'ROS-002',
+      receipt_date: '2026-07-10',
+      received_from: 'Sample Distributor',
+      total_amount: 4248,
+      payment_method: 'NEFT',
+      bills: [
+        {
+          doc_type: 'SR',
+          bill_number: 'DEMO-INV-002',
+          bill_date: '2026-07-10',
+          amount: 4248
+        },
+        {
+          doc_type: 'CN',
+          bill_number: 'DEMO-CN-002',
+          bill_date: '2026-07-10',
+          amount: -1224
+        }
+      ],
+      file_name: 'demo-ros-002.pdf',
+      original_name: 'demo-ros-002.pdf',
+      cloudinary_url: 'https://res.cloudinary.com/demo/raw/upload/v1234567890/ros/demo-ros-002.pdf',
+      cloudinary_public_id: 'ros/demo-ros-002',
+      created_at: '2026-07-10'
     }
   ]
 };

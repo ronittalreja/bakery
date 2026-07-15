@@ -8,6 +8,7 @@ const StockBatch = require('../models/StockBatch');
 const fs = require('fs').promises;
 const path = require('path');
 const db = require('../config/database');
+const { getDemoData } = require('../middleware/demoMode');
 
 // Parse multiple invoices from a single PDF
 const parseMultipleInvoices = async (req, res) => {
@@ -534,6 +535,21 @@ const getInvoicesByMonth = async (req, res) => {
   try {
     const { month, year } = req.query;
     
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoInvoices = getDemoData('invoices');
+      const filteredInvoices = demoInvoices.filter(invoice => {
+        const invoiceDate = new Date(invoice.invoice_date);
+        return invoiceDate.getMonth() + 1 === parseInt(month) && invoiceDate.getFullYear() === parseInt(year);
+      });
+      
+      return res.json({ 
+        success: true, 
+        invoices: filteredInvoices,
+        count: filteredInvoices.length 
+      });
+    }
+    
     if (!month || !year) {
       return res.status(400).json({ 
         success: false, 
@@ -565,6 +581,24 @@ const getInvoiceById = async (req, res) => {
   try {
     const { id } = req.params;
     
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoInvoices = getDemoData('invoices');
+      const invoice = demoInvoices.find(inv => inv.id === parseInt(id));
+      
+      if (!invoice) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'Invoice not found' 
+        });
+      }
+
+      return res.json({ 
+        success: true, 
+        invoice 
+      });
+    }
+    
     const [rows] = await db.execute('SELECT * FROM invoices WHERE id = ?', [parseInt(id)]);
     const invoice = rows[0];
     
@@ -592,6 +626,35 @@ const getInvoiceById = async (req, res) => {
 const getInvoiceItems = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoInvoices = getDemoData('invoices');
+      const invoice = demoInvoices.find(inv => inv.id === parseInt(id));
+      
+      if (!invoice) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'Invoice not found' 
+        });
+      }
+      
+      const items = invoice.items.map(item => ({
+        id: item.slNo,
+        product_name: item.itemName,
+        quantity: item.qty,
+        unit_price: item.rate,
+        total_price: item.total,
+        item_code: item.itemCode,
+        hsn_code: item.hsnCode,
+        uom: item.uom
+      }));
+      
+      return res.json({ 
+        success: true, 
+        items 
+      });
+    }
     
     // Get invoice items from the invoice_items table
     const [items] = await db.execute(`
