@@ -816,7 +816,27 @@ const getAllCreditNotes = async (req, res) => {
     // Return demo data if demo user
     if (req.isDemo) {
       const demoCreditNotes = getDemoData('creditNotes');
-      return res.json({ success: true, creditNotes: demoCreditNotes });
+      
+      // Transform demo credit notes to match database response format
+      const transformedCreditNotes = demoCreditNotes.map(cn => ({
+        id: cn.id,
+        credit_note_number: cn.credit_note_number,
+        date: cn.date,
+        return_date: cn.return_date,
+        receiver_name: cn.receiver_name,
+        receiver_gstin: cn.receiver_gstin,
+        reason: cn.reason,
+        total_items: cn.total_items,
+        gross_value: cn.gross_value,
+        net_value: cn.net_value,
+        file_name: cn.file_name,
+        original_name: cn.original_name,
+        items: typeof cn.items === 'string' ? cn.items : JSON.stringify(cn.items),
+        created_at: cn.created_at,
+        status: cn.status || 'processed'
+      }));
+      
+      return res.json({ success: true, creditNotes: transformedCreditNotes });
     }
     
     let query = `
