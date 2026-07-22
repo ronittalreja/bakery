@@ -25,6 +25,8 @@ const recordSale = async (req, res) => {
   // Handle demo user separately - use demo data instead of database
   if (req.isDemo) {
     try {
+      console.log('Demo sale request:', { items, totalAmount, paymentType });
+      
       // Validate required fields
       const amountNum = Number(totalAmount);
       if (
@@ -46,7 +48,14 @@ const recordSale = async (req, res) => {
         }
 
         // Check if this is a decoration item
-        const decoration = demoData.decorations.find(d => d.id === item.productId);
+        // First try to find by decoration id (numeric ID)
+        let decoration = demoData.decorations.find(d => d.id === item.productId);
+        
+        // If not found, try to find by sku (string ID from frontend)
+        if (!decoration) {
+          decoration = demoData.decorations.find(d => d.sku === item.productId);
+        }
+        
         if (decoration) {
           // Handle decoration item
           if (decoration.stock_quantity < Number(item.quantity)) {
@@ -73,7 +82,25 @@ const recordSale = async (req, res) => {
         }
 
         // Handle regular product items - validate against demo stock batches
-        const stockBatch = demoData.stockBatches.find(sb => sb.product_id === item.productId);
+        // First try to find by product_id (numeric ID)
+        let stockBatch = demoData.stockBatches.find(sb => sb.product_id === item.productId);
+        
+        // If not found, try to find by item_code (string ID from frontend)
+        if (!stockBatch) {
+          const product = demoData.products.find(p => p.item_code === item.productId || p.id === item.productId);
+          if (product) {
+            stockBatch = demoData.stockBatches.find(sb => sb.product_id === product.id);
+            console.log(`Found product by item_code/id: ${item.productId} -> product_id: ${product.id}`);
+          }
+        }
+        
+        console.log(`Stock batch lookup for item ${item.productId}:`, {
+          itemProductId: item.productId,
+          foundStockBatch: stockBatch ? stockBatch.id : null,
+          availableQuantity: stockBatch ? stockBatch.quantity : 0,
+          requestedQuantity: Number(item.quantity)
+        });
+        
         if (!stockBatch) {
           return res.status(400).json({ success: false, error: `No stock found for product ${item.name || item.productId}` });
         }
@@ -92,7 +119,7 @@ const recordSale = async (req, res) => {
         }
 
         allocatedItems.push({
-          productId: item.productId,
+          productId: stockBatch.product_id,
           batchId: stockBatch.id,
           quantity: Number(item.quantity),
           unitPrice,
@@ -143,6 +170,12 @@ const recordSale = async (req, res) => {
         const stockBatch = demoData.stockBatches.find(sb => sb.id === item.batchId);
         if (stockBatch && !isHistorical) {
           stockBatch.quantity -= item.quantity;
+          
+          // Reset stock to 200 if it reaches 1 or below
+          if (stockBatch.quantity <= 1) {
+            stockBatch.quantity = 200;
+            console.log(`Stock reset for product ${stockBatch.product_id} to 200`);
+          }
         }
       }
 
@@ -165,6 +198,12 @@ const recordSale = async (req, res) => {
         const decoration = demoData.decorations.find(d => d.id === item.decorationId);
         if (decoration && !isHistorical) {
           decoration.stock_quantity -= item.quantity;
+          
+          // Reset decoration stock to 100 if it reaches 1 or below
+          if (decoration.stock_quantity <= 1) {
+            decoration.stock_quantity = 100;
+            console.log(`Decoration stock reset for ${decoration.name} to 100`);
+          }
         }
       }
 
@@ -579,13 +618,45 @@ const getSalesByDate = async (req, res) => {
         return saleDate === date;
       });
       
+      // Transform demo sales to match the expected format with item codes and decoration details
+      const transformedSales = filteredSales.map(sale => {
+        const itemsWithDetails = sale.items.map(item => {
+          if (item.item_type === 'decoration') {
+            const decoration = demoData.decorations.find(d => d.id === item.item_id);
+            return {
+              ...item,
+              item_code: decoration?.sku || null,
+              hsn_code: null,
+              decoration_sku: decoration?.sku || null,
+              decoration_category: decoration?.category || null,
+              is_decoration: true
+            };
+          } else {
+            const product = demoData.products.find(p => p.id === item.item_id);
+            return {
+              ...item,
+              item_code: product?.item_code || null,
+              hsn_code: product?.hsn_code || null,
+              decoration_sku: null,
+              decoration_category: null,
+              is_decoration: false
+            };
+          }
+        });
+        
+        return {
+          ...sale,
+          items: itemsWithDetails
+        };
+      });
+      
       const summary = {
-        totalQuantity: filteredSales.reduce((sum, sale) => sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0),
-        totalValue: filteredSales.reduce((sum, sale) => sum + sale.total_amount, 0),
-        totalTransactions: filteredSales.length
+        totalQuantity: transformedSales.reduce((sum, sale) => sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0),
+        totalValue: transformedSales.reduce((sum, sale) => sum + sale.total_amount, 0),
+        totalTransactions: transformedSales.length
       };
 
-      return res.json({ success: true, data: filteredSales, summary });
+      return res.json({ success: true, data: transformedSales, summary });
     }
 
     const query = `
