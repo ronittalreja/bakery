@@ -1345,7 +1345,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-xs sm:text-sm">{formatDate(bill.bill_date)}</TableCell>
-                            <TableCell className="font-mono text-xs sm:text-sm">{bill.bill_number}</TableCell>
+                            <TableCell className="font-mono text-xs sm:text-sm whitespace-nowrap">{bill.bill_number}</TableCell>
                             <TableCell className="font-medium text-xs sm:text-sm">{formatCurrency(bill.amount)}</TableCell>
                             <TableCell className="text-xs sm:text-sm">
                               <Badge className={`${bill.dr_cr === 'Cr' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'} border-0`} variant="secondary">

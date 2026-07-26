@@ -862,7 +862,7 @@ const getAllCreditNotes = async (req, res) => {
     const params = [];
     
     if (month) {
-      query += ` WHERE DATE_FORMAT(date, '%Y-%m') = ?`;
+      query += ` WHERE DATE_FORMAT(COALESCE(return_date, date), '%Y-%m') = ?`;
       params.push(month);
     }
     
