@@ -69,8 +69,14 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
 
       const data = await response.json();
       if (data.success) {
-        setCreditNotes(data.creditNotes);
-        setFilteredCreditNotes(data.creditNotes);
+        // Sort by return date in descending order
+        const sortedCreditNotes = data.creditNotes.sort((a: CreditNote, b: CreditNote) => {
+          const dateA = new Date(a.returnDate || a.date);
+          const dateB = new Date(b.returnDate || b.date);
+          return dateB.getTime() - dateA.getTime();
+        });
+        setCreditNotes(sortedCreditNotes);
+        setFilteredCreditNotes(sortedCreditNotes);
       } else {
         throw new Error(data.error || "Failed to fetch credit notes");
       }
@@ -94,7 +100,6 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
       const filtered = creditNotes.filter(
         (creditNote) =>
           creditNote.creditNoteNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          creditNote.receiverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
           creditNote.reason.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredCreditNotes(filtered);
@@ -131,6 +136,11 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
   const totalValue = filteredCreditNotes.reduce((sum, cn) => {
     const value = typeof cn.netValue === 'string' ? parseFloat(cn.netValue) : cn.netValue || 0;
     return sum + value;
+  }, 0);
+  const totalLoss = filteredCreditNotes.reduce((sum, cn) => {
+    const gross = typeof cn.grossValue === 'string' ? parseFloat(cn.grossValue) : cn.grossValue || 0;
+    const net = typeof cn.netValue === 'string' ? parseFloat(cn.netValue) : cn.netValue || 0;
+    return sum + (gross - net);
   }, 0);
   const totalItems = filteredCreditNotes.reduce((sum, cn) => {
     const items = typeof cn.totalItems === 'string' ? parseInt(cn.totalItems) : cn.totalItems || 0;
@@ -186,7 +196,7 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 h-4 w-4" />
               <Input
-                placeholder="Search by credit note number, receiver, or reason..."
+                placeholder="Search by credit note number or reason..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 bg-white border-slate-300 focus:border-slate-500"
@@ -196,7 +206,7 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg p-4 sm:p-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -216,6 +226,17 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
               <div>
                 <div className="text-xl sm:text-2xl font-bold text-slate-900">{formatCurrency(totalValue)}</div>
                 <div className="text-sm text-slate-600">Total Value</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg p-4 sm:p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-bold text-slate-900">{formatCurrency(totalLoss)}</div>
+                <div className="text-sm text-slate-600">Total Loss</div>
               </div>
             </div>
           </div>
@@ -266,16 +287,18 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
                     <TableRow>
                       <TableHead>Credit Note #</TableHead>
                       <TableHead>Return Date</TableHead>
-                      <TableHead>Receiver</TableHead>
                       <TableHead>Reason</TableHead>
                       <TableHead>Items</TableHead>
                       <TableHead>Value</TableHead>
-                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredCreditNotes.map((creditNote) => (
-                      <TableRow key={creditNote.id}>
+                      <TableRow 
+                        key={creditNote.id}
+                        className="cursor-pointer hover:bg-slate-50 transition-colors"
+                        onClick={() => onViewCreditNote(creditNote.id, selectedMonth)}
+                      >
                         <TableCell className="font-mono font-medium">
                           {creditNote.creditNoteNumber}
                         </TableCell>
@@ -288,29 +311,12 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div>
-                            <div className="font-medium">{creditNote.receiverName}</div>
-                            <div className="text-xs text-muted-foreground">{creditNote.receiverGstin}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
                           <Badge className={`${getReasonColor(creditNote.reason)} border-0`} variant="secondary">
                             {creditNote.reason}
                           </Badge>
                         </TableCell>
                         <TableCell className="font-medium">{creditNote.totalItems || 0}</TableCell>
                         <TableCell className="font-medium">{formatCurrency(creditNote.netValue || 0)}</TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onViewCreditNote(creditNote.id, selectedMonth)}
-                            className="flex items-center gap-1"
-                          >
-                            <Eye className="h-3 w-3" />
-                            View
-                          </Button>
-                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
