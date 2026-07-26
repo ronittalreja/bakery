@@ -13,7 +13,7 @@ const getStock = async (req, res) => {
       const demoStock = demoData.stockBatches.map(batch => {
         const product = demoData.products.find(p => p.id === batch.product_id);
         return {
-          id: batch.product_id, // Use product_id as id for frontend compatibility
+          id: batch.product_id, // Use product_id as id so frontend can match with products
           product_id: batch.product_id,
           quantity: batch.quantity,
           expiry_date: batch.expiry_date,
@@ -25,10 +25,7 @@ const getStock = async (req, res) => {
           invoice_price: product?.invoice_price || 0,
           sale_price: product?.sale_price || 0,
           grm_value: product?.grm_value || 0,
-          image_url: product?.image_url || '/placeholder.svg',
-          shelf_life_days: 30,
-          batch_id: batch.id,
-          batchId: batch.id.toString() // Ensure batchId is a string for frontend
+          image_url: product?.image_url || '/placeholder.svg'
         };
       }).filter(item => item.quantity > 0);
 
