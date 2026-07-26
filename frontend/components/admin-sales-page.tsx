@@ -473,61 +473,6 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
           </div>
         )}
 
-        <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg">
-          <div className="p-6 border-b border-slate-200">
-            <h2 className="text-lg font-bold text-slate-900">Payment Method Breakdown</h2>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={Object.entries(paymentMethodTotals).map(([method, total]) => ({
-                        name: method,
-                        amount: total,
-                        count: sales.filter(sale => sale.paymentMethod === method).length
-                      }))}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="amount"
-                    >
-                      {Object.entries(paymentMethodTotals).map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={`hsl(${index * 60}, 70%, 50%)`} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => [`₹${Number(value).toLocaleString()}`, 'Amount']} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="space-y-3">
-                {Object.entries(paymentMethodTotals).map(([method, total], index) => (
-                  <div key={method} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 hover:shadow-md transition-all duration-200">
-                    <div className="flex items-center gap-3">
-                      <div 
-                        className="w-4 h-4 rounded-full" 
-                        style={{ backgroundColor: `hsl(${index * 60}, 70%, 50%)` }}
-                      />
-                      <span className="font-medium text-slate-900">{method}</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-slate-900">₹{total.toLocaleString()}</div>
-                      <div className="text-sm text-slate-600">
-                        {sales.filter(sale => sale.paymentMethod === method).length} transactions
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* YTD and MTD Comparison */}
         {ytdMtdData && (
           <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg">

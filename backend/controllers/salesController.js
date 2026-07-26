@@ -1364,37 +1364,37 @@ const getMonthlySalesAnalytics = async (req, res) => {
     
     const lastMonthStr2 = `${lastMonthYear2}-${lastMonthNum2.toString().padStart(2, '0')}`;
     
-    // Get current month sales summary
+    // Get current month sales summary from invoices (not sales table)
     const [currentSummary] = await db.execute(`
       SELECT 
-        COUNT(DISTINCT s.id) as totalTransactions,
-        COALESCE(SUM(s.total_amount), 0) as totalSales,
-        COALESCE(SUM(si.quantity), 0) as totalItems
-      FROM sales s
-      LEFT JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE_FORMAT(s.sale_date, '%Y-%m') = ?
+        COUNT(DISTINCT i.id) as totalTransactions,
+        COALESCE(SUM(ii.total), 0) as totalSales,
+        COALESCE(SUM(ii.qty), 0) as totalItems
+      FROM invoices i
+      JOIN invoice_items ii ON i.id = ii.invoice_id
+      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
     `, [month]);
 
-    // Get previous year sales summary
+    // Get previous year sales summary from invoices
     const [previousSummary] = await db.execute(`
       SELECT 
-        COUNT(DISTINCT s.id) as totalTransactions,
-        COALESCE(SUM(s.total_amount), 0) as totalSales,
-        COALESCE(SUM(si.quantity), 0) as totalItems
-      FROM sales s
-      LEFT JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE_FORMAT(s.sale_date, '%Y-%m') = ?
+        COUNT(DISTINCT i.id) as totalTransactions,
+        COALESCE(SUM(ii.total), 0) as totalSales,
+        COALESCE(SUM(ii.qty), 0) as totalItems
+      FROM invoices i
+      JOIN invoice_items ii ON i.id = ii.invoice_id
+      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
     `, [previousYearMonth]);
 
-    // Get last month sales summary - use the simpler calculation
+    // Get last month sales summary from invoices
     const [lastMonthSummary] = await db.execute(`
       SELECT 
-        COUNT(DISTINCT s.id) as totalTransactions,
-        COALESCE(SUM(s.total_amount), 0) as totalSales,
-        COALESCE(SUM(si.quantity), 0) as totalItems
-      FROM sales s
-      LEFT JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE_FORMAT(s.sale_date, '%Y-%m') = ?
+        COUNT(DISTINCT i.id) as totalTransactions,
+        COALESCE(SUM(ii.total), 0) as totalSales,
+        COALESCE(SUM(ii.qty), 0) as totalItems
+      FROM invoices i
+      JOIN invoice_items ii ON i.id = ii.invoice_id
+      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
     `, [lastMonthStr2]);
     
     // Debug: Check what months have data
@@ -1405,19 +1405,18 @@ const getMonthlySalesAnalytics = async (req, res) => {
       LIMIT 12
     `);
 
-    // Get most sold items for current month
+    // Get most sold items for current month from invoices
     const [mostSoldItems] = await db.execute(`
       SELECT 
-        si.name as productName,
-        p.item_code,
-        SUM(si.quantity) as totalQuantity,
-        SUM(si.total_price) as totalRevenue,
-        COUNT(DISTINCT s.id) as transactionCount
-      FROM sales s
-      JOIN sale_items si ON s.id = si.sale_id
-      LEFT JOIN products p ON si.item_id = p.id AND si.item_type = 'product'
-      WHERE DATE_FORMAT(s.sale_date, '%Y-%m') = ?
-      GROUP BY si.name, p.item_code
+        ii.item_name as productName,
+        ii.item_code,
+        SUM(ii.qty) as totalQuantity,
+        SUM(ii.total) as totalRevenue,
+        COUNT(DISTINCT i.id) as transactionCount
+      FROM invoices i
+      JOIN invoice_items ii ON i.id = ii.invoice_id
+      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
+      GROUP BY ii.item_name, ii.item_code
       ORDER BY totalQuantity DESC
       LIMIT 10
     `, [month]);
@@ -1628,64 +1627,68 @@ const getYTDMTDComparison = async (req, res) => {
     const prevMtdStartDate = `${previousYear}-${currentMonth.toString().padStart(2, '0')}-01`;
     const prevMtdEndDate = `${previousYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
 
-    // YTD from sales table only (no join)
+    // YTD from invoices table
     const [currentYTD] = await db.execute(`
-      SELECT COUNT(*) as totalTransactions,
-             COALESCE(SUM(total_amount), 0) as totalSales,
-             COALESCE(SUM(total_cost), 0) as totalCost
-      FROM sales
-      WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ?
+      SELECT COUNT(DISTINCT i.id) as totalTransactions,
+             COALESCE(SUM(ii.total), 0) as totalSales,
+             0 as totalCost
+      FROM invoices i
+      JOIN invoice_items ii ON i.id = ii.invoice_id
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
     `, [ytdStartDate, ytdEndDate, currentYear]);
     // Items
     const [itemsYTD] = await db.execute(`
-      SELECT COALESCE(SUM(si.quantity), 0) as totalItems
-      FROM sales s
-      LEFT JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
+      SELECT COALESCE(SUM(ii.qty), 0) as totalItems
+      FROM invoices i
+      JOIN invoice_items ii ON i.id = ii.invoice_id
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
     `, [ytdStartDate, ytdEndDate, currentYear]);
     // MTD, same
     const [currentMTD] = await db.execute(`
-      SELECT COUNT(*) as totalTransactions,
-             COALESCE(SUM(total_amount), 0) as totalSales,
-             COALESCE(SUM(total_cost), 0) as totalCost
-      FROM sales
-      WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ?
+      SELECT COUNT(DISTINCT i.id) as totalTransactions,
+             COALESCE(SUM(ii.total), 0) as totalSales,
+             0 as totalCost
+      FROM invoices i
+      JOIN invoice_items ii ON i.id = ii.invoice_id
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
     `, [mtdStartDate, mtdEndDate, currentYear]);
     const [itemsMTD] = await db.execute(`
-      SELECT COALESCE(SUM(si.quantity), 0) as totalItems
-      FROM sales s
-      LEFT JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
+      SELECT COALESCE(SUM(ii.qty), 0) as totalItems
+      FROM invoices i
+      JOIN invoice_items ii ON i.id = ii.invoice_id
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
     `, [mtdStartDate, mtdEndDate, currentYear]);
 
     // Previous year YTD
     const [previousYTD] = await db.execute(`
-      SELECT COUNT(*) as totalTransactions,
-             COALESCE(SUM(total_amount), 0) as totalSales,
-             COALESCE(SUM(total_cost), 0) as totalCost
-      FROM sales
-      WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ?
+      SELECT COUNT(DISTINCT i.id) as totalTransactions,
+             COALESCE(SUM(ii.total), 0) as totalSales,
+             0 as totalCost
+      FROM invoices i
+      JOIN invoice_items ii ON i.id = ii.invoice_id
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
     `, [prevYtdStartDate, prevYtdEndDate, previousYear]);
     const [itemsPrevYTD] = await db.execute(`
-      SELECT COALESCE(SUM(si.quantity), 0) as totalItems
-      FROM sales s
-      LEFT JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
+      SELECT COALESCE(SUM(ii.qty), 0) as totalItems
+      FROM invoices i
+      JOIN invoice_items ii ON i.id = ii.invoice_id
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
     `, [prevYtdStartDate, prevYtdEndDate, previousYear]);
 
     // Previous year MTD
     const [previousMTD] = await db.execute(`
-      SELECT COUNT(*) as totalTransactions,
-             COALESCE(SUM(total_amount), 0) as totalSales,
-             COALESCE(SUM(total_cost), 0) as totalCost
-      FROM sales
-      WHERE DATE(sale_date) BETWEEN ? AND ? AND YEAR(sale_date) = ?
+      SELECT COUNT(DISTINCT i.id) as totalTransactions,
+             COALESCE(SUM(ii.total), 0) as totalSales,
+             0 as totalCost
+      FROM invoices i
+      JOIN invoice_items ii ON i.id = ii.invoice_id
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
     `, [prevMtdStartDate, prevMtdEndDate, previousYear]);
     const [itemsPrevMTD] = await db.execute(`
-      SELECT COALESCE(SUM(si.quantity), 0) as totalItems
-      FROM sales s
-      LEFT JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE(s.sale_date) BETWEEN ? AND ? AND YEAR(s.sale_date) = ?
+      SELECT COALESCE(SUM(ii.qty), 0) as totalItems
+      FROM invoices i
+      JOIN invoice_items ii ON i.id = ii.invoice_id
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
     `, [prevMtdStartDate, prevMtdEndDate, previousYear]);
 
     // Populate actual response with correct item totals
