@@ -817,34 +817,26 @@ const getAllCreditNotes = async (req, res) => {
     if (req.isDemo) {
       const demoCreditNotes = getDemoData('creditNotes');
       
-      // Transform demo credit notes to match database response format
+      // Transform demo credit notes to match database response format (camelCase)
       const transformedCreditNotes = demoCreditNotes.map(cn => ({
         id: cn.id,
-        credit_note_number: cn.credit_note_number,
+        creditNoteNumber: cn.credit_note_number,
         date: cn.date,
-        return_date: cn.return_date,
-        receiver_name: cn.receiver_name,
-        receiver_gstin: cn.receiver_gstin,
+        returnDate: cn.return_date || cn.date,
+        receiverName: cn.receiver_name,
+        receiverGstin: cn.receiver_gstin,
         reason: cn.reason,
-        total_items: cn.total_items,
-        gross_value: cn.gross_value,
-        net_value: cn.net_value,
-        file_name: cn.file_name,
-        original_name: cn.original_name,
-        items: JSON.stringify(cn.items), // Convert to JSON string to match database format
-        created_at: cn.created_at,
-        status: cn.status || 'processed'
+        totalItems: cn.total_items,
+        grossValue: Number(cn.gross_value) || 0,
+        netValue: Number(cn.net_value) || 0,
+        fileName: cn.file_name,
+        originalName: cn.original_name,
+        status: cn.status || 'processed',
+        items: cn.items,
+        createdAt: cn.created_at
       }));
       
-      // Calculate summary totals
-      const summary = {
-        totalCreditNotes: transformedCreditNotes.length,
-        totalGrossValue: transformedCreditNotes.reduce((sum, cn) => sum + (Number(cn.gross_value) || 0), 0),
-        totalNetValue: transformedCreditNotes.reduce((sum, cn) => sum + (Number(cn.net_value) || 0), 0),
-        totalItems: transformedCreditNotes.reduce((sum, cn) => sum + (Number(cn.total_items) || 0), 0)
-      };
-      
-      return res.json({ success: true, creditNotes: transformedCreditNotes, summary });
+      return res.json({ success: true, creditNotes: transformedCreditNotes });
     }
     
     let query = `
