@@ -25,7 +25,8 @@ const getStock = async (req, res) => {
           invoice_price: product?.invoice_price || 0,
           sale_price: product?.sale_price || 0,
           grm_value: product?.grm_value || 0,
-          image_url: product?.image_url || '/placeholder.svg'
+          image_url: product?.image_url || '/placeholder.svg',
+          batchId: String(batch.id) // Add batchId for frontend stock validation
         };
       }).filter(item => item.quantity > 0);
 
