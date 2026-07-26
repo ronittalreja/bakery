@@ -831,7 +831,7 @@ const getAllCreditNotes = async (req, res) => {
         net_value: cn.net_value,
         file_name: cn.file_name,
         original_name: cn.original_name,
-        items: typeof cn.items === 'string' ? cn.items : JSON.stringify(cn.items),
+        items: JSON.stringify(cn.items), // Convert to JSON string to match database format
         created_at: cn.created_at,
         status: cn.status || 'processed'
       }));
@@ -928,8 +928,29 @@ const getCreditNoteDetails = async (req, res) => {
     // Return demo data if demo user
     if (req.isDemo) {
       const demoCreditNotes = getDemoData('creditNotes');
-      const creditNote = demoCreditNotes[0];
-      return res.json({ success: true, creditNote });
+      const creditNote = demoCreditNotes.find(cn => cn.id === Number(id)) || demoCreditNotes[0];
+      
+      // Transform to match the expected format
+      return res.json({
+        success: true,
+        creditNote: {
+          id: creditNote.id,
+          creditNoteNumber: creditNote.credit_note_number,
+          date: creditNote.date,
+          returnDate: creditNote.return_date || creditNote.date,
+          receiverName: creditNote.receiver_name,
+          receiverGstin: creditNote.receiver_gstin,
+          reason: creditNote.reason,
+          totalItems: creditNote.total_items,
+          grossValue: Number(creditNote.gross_value) || 0,
+          netValue: Number(creditNote.net_value) || 0,
+          fileName: creditNote.file_name,
+          originalName: creditNote.original_name,
+          items: creditNote.items,
+          createdAt: creditNote.created_at,
+          status: creditNote.status || 'processed'
+        }
+      });
     }
     
     const [rows] = await db.execute(
