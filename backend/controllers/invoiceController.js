@@ -304,23 +304,51 @@ const uploadInvoice = async (req, res) => {
 
       // Process items
       for (const item of parsedData.items) {
-        let [product] = await connection.execute('SELECT id FROM products WHERE item_code = ?', [item.itemCode]);
+        console.log(`Processing item: ${item.itemCode} - ${item.itemName}, rate: ${item.rate}`);
+        
+        let [product] = await connection.execute('SELECT id, invoice_price, sale_price, name FROM products WHERE item_code = ?', [item.itemCode]);
         let productId;
+        
         if (product && product.length > 0) {
           productId = product[0].id;
+          const currentInvoicePrice = product[0].invoice_price;
+          const currentSalePrice = product[0].sale_price;
+          const currentName = product[0].name;
+          
+          console.log(`Product found: ID ${productId}, current invoice_price: ${currentInvoicePrice}, new invoice_price: ${item.rate}`);
+          
           // Update pricing and also ensure category/shelf-life present using item code inference
           const inferred = Product.inferCategoryAndShelfLife(item.itemCode);
-          await connection.execute(
-            'UPDATE products SET name = ?, invoice_price = ?, sale_price = ?, grm_value = ?, category = COALESCE(category, ?), shelf_life_days = COALESCE(shelf_life_days, ?), updated_at = NOW() WHERE id = ?',
-            [item.itemName, item.rate, computeMrp(item.rate), computeGrmLossValue(item.rate), inferred.category || null, inferred.shelf_life_days ?? null, productId]
-          );
+          const newMrp = computeMrp(item.rate);
+          const newGrmValue = computeGrmLossValue(item.rate);
+          
+          try {
+            await connection.execute(
+              'UPDATE products SET name = ?, invoice_price = ?, sale_price = ?, grm_value = ?, category = COALESCE(category, ?), shelf_life_days = COALESCE(shelf_life_days, ?), updated_at = NOW() WHERE id = ?',
+              [item.itemName, item.rate, newMrp, newGrmValue, inferred.category || null, inferred.shelf_life_days ?? null, productId]
+            );
+            console.log(`✓ Updated product ${item.itemCode}: invoice_price ${currentInvoicePrice} -> ${item.rate}, sale_price ${currentSalePrice} -> ${newMrp}`);
+          } catch (updateError) {
+            console.error(`✗ Failed to update product ${item.itemCode}:`, updateError);
+            throw updateError;
+          }
         } else {
+          console.log(`Product not found for item_code ${item.itemCode}, creating new product`);
           const inferred = Product.inferCategoryAndShelfLife(item.itemCode);
-          const [result] = await connection.execute(
-            'INSERT INTO products (name, item_code, hsn_code, invoice_price, sale_price, grm_value, category, shelf_life_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [item.itemName, item.itemCode, item.hsnCode, item.rate, computeMrp(item.rate), computeGrmLossValue(item.rate), inferred.category || null, inferred.shelf_life_days ?? null]
-          );
-          productId = result.insertId;
+          const newMrp = computeMrp(item.rate);
+          const newGrmValue = computeGrmLossValue(item.rate);
+          
+          try {
+            const [result] = await connection.execute(
+              'INSERT INTO products (name, item_code, hsn_code, invoice_price, sale_price, grm_value, category, shelf_life_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+              [item.itemName, item.itemCode, item.hsnCode, item.rate, newMrp, newGrmValue, inferred.category || null, inferred.shelf_life_days ?? null]
+            );
+            productId = result.insertId;
+            console.log(`✓ Created new product ${item.itemCode} with ID ${productId}, invoice_price: ${item.rate}, sale_price: ${newMrp}`);
+          } catch (insertError) {
+            console.error(`✗ Failed to create product ${item.itemCode}:`, insertError);
+            throw insertError;
+          }
         }
 
         await InvoiceItem.create(

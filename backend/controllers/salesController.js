@@ -698,8 +698,19 @@ const getSalesSummary = async (req, res) => {
         const soldQty = Math.max(0, item.qty - creditNoteQty);
         
         if (soldQty > 0) {
-          // Use MRP (sale_price) from products instead of invoice rate
-          const mrp = productInfo.mrp || item.rate;
+          // Compute MRP from invoice rate at time of sale (not current product MRP)
+          // This ensures historical sales use the correct MRP for that time period
+          const roundUpToNearest5 = (value) => {
+            const remainder = value % 5;
+            return remainder === 0 ? value : value + (5 - remainder);
+          };
+          
+          const computeMrp = (invoicePrice) => {
+            const increased = invoicePrice * 1.33; // +33%
+            return roundUpToNearest5(Math.ceil(increased));
+          };
+          
+          const mrp = computeMrp(item.rate);
           const soldTotal = mrp * soldQty;
           invoiceTotal += soldTotal;
           invoiceItemsSold += soldQty;
@@ -912,9 +923,22 @@ const getSalesByDate = async (req, res) => {
         console.log(`Sold qty for ${key}: ${item.qty} - ${creditNoteQty} = ${soldQty}`);
         
         if (soldQty > 0) {
-          // Use MRP (sale_price) from products instead of invoice rate
-          const mrp = productInfo.mrp || item.rate;
+          // Compute MRP from invoice rate at time of sale (not current product MRP)
+          // This ensures historical sales use the correct MRP for that time period
+          const roundUpToNearest5 = (value) => {
+            const remainder = value % 5;
+            return remainder === 0 ? value : value + (5 - remainder);
+          };
+          
+          const computeMrp = (invoicePrice) => {
+            const increased = invoicePrice * 1.33; // +33%
+            return roundUpToNearest5(Math.ceil(increased));
+          };
+          
+          const mrp = computeMrp(item.rate);
           const soldTotal = mrp * soldQty;
+          console.log(`Using MRP computed from invoice rate: ${item.rate} -> ${mrp}`);
+          
           saleItems.push({
             id: item.item_name,
             product_id: null,
@@ -1133,9 +1157,21 @@ const getMonthlySales = async (req, res) => {
           const soldQty = Math.max(0, item.qty - creditNoteQty);
           
           if (soldQty > 0) {
-            // Use MRP (sale_price) from products instead of invoice rate
-            const mrp = productInfo.mrp || item.rate;
+            // Compute MRP from invoice rate at time of sale (not current product MRP)
+            // This ensures historical sales use the correct MRP for that time period
+            const roundUpToNearest5 = (value) => {
+              const remainder = value % 5;
+              return remainder === 0 ? value : value + (5 - remainder);
+            };
+            
+            const computeMrp = (invoicePrice) => {
+              const increased = invoicePrice * 1.33; // +33%
+              return roundUpToNearest5(Math.ceil(increased));
+            };
+            
+            const mrp = computeMrp(item.rate);
             const soldTotal = mrp * soldQty;
+            
             saleItems.push({
               id: item.item_name,
               product_id: null,
