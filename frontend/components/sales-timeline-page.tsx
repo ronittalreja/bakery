@@ -109,7 +109,10 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
 
       // Check if sales are not available
       if (salesData.message) {
-        setError(salesData.message);
+        const errorMessage = salesData.reason 
+          ? `${salesData.message} - ${salesData.reason}`
+          : salesData.message;
+        setError(errorMessage);
         setTransactions([]);
         setIsLoading(false);
         return;

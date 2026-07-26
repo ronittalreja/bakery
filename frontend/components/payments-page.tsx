@@ -112,6 +112,21 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
     }
   }, [user, selectedMonth, selectedYear]);
 
+  // Calculate invoice status based on ROS receipts
+  useEffect(() => {
+    if (invoices.length > 0) {
+      const invoicesWithStatus = invoices.map((invoice: Invoice) => {
+        const appearsInRos = rosReceipts.some((receipt: RosReceipt) => 
+          receipt.bills && receipt.bills.some((bill: any) => 
+            bill.doc_type === 'SR' && bill.bill_number === invoice.invoice_number
+          )
+        );
+        return { ...invoice, status: (appearsInRos ? 'cleared' : 'pending') as 'pending' | 'cleared' };
+      });
+      setInvoices(invoicesWithStatus);
+    }
+  }, [invoices, rosReceipts]);
+
   const fetchInvoices = async () => {
     try {
       setIsLoading(true);
@@ -134,18 +149,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
 
       const data = await response.json();
       const invoices = data.invoices || [];
-      
-      // Check if each invoice appears in ROS receipts and mark as cleared
-      const invoicesWithStatus = invoices.map((invoice: Invoice) => {
-        const appearsInRos = rosReceipts.some((receipt: RosReceipt) => 
-          receipt.bills.some((bill: any) => 
-            bill.doc_type === 'SR' && bill.bill_number === invoice.invoice_number
-          )
-        );
-        return { ...invoice, status: appearsInRos ? 'cleared' : 'pending' };
-      });
-      
-      setInvoices(invoicesWithStatus);
+      setInvoices(invoices);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -496,36 +500,64 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
         {/* Content based on active tab */}
         {activeTab === 'invoices' ? (
           <div className="space-y-4">
-            <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900">
-                  {invoicesSubTab === 'invoices' ? 'Invoices' : 'Invoices from ROS Receipts'} for {monthOptions[selectedMonth - 1]?.label} {selectedYear}
-                </h2>
-                <Badge variant="outline" className="bg-white border-slate-300 text-slate-700">
-                  {invoicesSubTab === 'invoices' ? invoices.length : invoicesFromRos.length} invoices
-                </Badge>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-6">
+              <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg p-4 sm:p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-bold text-slate-900">
+                      {invoicesSubTab === 'invoices' ? invoices.length : invoicesFromRos.length}
+                    </div>
+                    <div className="text-sm text-slate-600">
+                      {invoicesSubTab === 'invoices' ? 'Invoices' : 'Invoices from ROS'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg p-4 sm:p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <CreditCard className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-bold text-slate-900">
+                      {formatCurrency((invoicesSubTab === 'invoices' ? invoices : invoicesFromRos).reduce((sum, inv) => sum + (inv.total_amount || 0), 0))}
+                    </div>
+                    <div className="text-sm text-slate-600">Total Amount</div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg p-4 sm:p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-bold text-green-600">
+                      {(invoicesSubTab === 'invoices' ? invoices : invoicesFromRos).filter(inv => inv.status === 'cleared').length}
+                    </div>
+                    <div className="text-sm text-slate-600">Cleared</div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg p-4 sm:p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-yellow-100 rounded-lg">
+                    <Clock className="h-5 w-5 text-yellow-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-bold text-yellow-600">
+                      {(invoicesSubTab === 'invoices' ? invoices : invoicesFromRos).filter(inv => inv.status === 'pending' || !inv.status).length}
+                    </div>
+                    <div className="text-sm text-slate-600">Pending</div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Sub-tab Navigation for Invoices */}
-            <div className="flex space-x-1 mb-4 bg-slate-100 p-1 rounded-lg w-fit">
-              <Button
-                variant={invoicesSubTab === 'invoices' ? 'default' : 'ghost'}
-                onClick={() => setInvoicesSubTab('invoices')}
-                className="flex items-center gap-2 bg-white hover:bg-white text-slate-700 hover:text-slate-900 border border-slate-300 hover:border-slate-500 transition-all duration-200"
-              >
-                <FileText className="h-4 w-4" />
-                Invoices
-              </Button>
-              <Button
-                variant={invoicesSubTab === 'others' ? 'default' : 'ghost'}
-                onClick={() => setInvoicesSubTab('others')}
-                className="flex items-center gap-2 bg-white hover:bg-white text-slate-700 hover:text-slate-900 border border-slate-300 hover:border-slate-500 transition-all duration-200"
-              >
-                <FileText className="h-4 w-4" />
-                Others
-              </Button>
-            </div>
             
             {isLoading ? (
               <div className="text-center py-8">
@@ -546,7 +578,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                     {invoicesSubTab === 'invoices' ? 'Invoices List' : 'Invoices from ROS Receipts'}
                   </h2>
                   <p className="text-slate-600 mt-1 text-sm">
-                    {invoicesSubTab === 'invoices' ? invoices.length : invoicesFromRos.length} invoice(s) found
+                    for {monthOptions[selectedMonth - 1]?.label} {selectedYear}
                   </p>
                 </div>
                 <div className="p-4 sm:p-6">
@@ -565,10 +597,8 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                           <TableRow>
                             <TableHead>Invoice #</TableHead>
                             <TableHead>Invoice Date</TableHead>
-                            <TableHead>Store</TableHead>
                             <TableHead>Amount</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead>View</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -586,29 +616,12 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                                 <TableCell>
                                   <div className="font-medium">{formatDisplayDate(invoice.invoice_date)}</div>
                                 </TableCell>
-                                <TableCell>
-                                  <div className="font-medium">{invoice.store}</div>
-                                </TableCell>
                                 <TableCell className="font-medium">{formatCurrency(invoice.total_amount)}</TableCell>
                                 <TableCell>
                                   <Badge className={getStatusColor(invoice.status || 'pending')}>
                                     <StatusIcon className="h-3 w-3 mr-1" />
                                     {invoice.status || 'pending'}
                                   </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      viewInvoiceDetails(invoice);
-                                    }}
-                                    className="bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-300 hover:border-slate-500 transition-all duration-200"
-                                  >
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    View
-                                  </Button>
                                 </TableCell>
                               </TableRow>
                             );
@@ -799,7 +812,6 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                           <TableHead>Loss</TableHead>
                           <TableHead>Receivable</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead>View</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -826,7 +838,11 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                           const receivable = (isNaN(grossValue) ? 0 : grossValue) - (isNaN(totalLoss) ? 0 : totalLoss);
                           
                           return (
-                            <TableRow key={creditNote.id}>
+                            <TableRow 
+                              key={creditNote.id}
+                              className="cursor-pointer hover:bg-slate-50 transition-colors"
+                              onClick={() => viewCreditNote(creditNote)}
+                            >
                               <TableCell className="font-mono font-medium">
                                 {creditNote.creditNoteNumber}
                               </TableCell>
@@ -847,17 +863,6 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                                   <StatusIcon className="h-3 w-3 mr-1" />
                                   {creditNote.status || 'pending'}
                                 </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => viewCreditNote(creditNote)}
-                                  className="bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-300 hover:border-slate-500 transition-all duration-200"
-                                >
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  View
-                                </Button>
                               </TableCell>
                             </TableRow>
                           );
@@ -970,12 +975,15 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                           <TableHead>Amount</TableHead>
                           <TableHead>Bills</TableHead>
                           <TableHead>Payment Method</TableHead>
-                          <TableHead>View</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {rosReceipts.map((receipt) => (
-                         <TableRow key={receipt.id}>
+                         <TableRow 
+                           key={receipt.id}
+                           className="cursor-pointer hover:bg-slate-50 transition-colors"
+                           onClick={() => viewRosReceipt(receipt)}
+                         >
                            <TableCell className="font-mono font-medium">
                              {receipt.receiptNumber}
                            </TableCell>
@@ -993,17 +1001,6 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                                {receipt.paymentMethod}
                              </Badge>
                            </TableCell>
-                            <TableCell>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => viewRosReceipt(receipt)}
-                                className="bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-300 hover:border-slate-500 transition-all duration-200"
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                View
-                              </Button>
-                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
