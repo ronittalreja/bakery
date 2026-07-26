@@ -808,15 +808,18 @@ const getSalesByDate = async (req, res) => {
       let items;
       try {
         items = typeof cn.items === 'string' ? JSON.parse(cn.items) : cn.items;
+        console.log(`Credit note ${cn.id} items:`, items);
         if (Array.isArray(items)) {
           items.forEach(item => {
-            const key = item.itemCode || item.description;
+            // Try multiple field names for matching
+            const key = item.itemCode || item.description || item.item_name || item.name;
             if (key) {
               const existing = creditNoteItemsMap.get(key) || { quantity: 0 };
               creditNoteItemsMap.set(key, {
                 quantity: existing.quantity + (item.quantity || 0),
                 total: (existing.total || 0) + (item.total || 0)
               });
+              console.log(`Credit note item: ${key}, qty: ${item.quantity}`);
             }
           });
         }
@@ -824,6 +827,8 @@ const getSalesByDate = async (req, res) => {
         console.warn(`Failed to parse credit note items for CN ${cn.id}:`, e);
       }
     });
+
+    console.log('Credit note items map:', Array.from(creditNoteItemsMap.entries()));
 
     // Process each invoice
     for (const invoice of invoices) {
@@ -842,6 +847,8 @@ const getSalesByDate = async (req, res) => {
         const key = item.item_name;
         const productInfo = productMap.get(key);
         
+        console.log(`Invoice item: ${key}, qty: ${item.qty}`);
+        
         // Skip items that don't exist in products or are in excluded categories
         if (!productInfo) {
           console.log(`Skipping item ${key}: not found in products`);
@@ -855,7 +862,10 @@ const getSalesByDate = async (req, res) => {
         
         const creditNoteItem = creditNoteItemsMap.get(key);
         const creditNoteQty = creditNoteItem ? creditNoteItem.quantity : 0;
+        console.log(`Credit note match for ${key}:`, creditNoteItem ? `qty ${creditNoteQty}` : 'none');
+        
         const soldQty = Math.max(0, item.qty - creditNoteQty);
+        console.log(`Sold qty for ${key}: ${item.qty} - ${creditNoteQty} = ${soldQty}`);
         
         if (soldQty > 0) {
           // Use MRP (sale_price) from products instead of invoice rate
