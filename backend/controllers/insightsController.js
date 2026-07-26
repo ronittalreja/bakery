@@ -47,19 +47,64 @@ const getMonthlyInsights = async (req, res) => {
       return res.json({ success: true, data: insightsData });
     }
 
-    // Get total sales and cost breakdown for the month using new cost tracking columns
+    // Get total sales from invoices for the month
     const [salesData] = await db.execute(`
       SELECT 
-        COALESCE(SUM(s.total_amount), 0) as totalSales,
-        COALESCE(SUM(s.product_mrp_total), 0) as productMRPTotal,
-        COALESCE(SUM(s.decoration_mrp_total), 0) as decorationMRPTotal,
-        COALESCE(SUM(s.product_cost_total), 0) as productCostTotal,
-        COALESCE(SUM(s.decoration_cost_total), 0) as decorationCostTotal,
-        COALESCE(SUM(s.total_cost), 0) as totalCost,
-        COUNT(DISTINCT s.id) as totalTransactions
-      FROM sales s
-      WHERE DATE_FORMAT(s.sale_date, '%Y-%m') = ?
+        COALESCE(SUM(ii.total), 0) as totalSales,
+        COUNT(DISTINCT i.id) as totalTransactions
+      FROM invoices i
+      JOIN invoice_items ii ON i.id = ii.invoice_id
+      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
     `, [month]);
+
+    // For cost tracking, we need to calculate from invoice rates
+    // Invoice rate is the cost price, MRP is calculated as rate * 1.33 rounded to nearest 5
+    const [costData] = await db.execute(`
+      SELECT 
+        COALESCE(SUM(ii.total), 0) as totalCost,
+        COALESCE(SUM(ii.qty), 0) as totalItems
+      FROM invoices i
+      JOIN invoice_items ii ON i.id = ii.invoice_id
+      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
+    `, [month]);
+
+    // Calculate MRP from invoice rates (rate * 1.33 rounded to nearest 5)
+    const roundUpToNearest5 = (value) => {
+      const remainder = value % 5;
+      return remainder === 0 ? value : value + (5 - remainder);
+    };
+    
+    const computeMrp = (invoicePrice) => {
+      const increased = invoicePrice * 1.33; // +33%
+      return roundUpToNearest5(Math.ceil(increased));
+    };
+
+    // Get all invoice items to calculate MRP totals
+    const [invoiceItems] = await db.execute(`
+      SELECT 
+        ii.qty,
+        ii.rate,
+        ii.total
+      FROM invoices i
+      JOIN invoice_items ii ON i.id = ii.invoice_id
+      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
+    `, [month]);
+
+    let productMRPTotal = 0;
+    let decorationMRPTotal = 0;
+    let productCostTotal = 0;
+    let decorationCostTotal = 0;
+
+    // For simplicity, assume all invoice items are products (decorations are tracked separately)
+    // If you have decoration tracking in invoices, you'd need to filter by category
+    invoiceItems.forEach(item => {
+      const mrp = computeMrp(item.rate);
+      const mrpTotal = mrp * item.qty;
+      const costTotal = item.total; // invoice total is at cost price
+      
+      productMRPTotal += mrpTotal;
+      productCostTotal += costTotal;
+    });
 
     // Get total loss (GRM + GVN returns)
     const [lossData] = await db.execute(`
@@ -79,13 +124,9 @@ const getMonthlyInsights = async (req, res) => {
 
 
 
-    // Calculate profit and profit margin using new cost tracking data
+    // Calculate profit and profit margin using invoice data
     const totalSales = Number(salesData[0].totalSales);
-    const productMRPTotal = Number(salesData[0].productMRPTotal);
-    const decorationMRPTotal = Number(salesData[0].decorationMRPTotal);
-    const productCostTotal = Number(salesData[0].productCostTotal);
-    const decorationCostTotal = Number(salesData[0].decorationCostTotal);
-    const totalCost = Number(salesData[0].totalCost);
+    const totalCost = Number(costData[0].totalCost);
     const totalLoss = Number(lossData[0].totalLoss);
     const totalExpenses = Number(expensesData[0].totalExpenses);
     
