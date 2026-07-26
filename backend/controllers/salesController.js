@@ -998,53 +998,58 @@ const getMonthlySales = async (req, res) => {
 
     // Process each invoice
     for (const invoice of invoices) {
-      // Fetch invoice items
-      const [invoiceItems] = await db.execute(
-        `SELECT product_name, quantity, unit_price, total_price FROM invoice_items 
-         WHERE invoice_id = ?`,
-        [invoice.id]
-      );
+      try {
+        // Fetch invoice items
+        const [invoiceItems] = await db.execute(
+          `SELECT product_name, quantity, unit_price, total_price FROM invoice_items 
+           WHERE invoice_id = ?`,
+          [invoice.id]
+        );
 
-      const saleItems = [];
-      let invoiceTotal = 0;
+        const saleItems = [];
+        let invoiceTotal = 0;
 
-      // Calculate sold items (invoice items - credit note items)
-      invoiceItems.forEach(item => {
-        const key = item.product_name;
-        const creditNoteItem = creditNoteItemsMap.get(key);
-        const creditNoteQty = creditNoteItem ? creditNoteItem.quantity : 0;
-        const soldQty = Math.max(0, item.quantity - creditNoteQty);
-        
-        if (soldQty > 0) {
-          const soldTotal = (item.unit_price || 0) * soldQty;
-          saleItems.push({
-            id: item.product_name,
-            product_id: null,
-            batch_id: null,
-            quantity: soldQty,
-            unit_price: item.unit_price,
-            total_price: soldTotal,
-            name: item.product_name,
-            item_code: null,
-            hsn_code: null,
-            decoration_sku: null,
-            decoration_category: null,
-            is_decoration: false
-          });
-          invoiceTotal += soldTotal;
-          totalQuantity += soldQty;
-        }
-      });
-
-      if (saleItems.length > 0) {
-        salesData.push({
-          id: invoice.id,
-          sale_date: invoice.invoice_date,
-          total_amount: invoiceTotal,
-          payment_type: null,
-          items: saleItems
+        // Calculate sold items (invoice items - credit note items)
+        invoiceItems.forEach(item => {
+          const key = item.product_name;
+          const creditNoteItem = creditNoteItemsMap.get(key);
+          const creditNoteQty = creditNoteItem ? creditNoteItem.quantity : 0;
+          const soldQty = Math.max(0, item.quantity - creditNoteQty);
+          
+          if (soldQty > 0) {
+            const soldTotal = (item.unit_price || 0) * soldQty;
+            saleItems.push({
+              id: item.product_name,
+              product_id: null,
+              batch_id: null,
+              quantity: soldQty,
+              unit_price: item.unit_price,
+              total_price: soldTotal,
+              name: item.product_name,
+              item_code: null,
+              hsn_code: null,
+              decoration_sku: null,
+              decoration_category: null,
+              is_decoration: false
+            });
+            invoiceTotal += soldTotal;
+            totalQuantity += soldQty;
+          }
         });
-        totalValue += invoiceTotal;
+
+        if (saleItems.length > 0) {
+          salesData.push({
+            id: invoice.id,
+            sale_date: invoice.invoice_date,
+            total_amount: invoiceTotal,
+            payment_type: null,
+            items: saleItems
+          });
+          totalValue += invoiceTotal;
+        }
+      } catch (error) {
+        console.error(`Error processing invoice ${invoice.id}:`, error);
+        // Continue with next invoice even if this one fails
       }
     }
 
