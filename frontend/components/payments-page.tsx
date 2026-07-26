@@ -103,11 +103,12 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
 
   useEffect(() => {
     if (user) {
-      fetchInvoices();
-      fetchCreditNotes();
-      fetchRosReceipts();
-      fetchInvoicesFromRos();
-      fetchCreditNotesFromRos();
+      fetchRosReceipts().then(() => {
+        fetchInvoices();
+        fetchCreditNotes();
+        fetchInvoicesFromRos();
+        fetchCreditNotesFromRos();
+      });
     }
   }, [user, selectedMonth, selectedYear]);
 
@@ -132,7 +133,19 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       }
 
       const data = await response.json();
-      setInvoices(data.invoices || []);
+      const invoices = data.invoices || [];
+      
+      // Check if each invoice appears in ROS receipts and mark as cleared
+      const invoicesWithStatus = invoices.map((invoice: Invoice) => {
+        const appearsInRos = rosReceipts.some((receipt: RosReceipt) => 
+          receipt.bills.some((bill: any) => 
+            bill.doc_type === 'SR' && bill.bill_number === invoice.invoice_number
+          )
+        );
+        return { ...invoice, status: appearsInRos ? 'cleared' : 'pending' };
+      });
+      
+      setInvoices(invoicesWithStatus);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -527,49 +540,84 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                {(invoicesSubTab === 'invoices' ? invoices : invoicesFromRos).map((invoice) => {
-                  const StatusIcon = getStatusIcon(invoice.status || 'pending');
-                  return (
-                    <div key={invoice.id} className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg hover:shadow-xl transition-shadow p-4 sm:p-6">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-lg font-bold text-slate-900">#{invoice.invoice_number}</h3>
-                        <Badge className={getStatusColor(invoice.status || 'pending')}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {invoice.status || 'pending'}
-                        </Badge>
-                      </div>
-                      <p className="text-slate-600 mb-4">{invoice.store}</p>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-slate-600">Amount:</span>
-                          <span className="font-semibold text-slate-900">₹{invoice.total_amount.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-slate-600">Invoice Date:</span>
-                          <span className="text-sm text-slate-900">{formatDisplayDate(invoice.invoice_date)}</span>
-                        </div>
-                        {invoicesSubTab === 'others' && (
-                          <div className="flex justify-between">
-                            <span className="text-sm text-slate-600">Source:</span>
-                            <span className="text-sm text-blue-600 font-medium">ROS Receipt</span>
-                          </div>
-                        )}
-                        <div className="pt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => viewInvoiceDetails(invoice)}
-                            className="w-full bg-white hover:bg-white text-slate-700 hover:text-slate-900 border border-slate-300 hover:border-slate-500 transition-all duration-200"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                        </div>
-                      </div>
+              <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg">
+                <div className="p-4 sm:p-6 border-b border-slate-200">
+                  <h2 className="text-lg font-bold text-slate-900">
+                    {invoicesSubTab === 'invoices' ? 'Invoices List' : 'Invoices from ROS Receipts'}
+                  </h2>
+                  <p className="text-slate-600 mt-1 text-sm">
+                    {invoicesSubTab === 'invoices' ? invoices.length : invoicesFromRos.length} invoice(s) found
+                  </p>
+                </div>
+                <div className="p-4 sm:p-6">
+                  {isLoading ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Loading invoices...
                     </div>
-                  );
-                })}
+                  ) : (invoicesSubTab === 'invoices' ? invoices.length === 0 : invoicesFromRos.length === 0) ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {invoicesSubTab === 'invoices' ? 'No invoices found for this month' : 'No invoices from ROS receipts found for this month'}
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Invoice #</TableHead>
+                            <TableHead>Invoice Date</TableHead>
+                            <TableHead>Store</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>View</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {(invoicesSubTab === 'invoices' ? invoices : invoicesFromRos).map((invoice) => {
+                            const StatusIcon = getStatusIcon(invoice.status || 'pending');
+                            return (
+                              <TableRow 
+                                key={invoice.id}
+                                className="cursor-pointer hover:bg-slate-50 transition-colors"
+                                onClick={() => viewInvoiceDetails(invoice)}
+                              >
+                                <TableCell className="font-mono font-medium">
+                                  {invoice.invoice_number}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="font-medium">{formatDisplayDate(invoice.invoice_date)}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="font-medium">{invoice.store}</div>
+                                </TableCell>
+                                <TableCell className="font-medium">{formatCurrency(invoice.total_amount)}</TableCell>
+                                <TableCell>
+                                  <Badge className={getStatusColor(invoice.status || 'pending')}>
+                                    <StatusIcon className="h-3 w-3 mr-1" />
+                                    {invoice.status || 'pending'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      viewInvoiceDetails(invoice);
+                                    }}
+                                    className="bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-300 hover:border-slate-500 transition-all duration-200"
+                                  >
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    View
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -745,7 +793,6 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                         <TableRow>
                           <TableHead>Credit Note #</TableHead>
                           <TableHead>Credit Note Date</TableHead>
-                          <TableHead>Receiver</TableHead>
                           <TableHead>Reason</TableHead>
                           <TableHead>Items</TableHead>
                           <TableHead>Total</TableHead>
@@ -785,12 +832,6 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                               </TableCell>
                               <TableCell>
                                 <div className="font-medium">{formatDate(creditNote.date)}</div>
-                              </TableCell>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium">{creditNote.receiverName}</div>
-                                  <div className="text-xs text-muted-foreground">{creditNote.receiverGstin}</div>
-                                </div>
                               </TableCell>
                               <TableCell>
                                 <Badge className={`${getReasonColor(creditNote.reason)} border-0`} variant="secondary">

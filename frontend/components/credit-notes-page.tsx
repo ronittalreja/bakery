@@ -11,6 +11,16 @@ import { Badge } from "@/components/ui/badge";
 import { CreditCard, Calendar, Search, Eye, FileText, ArrowLeft, AlertCircle } from "lucide-react";
 import { useAuth, getAuthToken } from "@/hooks/use-auth";
 
+interface CreditNoteItem {
+  itemCode: string;
+  description: string;
+  hsnCode: string;
+  quantity: number;
+  rate: number;
+  total: number;
+  rtd: number;
+}
+
 interface CreditNote {
   id: number;
   creditNoteNumber: string;
@@ -24,6 +34,7 @@ interface CreditNote {
   netValue: number;
   fileName: string;
   originalName: string;
+  items?: CreditNoteItem[];
   createdAt: string;
 }
 
@@ -138,6 +149,16 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
     return sum + value;
   }, 0);
   const totalLoss = filteredCreditNotes.reduce((sum, cn) => {
+    // Calculate loss from items: sum of (total * rtd / 100) for each item
+    if (cn.items && Array.isArray(cn.items)) {
+      const itemLoss = cn.items.reduce((itemSum: number, item: any) => {
+        const total = typeof item.total === 'string' ? parseFloat(item.total) : item.total || 0;
+        const rtd = typeof item.rtd === 'string' ? parseFloat(item.rtd) : item.rtd || 0;
+        return itemSum + (total * rtd / 100);
+      }, 0);
+      return sum + itemLoss;
+    }
+    // Fallback: gross - net
     const gross = typeof cn.grossValue === 'string' ? parseFloat(cn.grossValue) : cn.grossValue || 0;
     const net = typeof cn.netValue === 'string' ? parseFloat(cn.netValue) : cn.netValue || 0;
     return sum + (gross - net);

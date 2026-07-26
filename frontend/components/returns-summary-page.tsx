@@ -70,9 +70,28 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
         throw new Error("No authentication token found");
       }
       
-      // For monthly data, we'll fetch data for each day of the month and aggregate
-      const [year, monthNum] = month.split('-');
-      const daysInMonth = new Date(parseInt(year), parseInt(monthNum), 0).getDate();
+      // Fetch credit notes for the month instead of returns
+      const creditNotesResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/credit-notes?month=${month}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!creditNotesResponse.ok) {
+        throw new Error("Failed to fetch credit notes");
+      }
+
+      const creditNotesData = await creditNotesResponse.json();
+      
+      if (!creditNotesData.success) {
+        throw new Error(creditNotesData.error || "Failed to fetch credit notes");
+      }
+
+      const creditNotes = creditNotesData.creditNotes || [];
       
       let allReturns: any[] = [];
       let monthlySummary = {
@@ -80,87 +99,46 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
         gvn: { totalDamages: 0, totalQuantity: 0 }
       };
 
-      // Fetch data for each day of the month
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${year}-${monthNum.padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+      // Process credit notes to extract return data
+      creditNotes.forEach((cn: any) => {
+        const items = cn.items || [];
+        const reason = cn.reason || '';
+        const isExpired = reason.toLowerCase().includes('expired');
+        const isDamaged = reason.toLowerCase().includes('damaged');
         
-        try {
-      const detailsResponse = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/details/${dateStr}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      
-          if (detailsResponse.ok) {
-      const detailsData = await detailsResponse.json();
-      
-            if (detailsData.success) {
-              // Add GRM data
-              const grmItems = (detailsData.grm || []).map((item: any) => ({
-                id: `${item.id}-${dateStr}`,
-          date: item.date,
-          productName: item.productName,
-          quantity: item.quantity,
-          reason: item.reason || 'GRM Return',
-          loss: item.lossAmount,
-          itemCode: item.itemCode,
-          category: item.category,
-          imageUrl: item.imageUrl,
-          invoiceReference: item.invoiceReference,
-          invoiceDate: item.invoiceDate
-              }));
-
-              // Add GVN data
-              const gvnItems = (detailsData.gvn || []).map((item: any) => ({
-                id: `${item.id}-${dateStr}`,
-          date: item.date,
-          productName: item.productName,
-          quantity: item.quantity,
-          reason: item.reason || 'GVN Damage',
-          loss: item.lossAmount,
-          itemCode: item.itemCode,
-          category: item.category,
-          imageUrl: item.imageUrl,
-          invoiceReference: item.invoiceReference,
-          invoiceDate: item.invoiceDate
-              }));
-      
-              allReturns.push(...grmItems, ...gvnItems);
-            }
+        items.forEach((item: any) => {
+          const quantity = item.quantity || 0;
+          const total = item.total || 0;
+          const rtd = item.rtd || 0;
+          const loss = total * rtd / 100;
+          
+          const returnItem = {
+            id: `${cn.id}-${item.itemCode}`,
+            date: cn.returnDate || cn.date,
+            productName: item.itemName || item.description || 'Unknown',
+            quantity: quantity,
+            reason: isExpired ? 'GRM Return' : (isDamaged ? 'GVN Damage' : 'Other'),
+            loss: loss,
+            itemCode: item.itemCode,
+            category: '',
+            imageUrl: '',
+            invoiceReference: cn.creditNoteNumber,
+            invoiceDate: cn.date
+          };
+          
+          allReturns.push(returnItem);
+          
+          // Update summary
+          if (isExpired) {
+            monthlySummary.grm.totalReturns += 1;
+            monthlySummary.grm.totalQuantity += quantity;
+            monthlySummary.grm.totalLoss += loss;
+          } else if (isDamaged) {
+            monthlySummary.gvn.totalDamages += 1;
+            monthlySummary.gvn.totalQuantity += quantity;
           }
-      
-          // Fetch summary for the day
-      const summaryResponse = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/summary/${dateStr}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      
-      if (summaryResponse.ok) {
-        const summaryData = await summaryResponse.json();
-            if (summaryData.grm) {
-              monthlySummary.grm.totalReturns += summaryData.grm.totalReturns || 0;
-              monthlySummary.grm.totalQuantity += summaryData.grm.totalQuantity || 0;
-              monthlySummary.grm.totalLoss += summaryData.grm.totalLoss || 0;
-            }
-            if (summaryData.gvn) {
-              monthlySummary.gvn.totalDamages += summaryData.gvn.totalDamages || 0;
-              monthlySummary.gvn.totalQuantity += summaryData.gvn.totalQuantity || 0;
-            }
-          }
-        } catch (dayError) {
-          // Skip failed days and continue
-          console.warn(`Failed to fetch data for ${dateStr}:`, dayError);
-        }
-      }
+        });
+      });
 
       // Group all monthly returns by product name to remove duplicates
       const monthlyGrouped = Object.values(
