@@ -602,6 +602,20 @@ const getSalesSummary = async (req, res) => {
       [date, date]
     );
 
+    // Fetch all products to get categories and MRP (sale_price)
+    const [products] = await db.execute(
+      `SELECT id, item_code, name, category, sale_price FROM products WHERE is_active = 1`
+    );
+
+    // Create a map of product name to product info (for category and MRP)
+    const productMap = new Map();
+    products.forEach(p => {
+      productMap.set(p.name, {
+        category: p.category,
+        mrp: p.sale_price
+      });
+    });
+
     // Check if we have invoices
     if (invoices.length === 0) {
       return res.json({
@@ -631,7 +645,8 @@ const getSalesSummary = async (req, res) => {
         items = typeof cn.items === 'string' ? JSON.parse(cn.items) : cn.items;
         if (Array.isArray(items)) {
           items.forEach(item => {
-            const key = item.itemCode || item.description;
+            // Try multiple field names for matching
+            const key = item.itemCode || item.description || item.item_name || item.name;
             if (key) {
               const existing = creditNoteItemsMap.get(key) || { quantity: 0 };
               creditNoteItemsMap.set(key, {
@@ -650,7 +665,7 @@ const getSalesSummary = async (req, res) => {
     for (const invoice of invoices) {
       // Fetch invoice items
       const [invoiceItems] = await db.execute(
-        `SELECT product_name, quantity, unit_price, total_price FROM invoice_items 
+        `SELECT item_name, qty, rate, total FROM invoice_items 
          WHERE invoice_id = ?`,
         [invoice.id]
       );
@@ -660,13 +675,26 @@ const getSalesSummary = async (req, res) => {
 
       // Calculate sold items (invoice items - credit note items)
       invoiceItems.forEach(item => {
-        const key = item.product_name;
+        const key = item.item_name;
+        const productInfo = productMap.get(key);
+        
+        // Skip items that don't exist in products or are in excluded categories
+        if (!productInfo) {
+          return;
+        }
+        
+        if (productInfo.category === 'packing_material') {
+          return;
+        }
+        
         const creditNoteItem = creditNoteItemsMap.get(key);
         const creditNoteQty = creditNoteItem ? creditNoteItem.quantity : 0;
-        const soldQty = Math.max(0, item.quantity - creditNoteQty);
+        const soldQty = Math.max(0, item.qty - creditNoteQty);
         
         if (soldQty > 0) {
-          const soldTotal = (item.unit_price || 0) * soldQty;
+          // Use MRP (sale_price) from products instead of invoice rate
+          const mrp = productInfo.mrp || item.rate;
+          const soldTotal = mrp * soldQty;
           invoiceTotal += soldTotal;
           invoiceItemsSold += soldQty;
         }
