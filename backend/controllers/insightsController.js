@@ -57,6 +57,17 @@ const getMonthlyInsights = async (req, res) => {
       WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
     `, [month]);
 
+    // Get credit notes total for the month
+    const [creditNotesData] = await db.execute(`
+      SELECT 
+        COALESCE(SUM(gross_value), 0) as totalCreditNotes
+      FROM credit_notes
+      WHERE DATE_FORMAT(date, '%Y-%m') = ?
+    `, [month]);
+
+    // Calculate net sales (invoice total - credit notes)
+    const netSales = Number(salesData[0].totalSales) - Number(creditNotesData[0].totalCreditNotes);
+
     // For cost tracking, we need to calculate from invoice rates
     // Invoice rate is the cost price, MRP is calculated as rate * 1.33 rounded to nearest 5
     const [costData] = await db.execute(`
@@ -124,8 +135,8 @@ const getMonthlyInsights = async (req, res) => {
 
 
 
-    // Calculate profit and profit margin using invoice data
-    const totalSales = Number(salesData[0].totalSales);
+    // Calculate profit and profit margin using net sales (invoice - credit notes)
+    const totalSales = netSales; // Use net sales (invoice - credit notes)
     const totalCost = Number(costData[0].totalCost);
     const totalLoss = Number(lossData[0].totalLoss);
     const totalExpenses = Number(expensesData[0].totalExpenses);
