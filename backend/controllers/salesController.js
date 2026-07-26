@@ -815,7 +815,7 @@ const getSalesByDate = async (req, res) => {
     for (const invoice of invoices) {
       // Fetch invoice items
       const [invoiceItems] = await db.execute(
-        `SELECT product_name, quantity, unit_price, total_price FROM invoice_items 
+        `SELECT item_name, qty, rate, total FROM invoice_items 
          WHERE invoice_id = ?`,
         [invoice.id]
       );
@@ -825,21 +825,21 @@ const getSalesByDate = async (req, res) => {
 
       // Calculate sold items (invoice items - credit note items)
       invoiceItems.forEach(item => {
-        const key = item.product_name;
+        const key = item.item_name;
         const creditNoteItem = creditNoteItemsMap.get(key);
         const creditNoteQty = creditNoteItem ? creditNoteItem.quantity : 0;
-        const soldQty = Math.max(0, item.quantity - creditNoteQty);
+        const soldQty = Math.max(0, item.qty - creditNoteQty);
         
         if (soldQty > 0) {
-          const soldTotal = (item.unit_price || 0) * soldQty;
+          const soldTotal = (item.rate || 0) * soldQty;
           saleItems.push({
-            id: item.product_name,
+            id: item.item_name,
             product_id: null,
             batch_id: null,
             quantity: soldQty,
-            unit_price: item.unit_price,
+            unit_price: item.rate,
             total_price: soldTotal,
-            name: item.product_name,
+            name: item.item_name,
             item_code: null,
             hsn_code: null,
             decoration_sku: null,
@@ -1001,7 +1001,7 @@ const getMonthlySales = async (req, res) => {
       try {
         // Fetch invoice items
         const [invoiceItems] = await db.execute(
-          `SELECT product_name, quantity, unit_price, total_price FROM invoice_items 
+          `SELECT item_name, qty, rate, total FROM invoice_items 
            WHERE invoice_id = ?`,
           [invoice.id]
         );
@@ -1011,21 +1011,21 @@ const getMonthlySales = async (req, res) => {
 
         // Calculate sold items (invoice items - credit note items)
         invoiceItems.forEach(item => {
-          const key = item.product_name;
+          const key = item.item_name;
           const creditNoteItem = creditNoteItemsMap.get(key);
           const creditNoteQty = creditNoteItem ? creditNoteItem.quantity : 0;
-          const soldQty = Math.max(0, item.quantity - creditNoteQty);
+          const soldQty = Math.max(0, item.qty - creditNoteQty);
           
           if (soldQty > 0) {
-            const soldTotal = (item.unit_price || 0) * soldQty;
+            const soldTotal = (item.rate || 0) * soldQty;
             saleItems.push({
-              id: item.product_name,
+              id: item.item_name,
               product_id: null,
               batch_id: null,
               quantity: soldQty,
-              unit_price: item.unit_price,
+              unit_price: item.rate,
               total_price: soldTotal,
-              name: item.product_name,
+              name: item.item_name,
               item_code: null,
               hsn_code: null,
               decoration_sku: null,
