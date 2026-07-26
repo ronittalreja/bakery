@@ -602,6 +602,22 @@ const getSalesSummary = async (req, res) => {
       [date, date]
     );
 
+    // Check if we have invoices
+    if (invoices.length === 0) {
+      return res.json({
+        success: true,
+        summary: {
+          totalTransactions: 0,
+          totalItems: 0,
+          totalSales: 0,
+          cashSales: 0,
+          upiSales: 0
+        },
+        message: `Sales not Available for ${date}`,
+        reason: 'Invoice not available'
+      });
+    }
+
     // Calculate total sales from invoices minus credit notes
     let totalSales = 0;
     let totalItems = 0;
@@ -764,21 +780,6 @@ const getSalesByDate = async (req, res) => {
         },
         message: `Sales not Available for ${date}`,
         reason: 'Invoice not available'
-      });
-    }
-
-    // Check if we have credit notes (optional - we can still calculate sales without them)
-    if (creditNotes.length === 0) {
-      return res.json({ 
-        success: true, 
-        data: [], 
-        summary: {
-          totalQuantity: 0, 
-          totalValue: 0,
-          totalTransactions: 0
-        },
-        message: `Sales not Available for ${date}`,
-        reason: 'Credit note not available'
       });
     }
 
