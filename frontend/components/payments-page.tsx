@@ -114,18 +114,28 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
 
   // Calculate invoice status based on ROS receipts
   useEffect(() => {
-    if (invoices.length > 0) {
+    if (invoices.length > 0 && rosReceipts.length > 0) {
+      console.log('Calculating invoice status...');
+      console.log('Invoices:', invoices.map(inv => ({ number: inv.invoice_number, currentStatus: inv.status })));
+      console.log('ROS Receipts bills:', rosReceipts.flatMap(r => r.bills || []).map(b => ({ type: b.doc_type, number: b.bill_number })));
+      
       const invoicesWithStatus = invoices.map((invoice: Invoice) => {
         const appearsInRos = rosReceipts.some((receipt: RosReceipt) => 
-          receipt.bills && receipt.bills.some((bill: any) => 
-            bill.doc_type === 'SR' && bill.bill_number === invoice.invoice_number
-          )
+          receipt.bills && receipt.bills.some((bill: any) => {
+            const match = bill.doc_type === 'SR' && bill.bill_number === invoice.invoice_number;
+            if (match) {
+              console.log(`Match found: Invoice ${invoice.invoice_number} matches bill ${bill.bill_number}`);
+            }
+            return match;
+          })
         );
         return { ...invoice, status: (appearsInRos ? 'cleared' : 'pending') as 'pending' | 'cleared' };
       });
+      
+      console.log('Updated invoices:', invoicesWithStatus.map(inv => ({ number: inv.invoice_number, status: inv.status })));
       setInvoices(invoicesWithStatus);
     }
-  }, [invoices, rosReceipts]);
+  }, [rosReceipts]); // Only depend on rosReceipts to avoid infinite loop
 
   const fetchInvoices = async () => {
     try {
@@ -501,7 +511,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
         {activeTab === 'invoices' ? (
           <div className="space-y-4">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg p-4 sm:p-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-100 rounded-lg">
@@ -524,35 +534,12 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                   </div>
                   <div>
                     <div className="text-xl sm:text-2xl font-bold text-slate-900">
-                      {formatCurrency((invoicesSubTab === 'invoices' ? invoices : invoicesFromRos).reduce((sum, inv) => sum + (inv.total_amount || 0), 0))}
+                      {formatCurrency((invoicesSubTab === 'invoices' ? invoices : invoicesFromRos).reduce((sum, inv) => {
+                        const amount = Number(inv.total_amount) || 0;
+                        return sum + amount;
+                      }, 0))}
                     </div>
                     <div className="text-sm text-slate-600">Total Amount</div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg p-4 sm:p-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <div className="text-xl sm:text-2xl font-bold text-green-600">
-                      {(invoicesSubTab === 'invoices' ? invoices : invoicesFromRos).filter(inv => inv.status === 'cleared').length}
-                    </div>
-                    <div className="text-sm text-slate-600">Cleared</div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg p-4 sm:p-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-yellow-100 rounded-lg">
-                    <Clock className="h-5 w-5 text-yellow-600" />
-                  </div>
-                  <div>
-                    <div className="text-xl sm:text-2xl font-bold text-yellow-600">
-                      {(invoicesSubTab === 'invoices' ? invoices : invoicesFromRos).filter(inv => inv.status === 'pending' || !inv.status).length}
-                    </div>
-                    <div className="text-sm text-slate-600">Pending</div>
                   </div>
                 </div>
               </div>
