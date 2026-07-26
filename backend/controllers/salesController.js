@@ -612,7 +612,8 @@ const getSalesSummary = async (req, res) => {
     products.forEach(p => {
       productMap.set(p.name, {
         category: p.category,
-        mrp: p.sale_price
+        mrp: p.sale_price,
+        item_code: p.item_code
       });
     });
 
@@ -687,7 +688,12 @@ const getSalesSummary = async (req, res) => {
           return;
         }
         
-        const creditNoteItem = creditNoteItemsMap.get(key);
+        // Try matching by name first, then by item_code
+        let creditNoteItem = creditNoteItemsMap.get(key);
+        if (!creditNoteItem && productInfo.item_code) {
+          creditNoteItem = creditNoteItemsMap.get(productInfo.item_code);
+        }
+        
         const creditNoteQty = creditNoteItem ? creditNoteItem.quantity : 0;
         const soldQty = Math.max(0, item.qty - creditNoteQty);
         
@@ -806,7 +812,8 @@ const getSalesByDate = async (req, res) => {
     products.forEach(p => {
       productMap.set(p.name, {
         category: p.category,
-        mrp: p.sale_price
+        mrp: p.sale_price,
+        item_code: p.item_code
       });
     });
 
@@ -832,7 +839,9 @@ const getSalesByDate = async (req, res) => {
 
     // Parse credit note items into a map for easy lookup
     const creditNoteItemsMap = new Map();
+    console.log(`Found ${creditNotes.length} credit notes for date ${date}`);
     creditNotes.forEach(cn => {
+      console.log(`Processing credit note ${cn.id}, date: ${cn.date}, return_date: ${cn.return_date}`);
       let items;
       try {
         items = typeof cn.items === 'string' ? JSON.parse(cn.items) : cn.items;
@@ -841,6 +850,7 @@ const getSalesByDate = async (req, res) => {
           items.forEach(item => {
             // Try multiple field names for matching
             const key = item.itemCode || item.description || item.item_name || item.name;
+            console.log(`Credit note item key: ${key}, item:`, item);
             if (key) {
               const existing = creditNoteItemsMap.get(key) || { quantity: 0 };
               creditNoteItemsMap.set(key, {
@@ -888,7 +898,13 @@ const getSalesByDate = async (req, res) => {
           return;
         }
         
-        const creditNoteItem = creditNoteItemsMap.get(key);
+        // Try matching by name first, then by item_code
+        let creditNoteItem = creditNoteItemsMap.get(key);
+        if (!creditNoteItem && productInfo.item_code) {
+          creditNoteItem = creditNoteItemsMap.get(productInfo.item_code);
+          console.log(`Trying item_code match for ${key}: ${productInfo.item_code}`);
+        }
+        
         const creditNoteQty = creditNoteItem ? creditNoteItem.quantity : 0;
         console.log(`Credit note match for ${key}:`, creditNoteItem ? `qty ${creditNoteQty}` : 'none');
         
@@ -1032,7 +1048,8 @@ const getMonthlySales = async (req, res) => {
     products.forEach(p => {
       productMap.set(p.name, {
         category: p.category,
-        mrp: p.sale_price
+        mrp: p.sale_price,
+        item_code: p.item_code
       });
     });
 
@@ -1106,7 +1123,12 @@ const getMonthlySales = async (req, res) => {
             return;
           }
           
-          const creditNoteItem = creditNoteItemsMap.get(key);
+          // Try matching by name first, then by item_code
+          let creditNoteItem = creditNoteItemsMap.get(key);
+          if (!creditNoteItem && productInfo.item_code) {
+            creditNoteItem = creditNoteItemsMap.get(productInfo.item_code);
+          }
+          
           const creditNoteQty = creditNoteItem ? creditNoteItem.quantity : 0;
           const soldQty = Math.max(0, item.qty - creditNoteQty);
           
