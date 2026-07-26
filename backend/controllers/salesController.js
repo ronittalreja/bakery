@@ -53,7 +53,12 @@ const recordSale = async (req, res) => {
         
         // If not found, try to find by sku (string ID from frontend)
         if (!decoration) {
-          decoration = demoData.decorations.find(d => d.sku === item.productId);
+          decoration = demoData.decorations.find(d => d.sku === item.productId || d.sku === String(item.productId));
+        }
+        
+        // If still not found, try to find by name
+        if (!decoration && item.name) {
+          decoration = demoData.decorations.find(d => d.name === item.name);
         }
         
         if (decoration) {
@@ -94,8 +99,26 @@ const recordSale = async (req, res) => {
           }
         }
         
+        // If still not found, try to find by batch ID (frontend might send batchId)
+        if (!stockBatch) {
+          stockBatch = demoData.stockBatches.find(sb => sb.id === item.productId || sb.id === Number(item.productId));
+          if (stockBatch) {
+            console.log(`Found stock batch by ID: ${item.productId} -> batch_id: ${stockBatch.id}`);
+          }
+        }
+        
+        // If still not found, try to find by product name
+        if (!stockBatch && item.name) {
+          const product = demoData.products.find(p => p.name === item.name);
+          if (product) {
+            stockBatch = demoData.stockBatches.find(sb => sb.product_id === product.id);
+            console.log(`Found product by name: ${item.name} -> product_id: ${product.id}`);
+          }
+        }
+        
         console.log(`Stock batch lookup for item ${item.productId}:`, {
           itemProductId: item.productId,
+          itemName: item.name,
           foundStockBatch: stockBatch ? stockBatch.id : null,
           availableQuantity: stockBatch ? stockBatch.quantity : 0,
           requestedQuantity: Number(item.quantity)
