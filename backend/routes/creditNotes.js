@@ -20,6 +20,9 @@ router.post('/store', creditNoteController.storeCreditNote);
 // Get all credit notes with month filter
 router.get('/', creditNoteController.getAllCreditNotes);
 
+// Get credit notes from ROS receipts that don't exist in credit_notes table
+router.get('/from-ros-receipts', creditNoteController.getCreditNotesFromRosReceipts);
+
 // Get credit note details by ID
 router.get('/:id', creditNoteController.getCreditNoteDetails);
 
@@ -28,9 +31,6 @@ router.patch('/:id/status', creditNoteController.updateCreditNoteStatus);
 
 // Get credit note processing history
 router.get('/history', creditNoteController.getCreditNoteHistory);
-
-// Get credit notes from ROS receipts that don't exist in credit_notes table
-router.get('/from-ros-receipts', creditNoteController.getCreditNotesFromRosReceipts);
 
 // Error handling middleware
 router.use((err, req, res, next) => {

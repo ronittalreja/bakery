@@ -32,6 +32,9 @@ router.post('/check', invoiceUpload.single('file'), checkInvoice);
 // Get invoices by month (for payments page)
 router.get('/', getInvoicesByMonth);
 
+// Get invoices from ROS receipts that don't exist in invoices table
+router.get('/from-ros-receipts', getInvoicesFromRosReceipts);
+
 // Get invoice by ID (for payments page)
 router.get('/:id', getInvoiceById);
 
@@ -40,8 +43,5 @@ router.get('/:id/items', getInvoiceItems);
 
 // Update invoice status (for payments page)
 router.patch('/:id/status', updateInvoiceStatus);
-
-// Get invoices from ROS receipts that don't exist in invoices table
-router.get('/from-ros-receipts', getInvoicesFromRosReceipts);
 
 module.exports = router;
