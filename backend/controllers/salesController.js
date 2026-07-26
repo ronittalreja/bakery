@@ -556,7 +556,7 @@ const recordSale = async (req, res) => {
   }
 };
 
-// Get Sales Summary for a specific date
+// Get Sales Summary for a specific date - calculated from invoices and credit notes
 const getSalesSummary = async (req, res) => {
   try {
     const { date } = req.params;
@@ -588,34 +588,90 @@ const getSalesSummary = async (req, res) => {
       });
     }
 
-    const [summaryRows] = await db.execute(
-      `SELECT 
-        COUNT(*) AS totalTransactions, 
-        SUM(total_amount) AS totalSales,
-        SUM(CASE WHEN payment_type = 'cash' THEN total_amount ELSE 0 END) AS cashSales,
-        SUM(CASE WHEN payment_type = 'upi' THEN total_amount ELSE 0 END) AS upiSales
-      FROM sales 
-      WHERE DATE(sale_date) = ?`,
+    // Fetch invoices for the date
+    const [invoices] = await db.execute(
+      `SELECT id, total_amount FROM invoices 
+       WHERE DATE(invoice_date) = ?`,
       [date]
     );
 
-    const [itemsRows] = await db.execute(
-      `SELECT SUM(quantity) AS totalItems 
-      FROM sale_items si
-      JOIN sales s ON si.sale_id = s.id
-      WHERE DATE(s.sale_date) = ?`,
-      [date]
+    // Fetch credit notes with return date matching the invoice date
+    const [creditNotes] = await db.execute(
+      `SELECT id, items FROM credit_notes 
+       WHERE DATE(return_date) = ? OR DATE(date) = ?`,
+      [date, date]
     );
+
+    // Calculate total sales from invoices minus credit notes
+    let totalSales = 0;
+    let totalItems = 0;
+    let totalTransactions = 0;
+
+    // Parse credit note items into a map for easy lookup
+    const creditNoteItemsMap = new Map();
+    creditNotes.forEach(cn => {
+      let items;
+      try {
+        items = typeof cn.items === 'string' ? JSON.parse(cn.items) : cn.items;
+        if (Array.isArray(items)) {
+          items.forEach(item => {
+            const key = item.itemCode || item.description;
+            if (key) {
+              const existing = creditNoteItemsMap.get(key) || { quantity: 0 };
+              creditNoteItemsMap.set(key, {
+                quantity: existing.quantity + (item.quantity || 0),
+                total: (existing.total || 0) + (item.total || 0)
+              });
+            }
+          });
+        }
+      } catch (e) {
+        console.warn(`Failed to parse credit note items for CN ${cn.id}:`, e);
+      }
+    });
+
+    // Process each invoice
+    for (const invoice of invoices) {
+      // Fetch invoice items
+      const [invoiceItems] = await db.execute(
+        `SELECT product_name, quantity, unit_price, total_price FROM invoice_items 
+         WHERE invoice_id = ?`,
+        [invoice.id]
+      );
+
+      let invoiceTotal = 0;
+      let invoiceItemsSold = 0;
+
+      // Calculate sold items (invoice items - credit note items)
+      invoiceItems.forEach(item => {
+        const key = item.product_name;
+        const creditNoteItem = creditNoteItemsMap.get(key);
+        const creditNoteQty = creditNoteItem ? creditNoteItem.quantity : 0;
+        const soldQty = Math.max(0, item.quantity - creditNoteQty);
+        
+        if (soldQty > 0) {
+          const soldTotal = (item.unit_price || 0) * soldQty;
+          invoiceTotal += soldTotal;
+          invoiceItemsSold += soldQty;
+        }
+      });
+
+      if (invoiceItemsSold > 0) {
+        totalSales += invoiceTotal;
+        totalItems += invoiceItemsSold;
+        totalTransactions += 1;
+      }
+    }
 
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.json({
       success: true,
       summary: {
-        totalTransactions: Number(summaryRows[0].totalTransactions) || 0,
-        totalItems: Number(itemsRows[0].totalItems) || 0,
-        totalSales: Number(summaryRows[0].totalSales) || 0,
-        cashSales: Number(summaryRows[0].cashSales) || 0,
-        upiSales: Number(summaryRows[0].upiSales) || 0
+        totalTransactions,
+        totalItems,
+        totalSales,
+        cashSales: 0, // Not available from invoices
+        upiSales: 0   // Not available from invoices
       }
     });
   } catch (error) {
@@ -623,7 +679,7 @@ const getSalesSummary = async (req, res) => {
   }
 };
 
-// Get Sales by Date with detailed breakdown
+// Get Sales by Date with detailed breakdown - calculated from invoices and credit notes
 const getSalesByDate = async (req, res) => {
   try {
     const { date } = req.params;
@@ -682,39 +738,22 @@ const getSalesByDate = async (req, res) => {
       return res.json({ success: true, data: transformedSales, summary });
     }
 
-    const query = `
-      SELECT
-        s.id as sale_id,
-        s.sale_date,
-        s.total_amount,
-        s.payment_type,
-        si.id as item_id,
-        si.item_id as product_id,
-        si.batch_id,
-        si.quantity, 
-        si.unit_price, 
-        si.total_price, 
-        si.name,
-        si.item_type,
-        p.item_code,
-        p.hsn_code,
-        d.sku as decoration_sku,
-        d.category as decoration_category
-      FROM sales s
-      JOIN sale_items si ON s.id = si.sale_id
-      LEFT JOIN products p ON si.item_id = p.id AND si.item_type = 'product'
-      LEFT JOIN decorations d ON si.item_id = d.id AND si.item_type = 'decoration'
-      WHERE DATE(s.sale_date) = ?
-      ORDER BY s.id DESC, si.id ASC
-    `;
-    
-    const [rows] = await db.execute(query, [date]);
-    console.log(`📊 Found ${rows.length} sales rows for date ${date}`);
-    if (rows.length > 0) {
-      console.log(`📅 Sample sale_date from database: ${rows[0].sale_date}`);
-    }
+    // Fetch invoices for the date
+    const [invoices] = await db.execute(
+      `SELECT id, invoice_number, invoice_date, total_amount FROM invoices 
+       WHERE DATE(invoice_date) = ?`,
+      [date]
+    );
 
-    if (!rows.length) {
+    // Fetch credit notes with return date matching the invoice date
+    const [creditNotes] = await db.execute(
+      `SELECT id, credit_note_number, date, return_date, items FROM credit_notes 
+       WHERE DATE(return_date) = ? OR DATE(date) = ?`,
+      [date, date]
+    );
+
+    // Check if we have data
+    if (invoices.length === 0 && creditNotes.length === 0) {
       return res.json({ 
         success: true, 
         data: [], 
@@ -722,42 +761,90 @@ const getSalesByDate = async (req, res) => {
           totalQuantity: 0, 
           totalValue: 0,
           totalTransactions: 0
-        }
+        },
+        message: `Sales not Available for ${date}`
       });
     }
 
-    // Group by sales
-    const salesMap = new Map();
-    rows.forEach(row => {
-      if (!salesMap.has(row.sale_id)) {
-        salesMap.set(row.sale_id, {
-          id: row.sale_id,
-          sale_date: row.sale_date,
-          total_amount: row.total_amount,
-          payment_type: row.payment_type,
-          items: []
-        });
+    // Calculate sales from invoices minus credit notes
+    const salesData = [];
+    let totalQuantity = 0;
+    let totalValue = 0;
+
+    // Parse credit note items into a map for easy lookup
+    const creditNoteItemsMap = new Map();
+    creditNotes.forEach(cn => {
+      let items;
+      try {
+        items = typeof cn.items === 'string' ? JSON.parse(cn.items) : cn.items;
+        if (Array.isArray(items)) {
+          items.forEach(item => {
+            const key = item.itemCode || item.description;
+            if (key) {
+              const existing = creditNoteItemsMap.get(key) || { quantity: 0 };
+              creditNoteItemsMap.set(key, {
+                quantity: existing.quantity + (item.quantity || 0),
+                total: (existing.total || 0) + (item.total || 0)
+              });
+            }
+          });
+        }
+      } catch (e) {
+        console.warn(`Failed to parse credit note items for CN ${cn.id}:`, e);
       }
-      
-      salesMap.get(row.sale_id).items.push({
-        id: row.item_id,
-        product_id: row.product_id,
-        batch_id: row.batch_id,
-        quantity: row.quantity,
-        unit_price: row.unit_price,
-        total_price: row.total_price,
-        name: row.name,
-        item_code: row.item_code,
-        hsn_code: row.hsn_code,
-        decoration_sku: row.decoration_sku,
-        decoration_category: row.decoration_category,
-        is_decoration: !row.batch_id && row.decoration_sku
-      });
     });
 
-    const salesData = Array.from(salesMap.values());
-    const totalQuantity = rows.reduce((sum, item) => sum + Number(item.quantity), 0);
-    const totalValue = rows.reduce((sum, item) => sum + Number(item.total_price), 0);
+    // Process each invoice
+    for (const invoice of invoices) {
+      // Fetch invoice items
+      const [invoiceItems] = await db.execute(
+        `SELECT product_name, quantity, unit_price, total_price FROM invoice_items 
+         WHERE invoice_id = ?`,
+        [invoice.id]
+      );
+
+      const saleItems = [];
+      let invoiceTotal = 0;
+
+      // Calculate sold items (invoice items - credit note items)
+      invoiceItems.forEach(item => {
+        const key = item.product_name;
+        const creditNoteItem = creditNoteItemsMap.get(key);
+        const creditNoteQty = creditNoteItem ? creditNoteItem.quantity : 0;
+        const soldQty = Math.max(0, item.quantity - creditNoteQty);
+        
+        if (soldQty > 0) {
+          const soldTotal = (item.unit_price || 0) * soldQty;
+          saleItems.push({
+            id: item.product_name,
+            product_id: null,
+            batch_id: null,
+            quantity: soldQty,
+            unit_price: item.unit_price,
+            total_price: soldTotal,
+            name: item.product_name,
+            item_code: null,
+            hsn_code: null,
+            decoration_sku: null,
+            decoration_category: null,
+            is_decoration: false
+          });
+          invoiceTotal += soldTotal;
+          totalQuantity += soldQty;
+        }
+      });
+
+      if (saleItems.length > 0) {
+        salesData.push({
+          id: invoice.id,
+          sale_date: invoice.invoice_date,
+          total_amount: invoiceTotal,
+          payment_type: null, // Optional - can be added later
+          items: saleItems
+        });
+        totalValue += invoiceTotal;
+      }
+    }
 
     res.set({
       'Cache-Control': 'no-store, no-cache, must-revalidate, private',
@@ -775,6 +862,7 @@ const getSalesByDate = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Error in getSalesByDate:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch sales' });
   }
 };

@@ -16,7 +16,7 @@ import { useSaleContext } from "@/contexts/SaleContext";
 
 interface SaleTransaction {
   id: string;
-  time: string;
+  time: string | null;
   date: string;
   staffMember: string;
   items: {
@@ -26,7 +26,7 @@ interface SaleTransaction {
     isDecoration?: boolean;
   }[];
   totalAmount: number;
-  paymentMethod: string;
+  paymentMethod: string | null;
 }
 
 interface SalesTimelinePageProps {
@@ -107,6 +107,14 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
         throw new Error(salesData.error || "API returned unsuccessful response");
       }
 
+      // Check if sales are not available
+      if (salesData.message) {
+        setError(salesData.message);
+        setTransactions([]);
+        setIsLoading(false);
+        return;
+      }
+
       const salesById: { [key: string]: SaleTransaction } = {};
       (salesData.data || []).forEach((sale: any) => {
         const saleId = sale.id || `temp-${Math.random()}`;
@@ -115,13 +123,12 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
             id: saleId,
             time: sale.sale_date
               ? formatTime(sale.sale_date)
-              : "Unknown",
+              : null, // Make time optional
             date: sale.sale_date ? sale.sale_date.split("T")[0] : selectedDate,
-            staffMember:
-              sale.staff_id === Number(user?.id) ? user?.name || "Unknown" : `Staff ${sale.staff_id || "Unknown"}`,
+            staffMember: "Unknown", // Simplified since we don't have staff info from invoices
             items: [],
             totalAmount: Number(sale.total_amount) || 0,
-            paymentMethod: sale.payment_type || "cash",
+            paymentMethod: sale.payment_type || null, // Make payment type optional
           };
         }
         // Check if this is a decoration item
@@ -305,12 +312,14 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
                                 maximumFractionDigits: 2,
                               })}
                             </div>
-                            <Badge
-                              className={`${getPaymentMethodColor(transaction.paymentMethod)} border-0`}
-                              variant="secondary"
-                            >
-                              {transaction.paymentMethod}
-                            </Badge>
+                            {transaction.paymentMethod ? (
+                              <Badge
+                                className={`${getPaymentMethodColor(transaction.paymentMethod || '')} border-0`}
+                                variant="secondary"
+                              >
+                                {transaction.paymentMethod}
+                              </Badge>
+                            ) : null}
                           </div>
                         </div>
 
