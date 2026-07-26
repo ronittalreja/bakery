@@ -848,7 +848,7 @@ const getSalesByDate = async (req, res) => {
           return;
         }
         
-        if (productInfo.category === 'others' || productInfo.category === 'packing_material') {
+        if (productInfo.category === 'packing_material') {
           console.log(`Skipping item ${key}: category is ${productInfo.category}`);
           return;
         }
@@ -1063,7 +1063,7 @@ const getMonthlySales = async (req, res) => {
             return;
           }
           
-          if (productInfo.category === 'others' || productInfo.category === 'packing_material') {
+          if (productInfo.category === 'packing_material') {
             console.log(`Skipping item ${key}: category is ${productInfo.category}`);
             return;
           }
