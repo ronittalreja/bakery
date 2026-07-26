@@ -768,6 +768,20 @@ const getSalesByDate = async (req, res) => {
       [date, date]
     );
 
+    // Fetch all products to get categories and MRP (sale_price)
+    const [products] = await db.execute(
+      `SELECT id, item_code, name, category, sale_price FROM products WHERE is_active = 1`
+    );
+
+    // Create a map of product name to product info (for category and MRP)
+    const productMap = new Map();
+    products.forEach(p => {
+      productMap.set(p.name, {
+        category: p.category,
+        mrp: p.sale_price
+      });
+    });
+
     // Check if we have invoices
     if (invoices.length === 0) {
       return res.json({ 
@@ -826,18 +840,33 @@ const getSalesByDate = async (req, res) => {
       // Calculate sold items (invoice items - credit note items)
       invoiceItems.forEach(item => {
         const key = item.item_name;
+        const productInfo = productMap.get(key);
+        
+        // Skip items that don't exist in products or are in excluded categories
+        if (!productInfo) {
+          console.log(`Skipping item ${key}: not found in products`);
+          return;
+        }
+        
+        if (productInfo.category === 'others' || productInfo.category === 'packing_material') {
+          console.log(`Skipping item ${key}: category is ${productInfo.category}`);
+          return;
+        }
+        
         const creditNoteItem = creditNoteItemsMap.get(key);
         const creditNoteQty = creditNoteItem ? creditNoteItem.quantity : 0;
         const soldQty = Math.max(0, item.qty - creditNoteQty);
         
         if (soldQty > 0) {
-          const soldTotal = (item.rate || 0) * soldQty;
+          // Use MRP (sale_price) from products instead of invoice rate
+          const mrp = productInfo.mrp || item.rate;
+          const soldTotal = mrp * soldQty;
           saleItems.push({
             id: item.item_name,
             product_id: null,
             batch_id: null,
             quantity: soldQty,
-            unit_price: item.rate,
+            unit_price: mrp,
             total_price: soldTotal,
             name: item.item_name,
             item_code: null,
@@ -955,6 +984,20 @@ const getMonthlySales = async (req, res) => {
       [month, month]
     );
 
+    // Fetch all products to get categories and MRP (sale_price)
+    const [products] = await db.execute(
+      `SELECT id, item_code, name, category, sale_price FROM products WHERE is_active = 1`
+    );
+
+    // Create a map of product name to product info (for category and MRP)
+    const productMap = new Map();
+    products.forEach(p => {
+      productMap.set(p.name, {
+        category: p.category,
+        mrp: p.sale_price
+      });
+    });
+
     if (invoices.length === 0) {
       return res.json({ 
         success: true, 
@@ -1012,18 +1055,33 @@ const getMonthlySales = async (req, res) => {
         // Calculate sold items (invoice items - credit note items)
         invoiceItems.forEach(item => {
           const key = item.item_name;
+          const productInfo = productMap.get(key);
+          
+          // Skip items that don't exist in products or are in excluded categories
+          if (!productInfo) {
+            console.log(`Skipping item ${key}: not found in products`);
+            return;
+          }
+          
+          if (productInfo.category === 'others' || productInfo.category === 'packing_material') {
+            console.log(`Skipping item ${key}: category is ${productInfo.category}`);
+            return;
+          }
+          
           const creditNoteItem = creditNoteItemsMap.get(key);
           const creditNoteQty = creditNoteItem ? creditNoteItem.quantity : 0;
           const soldQty = Math.max(0, item.qty - creditNoteQty);
           
           if (soldQty > 0) {
-            const soldTotal = (item.rate || 0) * soldQty;
+            // Use MRP (sale_price) from products instead of invoice rate
+            const mrp = productInfo.mrp || item.rate;
+            const soldTotal = mrp * soldQty;
             saleItems.push({
               id: item.item_name,
               product_id: null,
               batch_id: null,
               quantity: soldQty,
-              unit_price: item.rate,
+              unit_price: mrp,
               total_price: soldTotal,
               name: item.item_name,
               item_code: null,
