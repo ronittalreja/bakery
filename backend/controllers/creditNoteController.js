@@ -836,7 +836,15 @@ const getAllCreditNotes = async (req, res) => {
         status: cn.status || 'processed'
       }));
       
-      return res.json({ success: true, creditNotes: transformedCreditNotes });
+      // Calculate summary totals
+      const summary = {
+        totalCreditNotes: transformedCreditNotes.length,
+        totalGrossValue: transformedCreditNotes.reduce((sum, cn) => sum + (Number(cn.gross_value) || 0), 0),
+        totalNetValue: transformedCreditNotes.reduce((sum, cn) => sum + (Number(cn.net_value) || 0), 0),
+        totalItems: transformedCreditNotes.reduce((sum, cn) => sum + (Number(cn.total_items) || 0), 0)
+      };
+      
+      return res.json({ success: true, creditNotes: transformedCreditNotes, summary });
     }
     
     let query = `
