@@ -34,7 +34,7 @@ const demoData = {
       invoice_price: 500,
       return_date: '2026-07-05',
       type: 'GRM',
-      loss_amount: 250,
+      loss_amount: 375,
       batch_id: 2001,
       expiry_date: '2026-08-05'
     },
@@ -45,7 +45,7 @@ const demoData = {
       invoice_price: 400,
       return_date: '2026-07-05',
       type: 'GVN',
-      loss_amount: 120,
+      loss_amount: 0,
       batch_id: 2002,
       expiry_date: '2026-08-05'
     },
@@ -56,7 +56,7 @@ const demoData = {
       invoice_price: 150,
       return_date: '2026-07-04',
       type: 'GRM',
-      loss_amount: 60,
+      loss_amount: 90,
       batch_id: 2003,
       expiry_date: '2026-08-05'
     }
@@ -105,10 +105,10 @@ const demoData = {
       return_date: '2026-07-10',
       receiver_name: 'Sample Bakery Supplies',
       receiver_gstin: 'SAMPLE98765ZYXWV',
-      reason: 'QUALITY ISSUES',
+      reason: 'DAMAGED GOODS',
       total_items: 3,
       gross_value: 1440,
-      net_value: 1224,
+      net_value: 1440,
       file_name: 'demo-cn-002.pdf',
       original_name: 'demo-cn-002.pdf',
       items: [
@@ -118,7 +118,7 @@ const demoData = {
           hsnCode: '19059010',
           quantity: 3, 
           rate: 480, 
-          rtd: 15.00,
+          rtd: 0.00,
           amount: 1440 
         }
       ],
@@ -213,10 +213,10 @@ const demoData = {
       return_date: '2026-07-20',
       receiver_name: 'Royal Bakery Supplies',
       receiver_gstin: 'ROYAL345678UVWXY',
-      reason: 'QUALITY ISSUES',
+      reason: 'DAMAGED GOODS',
       total_items: 7,
       gross_value: 3000,
-      net_value: 2550,
+      net_value: 3000,
       file_name: 'demo-cn-006.pdf',
       original_name: 'demo-cn-006.pdf',
       items: [
@@ -226,7 +226,7 @@ const demoData = {
           hsnCode: '19059010',
           quantity: 5, 
           rate: 600, 
-          rtd: 15.00,
+          rtd: 0.00,
           amount: 3000 
         }
       ],
@@ -321,10 +321,10 @@ const demoData = {
       return_date: '2026-07-30',
       receiver_name: 'Local Bakery Store',
       receiver_gstin: 'LOCAL678901MNOPQ',
-      reason: 'QUALITY ISSUES',
+      reason: 'DAMAGED GOODS',
       total_items: 12,
       gross_value: 1080,
-      net_value: 918,
+      net_value: 1080,
       file_name: 'demo-cn-010.pdf',
       original_name: 'demo-cn-010.pdf',
       items: [
@@ -334,7 +334,7 @@ const demoData = {
           hsnCode: '19059010',
           quantity: 18, 
           rate: 60, 
-          rtd: 15.00,
+          rtd: 0.00,
           amount: 1080 
         }
       ],
