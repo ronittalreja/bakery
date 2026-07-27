@@ -122,22 +122,30 @@ const getMonthlyInsights = async (req, res) => {
       WHERE DATE_FORMAT(e.expense_date, '%Y-%m') = ?
     `, [month]);
 
+    // Calculate packing material expense (2% of net sales)
+    const packingMaterialExpense = netSales * 0.02;
+    const totalExpensesWithPacking = Number(expensesData[0].totalExpenses) + packingMaterialExpense;
+
 
 
     // Calculate profit and profit margin using net sales (MRP - credit notes)
     const totalSales = netSales; // Use net sales (MRP - credit notes)
     const totalCost = productCostTotal; // Cost from invoice totals
     const totalLoss = Number(lossData[0].totalLoss);
-    const totalExpenses = Number(expensesData[0].totalExpenses);
+    const totalExpenses = totalExpensesWithPacking; // Use expenses including packing material
+    
+    // Calculate profit as per user formula: (Net Sales * 25%) - Loss - Expenses
+    // Net Sales = MRP - Credit Notes
+    // Profit = Net Sales * 0.25 - Loss - Expenses
+    const totalProfit = (totalSales * 0.25) - totalLoss - totalExpenses;
     
     // Calculate profits
-    const productProfit = productMRPTotal - productCostTotal;
-    const decorationProfit = decorationMRPTotal - decorationCostTotal;
-    const totalProfit = totalSales - totalCost - totalLoss - totalExpenses;
+    const productProfit = (productMRPTotal * 0.25); // 25% margin on MRP
+    const decorationProfit = (decorationMRPTotal * 0.30); // 30% margin on decorations
     
     // Calculate margins
-    const productMargin = productMRPTotal > 0 ? (productProfit / productMRPTotal) * 100 : 0;
-    const decorationMargin = decorationMRPTotal > 0 ? (decorationProfit / decorationMRPTotal) * 100 : 0;
+    const productMargin = 25; // Fixed 25% margin
+    const decorationMargin = 30; // Fixed 30% margin
     const totalMargin = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
 
     const insightsData = {
@@ -155,7 +163,9 @@ const getMonthlyInsights = async (req, res) => {
       decorationMargin,
       totalMargin,
       totalLoss,
-      totalExpenses
+      totalExpenses,
+      packingMaterialExpense,
+      manualExpenses: Number(expensesData[0].totalExpenses)
     };
 
     console.log('Insights data calculated:', {
