@@ -226,8 +226,8 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
         const data = await resp.json();
         if (resp.ok && data.success) {
           setSummaryAccurate({
-            totalTransactions: data.totalTransactions,
-            totalSales: Number(data.totalSales || 0)
+            totalTransactions: data.data.current.totalTransactions,
+            totalSales: Number(data.data.current.totalSales || 0)
           });
         } else {
           setSummaryAccurate(null);
