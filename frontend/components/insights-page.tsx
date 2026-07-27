@@ -213,7 +213,7 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
                       <span className="font-medium text-slate-900">{formatCurrency(insights.manualExpenses)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-600">Packing Material (2% of Sales)</span>
+                      <span className="text-sm text-slate-600">Packing Material (from stock)</span>
                       <span className="font-medium text-slate-900">{formatCurrency(insights.packingMaterialExpense)}</span>
                     </div>
                     <div className="border-t pt-2 mt-2 flex justify-between items-center">

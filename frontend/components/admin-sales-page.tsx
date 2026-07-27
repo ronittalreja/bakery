@@ -269,19 +269,29 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
     }
   };
 
-  // Replace front-end calculated revenue & transactions by summaryAccurate if available
+  // Replace front-end calculated revenue by summaryAccurate if available
   const totalRevenue = summaryAccurate ? summaryAccurate.totalSales : sales.reduce((sum, sale) => sum + sale.total, 0);
-  const totalTransactions = summaryAccurate ? summaryAccurate.totalTransactions : sales.length;
-  const totalItems = sales.reduce((sum, sale) => sum + sale.quantity, 0);
-  const averageOrderValue = totalTransactions ? totalRevenue / totalTransactions : 0;
   
-  console.log('Sales calculations:', {
-    totalRevenue,
-    totalTransactions,
-    totalItems,
-    averageOrderValue,
-    salesLength: sales.length
-  });
+  // Calculate average daily revenue
+  const calculateAvgDailyRevenue = () => {
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    
+    let daysInMonth;
+    if (currentYear === year && currentMonth === month) {
+      // Ongoing month - use days till date
+      daysInMonth = now.getDate();
+    } else {
+      // Completed month - use total days in month
+      daysInMonth = new Date(year, month, 0).getDate();
+    }
+    
+    return daysInMonth > 0 ? totalRevenue / daysInMonth : 0;
+  };
+  
+  const avgDailyRevenue = calculateAvgDailyRevenue();
 
   const paymentMethodTotals = sales.reduce(
     (acc, sale) => {
@@ -323,7 +333,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
           </Alert>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg p-4 sm:p-6">
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-blue-600" />
@@ -351,80 +361,15 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
           </div>
           <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg p-4 sm:p-6">
             <div className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-green-600" />
-              <div className="text-sm font-medium text-slate-600">Transactions</div>
-            </div>
-            <div className="text-xl sm:text-2xl font-bold text-slate-900">{totalTransactions}</div>
-            {analytics && analytics.lastMonth && (
-              <div className="flex items-center gap-1 text-sm text-slate-600 mt-1">
-                <span>vs Last Month:</span>
-                <span className="font-medium">{analytics.lastMonth.totalTransactions}</span>
-                <div className={`flex items-center gap-1 ${
-                  analytics.lastMonthGrowth.transactions > 0 ? 'text-green-600' : analytics.lastMonthGrowth.transactions < 0 ? 'text-red-600' : 'text-gray-500'
-                }`}>
-                  {analytics.lastMonthGrowth.transactions > 0 ? (
-                    <TrendingUp className="h-3 w-3" />
-                  ) : analytics.lastMonthGrowth.transactions < 0 ? (
-                    <TrendingDown className="h-3 w-3" />
-                  ) : (
-                    <TrendingUp className="h-3 w-3 opacity-50" />
-                  )}
-                  <span className="text-xs">{Math.abs(analytics.lastMonthGrowth.transactions)}%</span>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg p-4 sm:p-6">
-            <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-purple-600" />
-              <div className="text-sm font-medium text-slate-600">Items Sold</div>
-            </div>
-            <div className="text-xl sm:text-2xl font-bold text-slate-900">{totalItems}</div>
-            {analytics && analytics.lastMonth && (
-              <div className="flex items-center gap-1 text-sm text-slate-600 mt-1">
-                <span>vs Last Month:</span>
-                <span className="font-medium">{analytics.lastMonth.totalItems}</span>
-                <div className={`flex items-center gap-1 ${
-                  analytics.lastMonthGrowth.items > 0 ? 'text-green-600' : analytics.lastMonthGrowth.items < 0 ? 'text-red-600' : 'text-gray-500'
-                }`}>
-                  {analytics.lastMonthGrowth.items > 0 ? (
-                    <TrendingUp className="h-3 w-3" />
-                  ) : analytics.lastMonthGrowth.items < 0 ? (
-                    <TrendingDown className="h-3 w-3" />
-                  ) : (
-                    <TrendingUp className="h-3 w-3 opacity-50" />
-                  )}
-                  <span className="text-xs">{Math.abs(analytics.lastMonthGrowth.items)}%</span>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg p-4 sm:p-6">
-            <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-orange-600" />
-              <div className="text-sm font-medium text-slate-600">Avg Order</div>
+              <div className="text-sm font-medium text-slate-600">Avg Daily Revenue</div>
             </div>
             <div className="text-xl sm:text-2xl font-bold text-slate-900">
-              ₹{Math.round(averageOrderValue)}
+              ₹{Math.round(avgDailyRevenue).toLocaleString()}
             </div>
-            {analytics && analytics.lastMonth && (
-              <div className="flex items-center gap-1 text-sm text-slate-600 mt-1">
-                <span>vs Last Month:</span>
-                <span className="font-medium">₹{Math.round(analytics.lastMonth.totalSales / analytics.lastMonth.totalTransactions || 0)}</span>
-                <div className={`flex items-center gap-1 ${
-                  analytics.lastMonthGrowth.revenue > 0 ? 'text-green-600' : analytics.lastMonthGrowth.revenue < 0 ? 'text-red-600' : 'text-gray-500'
-                }`}>
-                  {analytics.lastMonthGrowth.revenue > 0 ? (
-                    <TrendingUp className="h-3 w-3" />
-                  ) : analytics.lastMonthGrowth.revenue < 0 ? (
-                    <TrendingDown className="h-3 w-3" />
-                  ) : (
-                    <TrendingUp className="h-3 w-3 opacity-50" />
-                  )}
-                  <span className="text-xs">{Math.abs(analytics.lastMonthGrowth.revenue)}%</span>
-                </div>
-              </div>
-            )}
+            <div className="text-sm text-slate-600 mt-1">
+              Per day for {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </div>
           </div>
         </div>
 
