@@ -273,8 +273,8 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
   const totalRevenue = summaryAccurate ? summaryAccurate.totalSales : sales.reduce((sum, sale) => sum + sale.total, 0);
   
   // Calculate average daily revenue
-  const calculateAvgDailyRevenue = () => {
-    const [year, month] = selectedMonth.split('-').map(Number);
+  const calculateAvgDailyRevenue = (revenue: number, monthStr: string) => {
+    const [year, month] = monthStr.split('-').map(Number);
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
@@ -288,10 +288,20 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
       daysInMonth = new Date(year, month, 0).getDate();
     }
     
-    return daysInMonth > 0 ? totalRevenue / daysInMonth : 0;
+    return daysInMonth > 0 ? revenue / daysInMonth : 0;
   };
   
-  const avgDailyRevenue = calculateAvgDailyRevenue();
+  const avgDailyRevenue = calculateAvgDailyRevenue(totalRevenue, selectedMonth);
+  
+  // Calculate last month avg daily revenue
+  const lastMonthAvgDailyRevenue = analytics && analytics.lastMonth 
+    ? calculateAvgDailyRevenue(analytics.lastMonth.totalSales, analytics.lastMonth.month)
+    : 0;
+  
+  // Calculate growth percentage for avg daily revenue
+  const avgDailyRevenueGrowth = lastMonthAvgDailyRevenue > 0 
+    ? ((avgDailyRevenue - lastMonthAvgDailyRevenue) / lastMonthAvgDailyRevenue) * 100
+    : 0;
 
   const paymentMethodTotals = sales.reduce(
     (acc, sale) => {
@@ -367,9 +377,24 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
             <div className="text-xl sm:text-2xl font-bold text-slate-900">
               ₹{Math.round(avgDailyRevenue).toLocaleString()}
             </div>
-            <div className="text-sm text-slate-600 mt-1">
-              Per day for {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </div>
+            {analytics && analytics.lastMonth && (
+              <div className="flex items-center gap-1 text-sm text-slate-600 mt-1">
+                <span>vs Last Month:</span>
+                <span className="font-medium">₹{Math.round(lastMonthAvgDailyRevenue).toLocaleString()}</span>
+                <div className={`flex items-center gap-1 ${
+                  avgDailyRevenueGrowth > 0 ? 'text-green-600' : avgDailyRevenueGrowth < 0 ? 'text-red-600' : 'text-gray-500'
+                }`}>
+                  {avgDailyRevenueGrowth > 0 ? (
+                    <TrendingUp className="h-3 w-3" />
+                  ) : avgDailyRevenueGrowth < 0 ? (
+                    <TrendingDown className="h-3 w-3" />
+                  ) : (
+                    <TrendingUp className="h-3 w-3 opacity-50" />
+                  )}
+                  <span className="text-xs">{Math.abs(avgDailyRevenueGrowth).toFixed(1)}%</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

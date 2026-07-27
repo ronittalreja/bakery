@@ -123,14 +123,14 @@ const getMonthlyInsights = async (req, res) => {
     `, [month]);
 
     // Get packing material expense from stock items used in the month
+    // Try to get items with 'packing' in the name or category
     const [packingMaterialData] = await db.execute(`
       SELECT 
         COALESCE(SUM(ii.total), 0) as packingMaterialExpense
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
-      JOIN stock s ON ii.item_code = s.item_code
       WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
-      AND s.category = 'Packing Material'
+      AND (LOWER(ii.name) LIKE '%packing%' OR LOWER(ii.item_code) LIKE '%pack%')
     `, [month]);
 
     const packingMaterialExpense = Number(packingMaterialData[0].packingMaterialExpense);
