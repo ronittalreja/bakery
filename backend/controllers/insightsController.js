@@ -81,7 +81,8 @@ const getMonthlyInsights = async (req, res) => {
       SELECT 
         ii.qty,
         ii.rate,
-        ii.total
+        ii.total,
+        ii.name
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
       WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
@@ -122,17 +123,11 @@ const getMonthlyInsights = async (req, res) => {
       WHERE DATE_FORMAT(e.expense_date, '%Y-%m') = ?
     `, [month]);
 
-    // Get packing material expense - simple approach without category
-    const [packingMaterialData] = await db.execute(`
-      SELECT 
-        COALESCE(SUM(ii.total), 0) as packingMaterialExpense
-      FROM invoices i
-      JOIN invoice_items ii ON i.id = ii.invoice_id
-      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
-      AND LOWER(ii.name) LIKE '%packing%'
-    `, [month]);
+    // Calculate packing material expense using JS - filter invoice items with 'packing' in name
+    const packingMaterialExpense = invoiceItems
+      .filter(item => item.name && item.name.toLowerCase().includes('packing'))
+      .reduce((sum, item) => sum + (item.total || 0), 0);
 
-    const packingMaterialExpense = Number(packingMaterialData[0].packingMaterialExpense);
     const totalExpensesWithPacking = Number(expensesData[0].totalExpenses) + packingMaterialExpense;
 
 
