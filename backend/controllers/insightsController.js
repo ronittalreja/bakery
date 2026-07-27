@@ -122,15 +122,14 @@ const getMonthlyInsights = async (req, res) => {
       WHERE DATE_FORMAT(e.expense_date, '%Y-%m') = ?
     `, [month]);
 
-    // Get packing material expense from products with category 'Packing Material'
+    // Get packing material expense - simple approach without category
     const [packingMaterialData] = await db.execute(`
       SELECT 
         COALESCE(SUM(ii.total), 0) as packingMaterialExpense
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
-      JOIN products p ON ii.item_code = p.item_code
       WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
-      AND p.category = 'Packing Material'
+      AND LOWER(ii.name) LIKE '%packing%'
     `, [month]);
 
     const packingMaterialExpense = Number(packingMaterialData[0].packingMaterialExpense);
@@ -140,7 +139,7 @@ const getMonthlyInsights = async (req, res) => {
 
     // Calculate profit and profit margin using net sales (MRP - credit notes)
     const totalSales = netSales; // Use net sales (MRP - credit notes)
-    const totalCost = productCostTotal + decorationCostTotal; // Total cost from invoice totals
+    const totalCost = productCostTotal; // Total cost from invoice totals (all items at cost price)
     const totalLoss = Number(lossData[0].totalLoss);
     const totalExpenses = totalExpensesWithPacking; // Use expenses including packing material
     
