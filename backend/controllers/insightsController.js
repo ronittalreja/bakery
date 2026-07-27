@@ -47,7 +47,7 @@ const getMonthlyInsights = async (req, res) => {
       return res.json({ success: true, data: insightsData });
     }
 
-    // Get total sales from invoices for the month
+    // Get total sales from invoices for the month (cost price)
     const [salesData] = await db.execute(`
       SELECT 
         COALESCE(SUM(ii.total), 0) as totalSales,
@@ -63,20 +63,6 @@ const getMonthlyInsights = async (req, res) => {
         COALESCE(SUM(gross_value), 0) as totalCreditNotes
       FROM credit_notes
       WHERE DATE_FORMAT(date, '%Y-%m') = ?
-    `, [month]);
-
-    // Calculate net sales (invoice total - credit notes)
-    const netSales = Number(salesData[0].totalSales) - Number(creditNotesData[0].totalCreditNotes);
-
-    // For cost tracking, we need to calculate from invoice rates
-    // Invoice rate is the cost price, MRP is calculated as rate * 1.33 rounded to nearest 5
-    const [costData] = await db.execute(`
-      SELECT 
-        COALESCE(SUM(ii.total), 0) as totalCost,
-        COALESCE(SUM(ii.qty), 0) as totalItems
-      FROM invoices i
-      JOIN invoice_items ii ON i.id = ii.invoice_id
-      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
     `, [month]);
 
     // Calculate MRP from invoice rates (rate * 1.33 rounded to nearest 5)
@@ -117,6 +103,9 @@ const getMonthlyInsights = async (req, res) => {
       productCostTotal += costTotal;
     });
 
+    // Calculate net sales (MRP total - credit notes)
+    const netSales = productMRPTotal - Number(creditNotesData[0].totalCreditNotes);
+
     // Get total loss (GRM + GVN returns)
     const [lossData] = await db.execute(`
       SELECT 
@@ -135,9 +124,9 @@ const getMonthlyInsights = async (req, res) => {
 
 
 
-    // Calculate profit and profit margin using net sales (invoice - credit notes)
-    const totalSales = netSales; // Use net sales (invoice - credit notes)
-    const totalCost = Number(costData[0].totalCost);
+    // Calculate profit and profit margin using net sales (MRP - credit notes)
+    const totalSales = netSales; // Use net sales (MRP - credit notes)
+    const totalCost = productCostTotal; // Cost from invoice totals
     const totalLoss = Number(lossData[0].totalLoss);
     const totalExpenses = Number(expensesData[0].totalExpenses);
     
