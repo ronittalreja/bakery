@@ -21,5 +21,7 @@ router.get('/analytics/monthly/:month/:year?', getMonthlySalesAnalytics);
 
 router.get('/ytd-mtd/:year', getYTDMTDComparison);
 
+router.get('/summary-accurate/:month', getMonthlySalesAnalytics);
+
 // The controller already provides a richer GET /:date; avoid duplicate definitions
 module.exports = router;

@@ -1579,7 +1579,7 @@ const getMonthlySalesAnalytics = async (req, res) => {
           totalItems: previousTotalItems
         },
         lastMonth: {
-          month: lastMonthStr,
+          month: lastMonthStr2,
           totalTransactions: lastMonthTotalTransactions,
           totalSales: lastMonthNetSales,
           totalItems: lastMonthTotalItems
