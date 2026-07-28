@@ -50,6 +50,7 @@ const getMonthlyInsights = async (req, res) => {
     // Fetch all raw data with simple queries, then calculate in JS
     
     // Get all invoices and items for the month with category
+    // Use invoice item rates (historical prices) instead of current product prices
     const [invoicesData] = await db.execute(`
       SELECT 
         i.id,
@@ -59,9 +60,7 @@ const getMonthlyInsights = async (req, res) => {
         ii.total,
         ii.item_code,
         p.name,
-        p.category,
-        p.invoice_price,
-        p.sale_price
+        p.category
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
       LEFT JOIN products p ON ii.item_code = p.item_code
@@ -108,31 +107,28 @@ const getMonthlyInsights = async (req, res) => {
     let productCostTotal = 0;
     let decorationCostTotal = 0;
 
-    // Process invoice items in JS
+    // Process invoice items in JS using historical rates from invoice_items
     invoicesData.forEach(item => {
       const costTotal = Number(item.total) || 0;
+      const qty = Number(item.qty) || 0;
+      const rate = Number(item.rate) || 0;
       
       const category = item.category || '';
       const isDecoration = category.toLowerCase().includes('decoration');
       
+      // Compute MRP from historical rate (same formula used at time of invoice)
+      const historicalMrp = computeMrp(rate);
+      
       if (isDecoration) {
-        // For decorations, use actual sale_price (MRP) and invoice_price (Cost) from products
-        const salePrice = Number(item.sale_price) || 0;
-        const invoicePrice = Number(item.invoice_price) || Number(item.rate) || 0;
-        const qty = Number(item.qty) || 0;
-        
+        // For decorations, use historical rate as cost and computed MRP
         decorationInvoiceTotal += costTotal;
-        decorationMRPTotal += salePrice * qty;
-        decorationCostTotal += invoicePrice * qty;
+        decorationMRPTotal += historicalMrp * qty;
+        decorationCostTotal += rate * qty;
       } else {
-        // For products, use actual sale_price (MRP) and invoice_price (Cost) from products
-        const salePrice = Number(item.sale_price) || 0;
-        const invoicePrice = Number(item.invoice_price) || Number(item.rate) || 0;
-        const qty = Number(item.qty) || 0;
-        
+        // For products, use historical rate as cost and computed MRP
         productInvoiceTotal += costTotal;
-        productMRPTotal += salePrice * qty;
-        productCostTotal += invoicePrice * qty;
+        productMRPTotal += historicalMrp * qty;
+        productCostTotal += rate * qty;
       }
     });
 

@@ -302,6 +302,15 @@ const uploadInvoice = async (req, res) => {
 
       const computeGrmLossValue = (invoicePrice) => Number((invoicePrice * 0.15).toFixed(2));
 
+      // Determine if this is a historical invoice (more than 30 days old or before 2024)
+      const invoiceDate = new Date(parsedData.invoiceDate);
+      const today = new Date();
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+      const isHistorical = invoiceDate < thirtyDaysAgo || invoiceDate.getFullYear() < 2024;
+      
+      console.log(`Invoice date: ${parsedData.invoiceDate}, Is historical: ${isHistorical}`);
+
       // Process items
       for (const item of parsedData.items) {
         console.log(`Processing item: ${item.itemCode} - ${item.itemName}, rate: ${item.rate}`);
@@ -317,20 +326,25 @@ const uploadInvoice = async (req, res) => {
           
           console.log(`Product found: ID ${productId}, current invoice_price: ${currentInvoicePrice}, new invoice_price: ${item.rate}`);
           
-          // Update pricing and also ensure category/shelf-life present using item code inference
-          const inferred = Product.inferCategoryAndShelfLife(item.itemCode);
-          const newMrp = computeMrp(item.rate);
-          const newGrmValue = computeGrmLossValue(item.rate);
-          
-          try {
-            await connection.execute(
-              'UPDATE products SET name = ?, invoice_price = ?, sale_price = ?, grm_value = ?, category = COALESCE(category, ?), shelf_life_days = COALESCE(shelf_life_days, ?), updated_at = NOW() WHERE id = ?',
-              [item.itemName, item.rate, newMrp, newGrmValue, inferred.category || null, inferred.shelf_life_days ?? null, productId]
-            );
-            console.log(`✓ Updated product ${item.itemCode}: invoice_price ${currentInvoicePrice} -> ${item.rate}, sale_price ${currentSalePrice} -> ${newMrp}`);
-          } catch (updateError) {
-            console.error(`✗ Failed to update product ${item.itemCode}:`, updateError);
-            throw updateError;
+          // For historical invoices, don't update product prices - preserve current prices
+          if (!isHistorical) {
+            // Update pricing and also ensure category/shelf-life present using item code inference
+            const inferred = Product.inferCategoryAndShelfLife(item.itemCode);
+            const newMrp = computeMrp(item.rate);
+            const newGrmValue = computeGrmLossValue(item.rate);
+            
+            try {
+              await connection.execute(
+                'UPDATE products SET name = ?, invoice_price = ?, sale_price = ?, grm_value = ?, category = COALESCE(category, ?), shelf_life_days = COALESCE(shelf_life_days, ?), updated_at = NOW() WHERE id = ?',
+                [item.itemName, item.rate, newMrp, newGrmValue, inferred.category || null, inferred.shelf_life_days ?? null, productId]
+              );
+              console.log(`✓ Updated product ${item.itemCode}: invoice_price ${currentInvoicePrice} -> ${item.rate}, sale_price ${currentSalePrice} -> ${newMrp}`);
+            } catch (updateError) {
+              console.error(`✗ Failed to update product ${item.itemCode}:`, updateError);
+              throw updateError;
+            }
+          } else {
+            console.log(`⏭ Historical invoice - skipping product price update for ${item.itemCode}, preserving current prices`);
           }
         } else {
           console.log(`Product not found for item_code ${item.itemCode}, creating new product`);
@@ -379,6 +393,13 @@ const uploadInvoice = async (req, res) => {
           expiryDateStr = exp.toISOString().split('T')[0];
         }
 
+        // Always store the invoice prices in stock batches (historical or current)
+        // This ensures historical data is preserved for accurate calculations
+        const batchInvoicePrice = item.rate;
+        const batchSalePrice = computeMrp(item.rate);
+        
+        console.log(`Creating stock batch with prices: invoice=${batchInvoicePrice}, sale=${batchSalePrice} (historical: ${isHistorical})`);
+
         await StockBatch.create(
           {
             productId,
@@ -386,8 +407,8 @@ const uploadInvoice = async (req, res) => {
             expiryDate: expiryDateStr,
             invoiceDate: parsedData.invoiceDate,
             invoiceReference: parsedData.invoiceNo,
-            invoicePrice: item.rate,
-            salePrice: newMrp,
+            invoicePrice: batchInvoicePrice,
+            salePrice: batchSalePrice,
           },
           connection
         );
