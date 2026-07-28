@@ -5,13 +5,8 @@ const db = require('../config/database');
 // Helper function to sync prices across all related tables
 const syncProductPrices = async (productId, invoicePrice, salePrice) => {
   try {
-    // Update stock batches with new prices
-    await db.execute(
-      'UPDATE stock_batches SET invoice_price = ?, sale_price = ? WHERE product_id = ?',
-      [invoicePrice, salePrice, productId]
-    );
-    console.log(`✓ Synced prices for product ${productId} to stock_batches`);
-    
+    // Note: stock_batches table doesn't have invoice_price/sale_price columns
+    // Prices are stored in products table and used dynamically
     // Note: We don't update invoice_items as they should preserve historical prices
     // Note: We don't update sale_items as they should preserve historical prices
     return true;

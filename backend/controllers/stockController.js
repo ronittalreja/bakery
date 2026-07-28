@@ -49,8 +49,8 @@ const getStock = async (req, res) => {
         p.item_code,
         p.name,
         p.hsn_code,
-        COALESCE(sb.invoice_price, p.invoice_price, 0) as invoice_price,
-        COALESCE(sb.sale_price, p.sale_price, 0) as sale_price,
+        p.invoice_price,
+        p.sale_price,
         p.grm_value,
         p.image_url,
         sb.quantity AS available_quantity
