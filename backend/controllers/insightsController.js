@@ -49,7 +49,7 @@ const getMonthlyInsights = async (req, res) => {
 
     // Fetch all raw data with simple queries, then calculate in JS
     
-    // Get all invoices and items for the month
+    // Get all invoices and items for the month with category
     const [invoicesData] = await db.execute(`
       SELECT 
         i.id,
@@ -58,7 +58,10 @@ const getMonthlyInsights = async (req, res) => {
         ii.rate,
         ii.total,
         ii.item_code,
-        p.name
+        p.name,
+        p.category,
+        p.invoice_price,
+        p.sale_price
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
       LEFT JOIN products p ON ii.item_code = p.item_code
@@ -102,89 +105,91 @@ const getMonthlyInsights = async (req, res) => {
     let decorationMRPTotal = 0;
     let productCostTotal = 0;
     let decorationCostTotal = 0;
-    let packingMaterialExpense = 0;
+    let totalInvoiceCost = 0;
 
     // Process invoice items in JS
     invoicesData.forEach(item => {
-      const mrp = computeMrp(item.rate);
-      const mrpTotal = mrp * item.qty;
       const costTotal = Number(item.total) || 0;
+      totalInvoiceCost += costTotal;
       
-      productMRPTotal += mrpTotal;
-      productCostTotal += costTotal;
-
-      // Check if packing material (use item_code if name not available)
-      const itemName = item.name || item.item_code || '';
-      if (itemName.toLowerCase().includes('packing')) {
-        packingMaterialExpense += costTotal;
+      const category = item.category || '';
+      const isDecoration = category.toLowerCase().includes('decoration');
+      
+      if (isDecoration) {
+        // For decorations, use actual sale_price from products if available
+        const salePrice = Number(item.sale_price) || 0;
+        const invoicePrice = Number(item.invoice_price) || Number(item.rate) || 0;
+        const qty = Number(item.qty) || 0;
+        
+        decorationMRPTotal += salePrice * qty;
+        decorationCostTotal += invoicePrice * qty;
+      } else {
+        // For products, calculate MRP from rate
+        const mrp = computeMrp(item.rate);
+        const mrpTotal = mrp * item.qty;
+        
+        productMRPTotal += mrpTotal;
+        productCostTotal += costTotal;
       }
     });
 
-    // Calculate credit notes total in JS
-    const totalCreditNotes = creditNotesData.reduce((sum, cn) => sum + Number(cn.gross_value), 0);
+    // Calculate credit notes total (returns)
+    const totalReturns = creditNotesData.reduce((sum, cn) => sum + Number(cn.gross_value), 0);
 
-    // Calculate net sales (MRP total - credit notes)
-    const netSales = productMRPTotal - totalCreditNotes;
+    // Calculate net revenue (total invoice cost - total returns)
+    const netRevenue = totalInvoiceCost - totalReturns;
 
-    // Calculate total loss in JS
-    const totalLoss = returnsData.reduce((sum, r) => sum + Number(r.loss_amount), 0);
+    // Calculate total expenses in JS (includes automated RETURN LOSS)
+    const totalExpenses = expensesData.reduce((sum, e) => sum + Number(e.amount), 0);
 
-    // Calculate total expenses in JS
-    const manualExpenses = expensesData.reduce((sum, e) => sum + Number(e.amount), 0);
-    const totalExpenses = manualExpenses + packingMaterialExpense;
-
-    // Calculate profit and profit margin using net sales (MRP - credit notes)
-    const totalSales = netSales; // Use net sales (MRP - credit notes)
-    const totalCost = productCostTotal; // Total cost from invoice totals (all items at cost price)
+    // Calculate profit: (Net Revenue * 25%) - Expenses
+    const totalProfit = (netRevenue * 0.25) - totalExpenses;
     
-    // Calculate profit as per user formula: (Net Sales * 25%) - Loss - Expenses
-    // Net Sales = MRP - Credit Notes
-    // Profit = Net Sales * 0.25 - Loss - Expenses
-    const totalProfit = (totalSales * 0.25) - totalLoss - totalExpenses;
+    // Calculate product profit: (Product MRP Total * 25%)
+    const productProfit = (productMRPTotal * 0.25);
     
-    // Calculate profits
-    const productProfit = (productMRPTotal * 0.25); // 25% margin on MRP
-    const decorationProfit = (decorationMRPTotal * 0.30); // 30% margin on decorations
+    // Calculate decoration profit: (Decoration MRP - Decoration Cost)
+    const decorationProfit = decorationMRPTotal - decorationCostTotal;
     
     // Calculate margins
-    const productMargin = 25; // Fixed 25% margin
-    const decorationMargin = 30; // Fixed 30% margin
-    const totalMargin = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
+    const productMargin = 25; // Fixed 25% margin for products
+    const decorationMargin = decorationMRPTotal > 0 ? (decorationProfit / decorationMRPTotal) * 100 : 0;
+    const totalMargin = netRevenue > 0 ? (totalProfit / netRevenue) * 100 : 0;
 
     const insightsData = {
       month,
-      totalSales,
+      totalInvoice: totalInvoiceCost,
+      totalReturns,
+      netRevenue,
       productMRPTotal,
       decorationMRPTotal,
       productCostTotal,
       decorationCostTotal,
-      totalCost,
+      totalCost: totalInvoiceCost,
       productProfit,
       decorationProfit,
       totalProfit,
       productMargin,
       decorationMargin,
       totalMargin,
-      totalLoss,
-      totalExpenses,
-      packingMaterialExpense,
-      manualExpenses
+      totalExpenses
     };
 
     console.log('Insights data calculated:', {
-      totalSales,
+      totalInvoice: totalInvoiceCost,
+      totalReturns,
+      netRevenue,
       productMRPTotal,
       decorationMRPTotal,
       productCostTotal,
       decorationCostTotal,
-      totalCost,
+      totalCost: totalInvoiceCost,
       productProfit,
       decorationProfit,
       totalProfit,
       productMargin: productMargin.toFixed(2) + '%',
       decorationMargin: decorationMargin.toFixed(2) + '%',
       totalMargin: totalMargin.toFixed(2) + '%',
-      totalLoss,
       totalExpenses
     });
 

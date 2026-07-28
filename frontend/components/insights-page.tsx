@@ -23,7 +23,9 @@ import {
 
 interface InsightsData {
   month: string;
-  totalSales: number;
+  totalInvoice: number;
+  totalReturns: number;
+  netRevenue: number;
   productMRPTotal?: number;
   decorationMRPTotal?: number;
   productCostTotal?: number;
@@ -35,10 +37,7 @@ interface InsightsData {
   productMargin?: number;
   decorationMargin?: number;
   totalMargin?: number;
-  totalLoss: number;
   totalExpenses: number;
-  packingMaterialExpense?: number;
-  manualExpenses?: number;
 }
 
 interface InsightsPageProps {
@@ -165,31 +164,31 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="bg-white rounded-lg p-4 border border-slate-200">
                     <div className="flex items-center gap-2 mb-2">
-                      <DollarSign className="h-4 w-4 text-green-600" />
-                      <div className="text-sm font-medium text-slate-600">Total MRP</div>
+                      <FileText className="h-4 w-4 text-blue-600" />
+                      <div className="text-sm font-medium text-slate-600">Total Invoice</div>
                     </div>
                     <div className="text-xl font-bold text-slate-900">
-                      {formatCurrency(insights.totalSales)}
+                      {formatCurrency(insights.totalInvoice)}
                     </div>
                   </div>
                   
                   <div className="bg-white rounded-lg p-4 border border-slate-200">
                     <div className="flex items-center gap-2 mb-2">
-                      <FileText className="h-4 w-4 text-blue-600" />
-                      <div className="text-sm font-medium text-slate-600">Total Cost</div>
+                      <XCircle className="h-4 w-4 text-red-600" />
+                      <div className="text-sm font-medium text-slate-600">Total Returns</div>
                     </div>
                     <div className="text-xl font-bold text-slate-900">
-                      {formatCurrency(insights.totalCost)}
+                      {formatCurrency(insights.totalReturns)}
                     </div>
                   </div>
 
                   <div className="bg-white rounded-lg p-4 border border-slate-200">
                     <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle className="h-4 w-4 text-red-600" />
-                      <div className="text-sm font-medium text-slate-600">Total Loss</div>
+                      <DollarSign className="h-4 w-4 text-green-600" />
+                      <div className="text-sm font-medium text-slate-600">Net Revenue</div>
                     </div>
                     <div className="text-xl font-bold text-slate-900">
-                      {formatCurrency(insights.totalLoss)}
+                      {formatCurrency(insights.netRevenue)}
                     </div>
                   </div>
 
@@ -200,25 +199,6 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
                     </div>
                     <div className="text-xl font-bold text-slate-900">
                       {formatCurrency(insights.totalExpenses)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Expense Breakdown */}
-                <div className="mt-4 bg-white rounded-lg p-4 border border-slate-200">
-                  <div className="text-sm font-medium text-slate-600 mb-3">Expense Breakdown</div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-600">Manual Expenses</span>
-                      <span className="font-medium text-slate-900">{formatCurrency(insights.manualExpenses)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-600">Packing Material (from stock)</span>
-                      <span className="font-medium text-slate-900">{formatCurrency(insights.packingMaterialExpense)}</span>
-                    </div>
-                    <div className="border-t pt-2 mt-2 flex justify-between items-center">
-                      <span className="text-sm font-medium text-slate-700">Total Expenses</span>
-                      <span className="font-bold text-slate-900">{formatCurrency(insights.totalExpenses)}</span>
                     </div>
                   </div>
                 </div>
