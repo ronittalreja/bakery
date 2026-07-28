@@ -47,22 +47,41 @@ const getMonthlyInsights = async (req, res) => {
       return res.json({ success: true, data: insightsData });
     }
 
-    // Get total sales from invoices for the month (cost price)
-    const [salesData] = await db.execute(`
+    // Fetch all raw data with simple queries, then calculate in JS
+    
+    // Get all invoices and items for the month
+    const [invoicesData] = await db.execute(`
       SELECT 
-        COALESCE(SUM(ii.total), 0) as totalSales,
-        COUNT(DISTINCT i.id) as totalTransactions
+        i.id,
+        i.invoice_date,
+        ii.qty,
+        ii.rate,
+        ii.total,
+        ii.name
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
       WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
     `, [month]);
 
-    // Get credit notes total for the month
+    // Get all credit notes for the month
     const [creditNotesData] = await db.execute(`
-      SELECT 
-        COALESCE(SUM(gross_value), 0) as totalCreditNotes
+      SELECT gross_value, date
       FROM credit_notes
       WHERE DATE_FORMAT(date, '%Y-%m') = ?
+    `, [month]);
+
+    // Get all returns for the month
+    const [returnsData] = await db.execute(`
+      SELECT loss_amount, return_date
+      FROM returns
+      WHERE DATE_FORMAT(return_date, '%Y-%m') = ?
+    `, [month]);
+
+    // Get all expenses for the month
+    const [expensesData] = await db.execute(`
+      SELECT amount, expense_date
+      FROM expenses
+      WHERE DATE_FORMAT(expense_date, '%Y-%m') = ?
     `, [month]);
 
     // Calculate MRP from invoice rates (rate * 1.33 rounded to nearest 5)
@@ -76,67 +95,44 @@ const getMonthlyInsights = async (req, res) => {
       return roundUpToNearest5(Math.ceil(increased));
     };
 
-    // Get all invoice items to calculate MRP totals
-    const [invoiceItems] = await db.execute(`
-      SELECT 
-        ii.qty,
-        ii.rate,
-        ii.total,
-        ii.name
-      FROM invoices i
-      JOIN invoice_items ii ON i.id = ii.invoice_id
-      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
-    `, [month]);
-
+    // Calculate totals using JS
     let productMRPTotal = 0;
     let decorationMRPTotal = 0;
     let productCostTotal = 0;
     let decorationCostTotal = 0;
+    let packingMaterialExpense = 0;
 
-    // For simplicity, assume all invoice items are products (decorations are tracked separately)
-    // If you have decoration tracking in invoices, you'd need to filter by category
-    invoiceItems.forEach(item => {
+    // Process invoice items in JS
+    invoicesData.forEach(item => {
       const mrp = computeMrp(item.rate);
       const mrpTotal = mrp * item.qty;
-      const costTotal = item.total; // invoice total is at cost price
+      const costTotal = item.total;
       
       productMRPTotal += mrpTotal;
       productCostTotal += costTotal;
+
+      // Check if packing material
+      if (item.name && item.name.toLowerCase().includes('packing')) {
+        packingMaterialExpense += costTotal;
+      }
     });
 
+    // Calculate credit notes total in JS
+    const totalCreditNotes = creditNotesData.reduce((sum, cn) => sum + Number(cn.gross_value), 0);
+
     // Calculate net sales (MRP total - credit notes)
-    const netSales = productMRPTotal - Number(creditNotesData[0].totalCreditNotes);
+    const netSales = productMRPTotal - totalCreditNotes;
 
-    // Get total loss (GRM + GVN returns)
-    const [lossData] = await db.execute(`
-      SELECT 
-        COALESCE(SUM(r.loss_amount), 0) as totalLoss
-      FROM returns r
-      WHERE DATE_FORMAT(r.return_date, '%Y-%m') = ?
-    `, [month]);
+    // Calculate total loss in JS
+    const totalLoss = returnsData.reduce((sum, r) => sum + Number(r.loss_amount), 0);
 
-    // Get total expenses for the month
-    const [expensesData] = await db.execute(`
-      SELECT 
-        COALESCE(SUM(e.amount), 0) as totalExpenses
-      FROM expenses e
-      WHERE DATE_FORMAT(e.expense_date, '%Y-%m') = ?
-    `, [month]);
-
-    // Calculate packing material expense using JS - filter invoice items with 'packing' in name
-    const packingMaterialExpense = invoiceItems
-      .filter(item => item.name && item.name.toLowerCase().includes('packing'))
-      .reduce((sum, item) => sum + (item.total || 0), 0);
-
-    const totalExpensesWithPacking = Number(expensesData[0].totalExpenses) + packingMaterialExpense;
-
-
+    // Calculate total expenses in JS
+    const manualExpenses = expensesData.reduce((sum, e) => sum + Number(e.amount), 0);
+    const totalExpenses = manualExpenses + packingMaterialExpense;
 
     // Calculate profit and profit margin using net sales (MRP - credit notes)
     const totalSales = netSales; // Use net sales (MRP - credit notes)
     const totalCost = productCostTotal; // Total cost from invoice totals (all items at cost price)
-    const totalLoss = Number(lossData[0].totalLoss);
-    const totalExpenses = totalExpensesWithPacking; // Use expenses including packing material
     
     // Calculate profit as per user formula: (Net Sales * 25%) - Loss - Expenses
     // Net Sales = MRP - Credit Notes
@@ -169,7 +165,7 @@ const getMonthlyInsights = async (req, res) => {
       totalLoss,
       totalExpenses,
       packingMaterialExpense,
-      manualExpenses: Number(expensesData[0].totalExpenses)
+      manualExpenses
     };
 
     console.log('Insights data calculated:', {
