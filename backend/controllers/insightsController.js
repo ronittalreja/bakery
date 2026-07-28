@@ -57,9 +57,11 @@ const getMonthlyInsights = async (req, res) => {
         ii.qty,
         ii.rate,
         ii.total,
-        ii.name
+        ii.item_code,
+        p.name
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
+      LEFT JOIN products p ON ii.item_code = p.item_code
       WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
     `, [month]);
 
@@ -111,8 +113,9 @@ const getMonthlyInsights = async (req, res) => {
       productMRPTotal += mrpTotal;
       productCostTotal += costTotal;
 
-      // Check if packing material
-      if (item.name && item.name.toLowerCase().includes('packing')) {
+      // Check if packing material (use item_code if name not available)
+      const itemName = item.name || item.item_code || '';
+      if (itemName.toLowerCase().includes('packing')) {
         packingMaterialExpense += costTotal;
       }
     });
