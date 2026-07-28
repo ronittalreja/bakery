@@ -101,71 +101,72 @@ const getMonthlyInsights = async (req, res) => {
     };
 
     // Calculate totals using JS
+    let productInvoiceTotal = 0; // Total invoice cost for products
+    let decorationInvoiceTotal = 0; // Total invoice cost for decorations
     let productMRPTotal = 0;
     let decorationMRPTotal = 0;
     let productCostTotal = 0;
     let decorationCostTotal = 0;
-    let totalInvoiceCost = 0;
 
     // Process invoice items in JS
     invoicesData.forEach(item => {
       const costTotal = Number(item.total) || 0;
-      totalInvoiceCost += costTotal;
       
       const category = item.category || '';
       const isDecoration = category.toLowerCase().includes('decoration');
       
       if (isDecoration) {
-        // For decorations, use actual sale_price from products if available
+        // For decorations, use actual sale_price (MRP) and invoice_price (Cost) from products
         const salePrice = Number(item.sale_price) || 0;
         const invoicePrice = Number(item.invoice_price) || Number(item.rate) || 0;
         const qty = Number(item.qty) || 0;
         
+        decorationInvoiceTotal += costTotal;
         decorationMRPTotal += salePrice * qty;
         decorationCostTotal += invoicePrice * qty;
       } else {
-        // For products, calculate MRP from rate
-        const mrp = computeMrp(item.rate);
-        const mrpTotal = mrp * item.qty;
-        
-        productMRPTotal += mrpTotal;
-        productCostTotal += costTotal;
+        // For products, accumulate invoice total
+        productInvoiceTotal += costTotal;
       }
     });
 
     // Calculate credit notes total (returns)
     const totalReturns = creditNotesData.reduce((sum, cn) => sum + Number(cn.gross_value), 0);
 
-    // Calculate net revenue (total invoice cost - total returns)
-    const netRevenue = totalInvoiceCost - totalReturns;
+    // Calculate product analysis: (Invoices - Returns) + 25% for MRP, (Invoices - Returns) for Cost
+    const netProductInvoice = productInvoiceTotal - totalReturns;
+    productMRPTotal = netProductInvoice * 1.25; // +25%
+    productCostTotal = netProductInvoice;
+
+    // Calculate net revenue and net cost
+    const netRevenue = productMRPTotal + decorationMRPTotal;
+    const netCost = productCostTotal + decorationCostTotal;
 
     // Calculate total expenses in JS (includes automated RETURN LOSS)
     const totalExpenses = expensesData.reduce((sum, e) => sum + Number(e.amount), 0);
 
-    // Calculate profit: (Net Revenue * 25%) - Expenses
-    const totalProfit = (netRevenue * 0.25) - totalExpenses;
+    // Calculate profit: Net Revenue - Net Cost - Expenses
+    const totalProfit = netRevenue - netCost - totalExpenses;
     
-    // Calculate product profit: (Product MRP Total * 25%)
-    const productProfit = (productMRPTotal * 0.25);
+    // Calculate product profit: Product MRP - Product Cost
+    const productProfit = productMRPTotal - productCostTotal;
     
-    // Calculate decoration profit: (Decoration MRP - Decoration Cost)
+    // Calculate decoration profit: Decoration MRP - Decoration Cost
     const decorationProfit = decorationMRPTotal - decorationCostTotal;
     
     // Calculate margins
-    const productMargin = 25; // Fixed 25% margin for products
+    const productMargin = productMRPTotal > 0 ? (productProfit / productMRPTotal) * 100 : 0;
     const decorationMargin = decorationMRPTotal > 0 ? (decorationProfit / decorationMRPTotal) * 100 : 0;
     const totalMargin = netRevenue > 0 ? (totalProfit / netRevenue) * 100 : 0;
 
     const insightsData = {
       month,
-      totalInvoice: totalInvoiceCost,
-      totalReturns,
       netRevenue,
+      netCost,
       productMRPTotal,
       decorationMRPTotal,
       productCostTotal,
       decorationCostTotal,
-      totalCost: totalInvoiceCost,
       productProfit,
       decorationProfit,
       totalProfit,
@@ -176,14 +177,12 @@ const getMonthlyInsights = async (req, res) => {
     };
 
     console.log('Insights data calculated:', {
-      totalInvoice: totalInvoiceCost,
-      totalReturns,
       netRevenue,
+      netCost,
       productMRPTotal,
       decorationMRPTotal,
       productCostTotal,
       decorationCostTotal,
-      totalCost: totalInvoiceCost,
       productProfit,
       decorationProfit,
       totalProfit,

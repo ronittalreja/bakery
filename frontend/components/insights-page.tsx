@@ -23,14 +23,12 @@ import {
 
 interface InsightsData {
   month: string;
-  totalInvoice: number;
-  totalReturns: number;
   netRevenue: number;
+  netCost: number;
   productMRPTotal?: number;
   decorationMRPTotal?: number;
   productCostTotal?: number;
   decorationCostTotal?: number;
-  totalCost?: number;
   productProfit?: number;
   decorationProfit?: number;
   totalProfit?: number;
@@ -161,27 +159,7 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-white rounded-lg p-4 border border-slate-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FileText className="h-4 w-4 text-blue-600" />
-                      <div className="text-sm font-medium text-slate-600">Total Invoice</div>
-                    </div>
-                    <div className="text-xl font-bold text-slate-900">
-                      {formatCurrency(insights.totalInvoice)}
-                    </div>
-                  </div>
-                  
-                  <div className="bg-white rounded-lg p-4 border border-slate-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <XCircle className="h-4 w-4 text-red-600" />
-                      <div className="text-sm font-medium text-slate-600">Total Returns</div>
-                    </div>
-                    <div className="text-xl font-bold text-slate-900">
-                      {formatCurrency(insights.totalReturns)}
-                    </div>
-                  </div>
-
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="bg-white rounded-lg p-4 border border-slate-200">
                     <div className="flex items-center gap-2 mb-2">
                       <DollarSign className="h-4 w-4 text-green-600" />
@@ -189,6 +167,16 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
                     </div>
                     <div className="text-xl font-bold text-slate-900">
                       {formatCurrency(insights.netRevenue)}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white rounded-lg p-4 border border-slate-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText className="h-4 w-4 text-blue-600" />
+                      <div className="text-sm font-medium text-slate-600">Net Cost</div>
+                    </div>
+                    <div className="text-xl font-bold text-slate-900">
+                      {formatCurrency(insights.netCost)}
                     </div>
                   </div>
 

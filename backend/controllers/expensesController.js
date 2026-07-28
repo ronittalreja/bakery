@@ -16,13 +16,31 @@ const getExpenses = async (req, res) => {
     
     // Automatically add RETURN LOSS expense from credit notes for the month
     const monthStr = `${year}-${String(month).padStart(2, '0')}`;
-    const [creditNotesData] = await db.execute(`
-      SELECT COALESCE(SUM(loss_amount), 0) as totalLoss
-      FROM credit_notes
-      WHERE DATE_FORMAT(date, '%Y-%m') = ?
-    `, [monthStr]);
+    let returnLossAmount = 0;
     
-    const returnLossAmount = Number(creditNotesData[0].totalLoss);
+    try {
+      const [creditNotesData] = await db.execute(`
+        SELECT COALESCE(SUM(loss), 0) as totalLoss
+        FROM credit_notes
+        WHERE DATE_FORMAT(date, '%Y-%m') = ?
+      `, [monthStr]);
+      
+      returnLossAmount = Number(creditNotesData[0].totalLoss);
+    } catch (error) {
+      console.error('Error fetching credit notes loss:', error);
+      // If loss column doesn't exist, try with loss_amount
+      try {
+        const [creditNotesData] = await db.execute(`
+          SELECT COALESCE(SUM(loss_amount), 0) as totalLoss
+          FROM credit_notes
+          WHERE DATE_FORMAT(date, '%Y-%m') = ?
+        `, [monthStr]);
+        
+        returnLossAmount = Number(creditNotesData[0].totalLoss);
+      } catch (error2) {
+        console.error('Error fetching credit notes loss_amount:', error2);
+      }
+    }
     
     if (returnLossAmount > 0) {
       // Check if RETURN LOSS expense already exists for this month
