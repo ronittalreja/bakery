@@ -1,5 +1,25 @@
 const Product = require('../models/Product');
 const { getDemoData } = require('../middleware/demoMode');
+const db = require('../config/database');
+
+// Helper function to sync prices across all related tables
+const syncProductPrices = async (productId, invoicePrice, salePrice) => {
+  try {
+    // Update stock batches with new prices
+    await db.execute(
+      'UPDATE stock_batches SET invoice_price = ?, sale_price = ? WHERE product_id = ?',
+      [invoicePrice, salePrice, productId]
+    );
+    console.log(`✓ Synced prices for product ${productId} to stock_batches`);
+    
+    // Note: We don't update invoice_items as they should preserve historical prices
+    // Note: We don't update sale_items as they should preserve historical prices
+    return true;
+  } catch (error) {
+    console.error('Error syncing product prices:', error);
+    return false;
+  }
+};
 
 const getAllProducts = async (req, res) => {
   try {
@@ -67,6 +87,11 @@ const createProduct = async (req, res) => {
       is_active: typeof isActive === 'boolean' ? (isActive ? 1 : 0) : undefined
     });
     
+    // Sync prices to stock batches (for any existing batches)
+    if (invoicePrice !== undefined && salePrice !== undefined) {
+      await syncProductPrices(product.id, invoicePrice, salePrice);
+    }
+    
     res.json({ success: true, product });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -94,6 +119,11 @@ const updateProduct = async (req, res) => {
     
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
+    }
+    
+    // Sync prices to stock batches
+    if (invoicePrice !== undefined && salePrice !== undefined) {
+      await syncProductPrices(id, invoicePrice, salePrice);
     }
     
     res.json({ success: true, product });

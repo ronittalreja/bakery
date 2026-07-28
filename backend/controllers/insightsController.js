@@ -125,22 +125,28 @@ const getMonthlyInsights = async (req, res) => {
         decorationMRPTotal += salePrice * qty;
         decorationCostTotal += invoicePrice * qty;
       } else {
-        // For products, accumulate invoice total
+        // For products, use actual sale_price (MRP) and invoice_price (Cost) from products
+        const salePrice = Number(item.sale_price) || 0;
+        const invoicePrice = Number(item.invoice_price) || Number(item.rate) || 0;
+        const qty = Number(item.qty) || 0;
+        
         productInvoiceTotal += costTotal;
+        productMRPTotal += salePrice * qty;
+        productCostTotal += invoicePrice * qty;
       }
     });
 
     // Calculate credit notes total (returns)
     const totalReturns = creditNotesData.reduce((sum, cn) => sum + Number(cn.gross_value), 0);
 
-    // Calculate product analysis: (Invoices - Returns) + 25% for MRP, (Invoices - Returns) for Cost
-    const netProductInvoice = productInvoiceTotal - totalReturns;
-    productMRPTotal = netProductInvoice * 1.25; // +25%
-    productCostTotal = netProductInvoice;
-
-    // Calculate net revenue and net cost
-    const netRevenue = productMRPTotal + decorationMRPTotal;
-    const netCost = productCostTotal + decorationCostTotal;
+    // Calculate net revenue and net cost (after deducting returns proportionally)
+    const totalInvoiceMRP = productMRPTotal + decorationMRPTotal;
+    const totalInvoiceCost = productCostTotal + decorationCostTotal;
+    
+    // Deduct returns proportionally from MRP and cost
+    const returnRatio = totalInvoiceMRP > 0 ? totalReturns / totalInvoiceMRP : 0;
+    const netRevenue = totalInvoiceMRP - totalReturns;
+    const netCost = totalInvoiceCost - (totalInvoiceCost * returnRatio);
 
     // Calculate total expenses in JS (includes automated RETURN LOSS)
     const totalExpenses = expensesData.reduce((sum, e) => sum + Number(e.amount), 0);

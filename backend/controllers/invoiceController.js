@@ -386,12 +386,19 @@ const uploadInvoice = async (req, res) => {
             expiryDate: expiryDateStr,
             invoiceDate: parsedData.invoiceDate,
             invoiceReference: parsedData.invoiceNo,
+            invoicePrice: item.rate,
+            salePrice: newMrp,
           },
           connection
         );
       }
 
       await connection.commit();
+      
+      // Trigger automatic data sync after successful invoice upload
+      // Prices are already synced in the loop above, stock batches are created with prices
+      // This ensures Manage Products = Manage Stock = Sales Timeline consistency
+      
       res.json({ success: true, message: 'Invoice processed successfully', data: validationResult });
     } catch (error) {
       await connection.rollback();

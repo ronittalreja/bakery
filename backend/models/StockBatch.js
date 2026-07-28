@@ -4,13 +4,15 @@ class StockBatch {
   static async create(batchData, connection = db) {
     try {
       const [result] = await connection.execute(
-        'INSERT INTO stock_batches (product_id, quantity, expiry_date, invoice_date, invoice_reference) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO stock_batches (product_id, quantity, expiry_date, invoice_date, invoice_reference, invoice_price, sale_price) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [
           batchData.productId,
           batchData.quantity,
           batchData.expiryDate,
           batchData.invoiceDate,
-          batchData.invoiceReference
+          batchData.invoiceReference,
+          batchData.invoicePrice || 0,
+          batchData.salePrice || 0
         ]
       );
       return result.insertId;
@@ -70,8 +72,8 @@ class StockBatch {
           p.item_code,
           p.name,
           p.hsn_code,
-          p.invoice_price,
-          p.sale_price,
+          COALESCE(sb.invoice_price, p.invoice_price, 0) as invoice_price,
+          COALESCE(sb.sale_price, p.sale_price, 0) as sale_price,
           p.grm_value,
           p.image_url,
           p.category,
@@ -128,8 +130,8 @@ class StockBatch {
           p.name,
           p.item_code,
           p.hsn_code,
-          p.invoice_price,
-          p.sale_price,
+          COALESCE(sb.invoice_price, p.invoice_price, 0) as invoice_price,
+          COALESCE(sb.sale_price, p.sale_price, 0) as sale_price,
           p.grm_value,
           p.image_url,
           p.category,
@@ -142,7 +144,7 @@ class StockBatch {
         FROM stock_batches sb
         JOIN products p ON sb.product_id = p.id
         WHERE p.is_active = 1 AND (CASE WHEN p.shelf_life_days IS NOT NULL AND p.shelf_life_days >= 0 THEN DATE_ADD(sb.invoice_date, INTERVAL p.shelf_life_days DAY) ELSE sb.expiry_date END) > ?
-        GROUP BY p.id, p.name, p.item_code, p.hsn_code, p.invoice_price, p.sale_price, p.grm_value, p.image_url, p.category, p.shelf_life_days
+        GROUP BY p.id, p.name, p.item_code, p.hsn_code, COALESCE(sb.invoice_price, p.invoice_price, 0), COALESCE(sb.sale_price, p.sale_price, 0), p.grm_value, p.image_url, p.category, p.shelf_life_days
         HAVING total_available > 0
         ORDER BY p.name ASC`;
 

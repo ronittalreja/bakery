@@ -161,6 +161,8 @@ app.post('/api/migrate', async (req, res) => {
         expiry_date DATE,
         invoice_date DATE NOT NULL,
         invoice_reference VARCHAR(255),
+        invoice_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+        sale_price DECIMAL(10,2) NOT NULL DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
       )
@@ -902,6 +904,79 @@ app.post('/api/fix-stock-adjustments-table', async (req, res) => {
   } catch (error) {
     console.error('Create stock_adjustments table error:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Add price columns to stock_batches table
+app.post('/api/add-price-columns-stock', async (req, res) => {
+  try {
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    console.log('🔧 Adding price columns to stock_batches table...');
+    
+    // Add invoice_price column
+    try {
+      await connection.execute('ALTER TABLE stock_batches ADD COLUMN invoice_price DECIMAL(10,2) NOT NULL DEFAULT 0');
+      console.log('✅ Added invoice_price column');
+    } catch (error) {
+      if (error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ invoice_price column already exists');
+      } else {
+        console.log('❌ Error adding invoice_price:', error.message);
+      }
+    }
+    
+    // Add sale_price column
+    try {
+      await connection.execute('ALTER TABLE stock_batches ADD COLUMN sale_price DECIMAL(10,2) NOT NULL DEFAULT 0');
+      console.log('✅ Added sale_price column');
+    } catch (error) {
+      if (error.message.includes('Duplicate column name')) {
+        console.log('ℹ️ sale_price column already exists');
+      } else {
+        console.log('❌ Error adding sale_price:', error.message);
+      }
+    }
+    
+    // Update existing stock batches with current product prices
+    try {
+      await connection.execute(`
+        UPDATE stock_batches sb
+        JOIN products p ON sb.product_id = p.id
+        SET sb.invoice_price = p.invoice_price,
+            sb.sale_price = p.sale_price
+        WHERE sb.invoice_price = 0 OR sb.sale_price = 0
+      `);
+      console.log('✅ Updated existing stock batches with product prices');
+    } catch (error) {
+      console.log('❌ Error updating existing stock batches:', error.message);
+    }
+    
+    await connection.end();
+    
+    res.json({ 
+      success: true, 
+      message: 'Price columns added to stock_batches table and existing data updated' 
+    });
+    
+  } catch (error) {
+    console.error('Add price columns error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 });
 

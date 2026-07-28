@@ -1,0 +1,6 @@
+[
+  {
+    "fileName": "Invoice_2_R3309_20262730062707.Pdf",
+    "error": "Failed to parse response: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON. Raw response: <!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <title>502</title>\n    <style>@font-face {\n  font-fami"
+  }
+]
