@@ -284,21 +284,31 @@ function extractBillsData(text) {
     // Pattern 1.5: Fallback for CN entries - more flexible pattern
     if (bills.filter(b => b.doc_type === 'CN').length === 0) {
       console.log('Trying fallback CN pattern...');
-      const cnFallbackMatches = text.match(/CN(\d{2}\/\d{2}\/\d{4})([A-Z0-9\/-]+?)(\d{3,}(?:\.\d{2})?)(Cr|Dr)/gi);
+      // Handle case where invoice number might be concatenated with amount
+      const cnFallbackMatches = text.match(/CN(\d{2}\/\d{2}\/\d{4})(MU\d{4}\/CN\/?)(\d{3,}(?:\.\d{2})?)(Cr|Dr)/gi);
       if (cnFallbackMatches) {
         console.log('Found CN fallback matches:', cnFallbackMatches.length);
         cnFallbackMatches.forEach(match => {
-          const parts = match.match(/CN(\d{2}\/\d{2}\/\d{4})([A-Z0-9\/-]+?)(\d{3,}(?:\.\d{2})?)(Cr|Dr)/i);
+          const parts = match.match(/CN(\d{2}\/\d{2}\/\d{4})(MU\d{4}\/CN\/?)(\d{3,}(?:\.\d{2})?)(Cr|Dr)/i);
           if (parts) {
-            // Clean up bill number - take only the part before the amount
+            // If the amount starts with 5 digits, those might be the invoice number
+            let amountStr = parts[3];
             let billNumber = parts[2].trim();
-            // Remove any trailing digits that got mixed in
-            billNumber = billNumber.replace(/\d+$/, '');
+            let amount = parseFloat(amountStr);
+            
+            // Check if amount looks like it has an invoice number prepended (5 digits followed by more digits)
+            const amountWithInvoiceMatch = amountStr.match(/^(\d{5})(\d{3,}(?:\.\d{2})?)$/);
+            if (amountWithInvoiceMatch) {
+              // First 5 digits are invoice number, rest is amount
+              billNumber = billNumber + amountWithInvoiceMatch[1];
+              amount = parseFloat(amountWithInvoiceMatch[2]);
+            }
+            
             bills.push({
               doc_type: 'CN',
               bill_date: formatDate(parts[1]),
               bill_number: billNumber,
-              amount: parseFloat(parts[3]),
+              amount: amount,
               dr_cr: parts[4].toUpperCase()
             });
           }
@@ -327,17 +337,31 @@ function extractBillsData(text) {
     // Pattern 2.1: Fallback for SR entries with different format (MUM2627, etc.)
     if (bills.filter(b => b.doc_type === 'SR').length === 0) {
       console.log('Trying fallback SR pattern for MUM2627 format...');
-      const srFallbackMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/\d{5})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/gi);
+      // Handle case where invoice number might be missing or concatenated with amount
+      const srFallbackMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{3,}(?:\.\d{2})?)(Cr|Dr)/gi);
       if (srFallbackMatches) {
         console.log('Found SR fallback matches:', srFallbackMatches.length);
         srFallbackMatches.forEach(match => {
-          const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/\d{5})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/i);
+          const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{3,}(?:\.\d{2})?)(Cr|Dr)/i);
           if (parts) {
+            // If the amount starts with 5 digits, those might be the invoice number
+            let amountStr = parts[3];
+            let billNumber = parts[2].trim();
+            let amount = parseFloat(amountStr);
+            
+            // Check if amount looks like it has an invoice number prepended (5 digits followed by more digits)
+            const amountWithInvoiceMatch = amountStr.match(/^(\d{5})(\d{3,}(?:\.\d{2})?)$/);
+            if (amountWithInvoiceMatch) {
+              // First 5 digits are invoice number, rest is amount
+              billNumber = billNumber + amountWithInvoiceMatch[1];
+              amount = parseFloat(amountWithInvoiceMatch[2]);
+            }
+            
             bills.push({
               doc_type: 'SR',
               bill_date: formatDate(parts[1]),
-              bill_number: parts[2].trim(),
-              amount: parseFloat(parts[3]),
+              bill_number: billNumber,
+              amount: amount,
               dr_cr: parts[4].toUpperCase()
             });
           }
