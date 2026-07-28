@@ -134,16 +134,16 @@ class StockBatch {
           p.image_url,
           p.category,
           p.shelf_life_days,
-          SUM(sb.quantity) AS total_available,
+          COALESCE(SUM(sb.quantity), 0) AS total_available,
           MIN(CASE 
                 WHEN sb.quantity > 0
                 THEN (CASE WHEN p.shelf_life_days IS NOT NULL AND p.shelf_life_days >= 0 THEN DATE_ADD(sb.invoice_date, INTERVAL p.shelf_life_days DAY) ELSE sb.expiry_date END)
               END) AS next_expiry
-        FROM stock_batches sb
-        JOIN products p ON sb.product_id = p.id
-        WHERE p.is_active = 1 AND (CASE WHEN p.shelf_life_days IS NOT NULL AND p.shelf_life_days >= 0 THEN DATE_ADD(sb.invoice_date, INTERVAL p.shelf_life_days DAY) ELSE sb.expiry_date END) > ?
+        FROM products p
+        LEFT JOIN stock_batches sb ON sb.product_id = p.id 
+          AND (CASE WHEN p.shelf_life_days IS NOT NULL AND p.shelf_life_days >= 0 THEN DATE_ADD(sb.invoice_date, INTERVAL p.shelf_life_days DAY) ELSE sb.expiry_date END) > ?
+        WHERE p.is_active = 1
         GROUP BY p.id, p.name, p.item_code, p.hsn_code, p.invoice_price, p.sale_price, p.grm_value, p.image_url, p.category, p.shelf_life_days
-        HAVING total_available > 0
         ORDER BY p.name ASC`;
 
       const [rows] = await connection.execute(query, [referenceDate]);
