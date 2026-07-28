@@ -108,7 +108,7 @@ const getMonthlyInsights = async (req, res) => {
     invoicesData.forEach(item => {
       const mrp = computeMrp(item.rate);
       const mrpTotal = mrp * item.qty;
-      const costTotal = item.total;
+      const costTotal = Number(item.total) || 0;
       
       productMRPTotal += mrpTotal;
       productCostTotal += costTotal;
