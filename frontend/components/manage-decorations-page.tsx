@@ -22,7 +22,6 @@ interface Decoration {
   price: number;
   costPrice: number;
   stock: number;
-  image: string;
 }
 
 interface StockHistoryEntry {
@@ -44,8 +43,10 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
   const { user, loading: authLoading } = useAuth(); // Add useAuth
   const router = useRouter(); // Add useRouter
   const [decorations, setDecorations] = useState<Decoration[]>([]);
+  const [filteredDecorations, setFilteredDecorations] = useState<Decoration[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDecoration, setEditingDecoration] = useState<Decoration | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState({
     sku: "",
     name: "",
@@ -53,7 +54,6 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
     price: "",
     costPrice: "",
     stock: "",
-    image: "",
   });
   const [stockAdjustment, setStockAdjustment] = useState({
     decorationId: "",
@@ -83,6 +83,35 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
     { value: "ribbons", label: "Ribbons & Bows" },
     { value: "toppers", label: "Cake Toppers" },
   ];
+
+  // Category-based logo mapping
+  const getCategoryLogo = (category: string) => {
+    const categoryMap: { [key: string]: string } = {
+      'candles': '🕯️',
+      'party': '🎉',
+      'spray': '🎊',
+      'utensils': '🥄',
+      'disposable': '🥡',
+      'balloons': '🎈',
+      'ribbons': '🎀',
+      'toppers': '🏆',
+    };
+    return categoryMap[category?.toLowerCase() || ''] || '🎀';
+  };
+
+  // Search and filter decorations
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredDecorations(decorations);
+    } else {
+      const query = searchQuery.toLowerCase();
+      setFilteredDecorations(decorations.filter(decoration =>
+        (decoration.name?.toLowerCase() || '').includes(query) ||
+        (decoration.sku?.toLowerCase() || '').includes(query) ||
+        (decoration.category?.toLowerCase() || '').includes(query)
+      ));
+    }
+  }, [searchQuery, decorations]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -125,7 +154,6 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
         price: Number(d.sale_price || 0),
         costPrice: Number(d.cost || 0),
         stock: Number(d.stock_quantity || 0),
-        image: d.image_url || "/placeholder.svg",
       }));
       setDecorations(mappedDecorations);
     } catch (err: any) {
@@ -260,7 +288,6 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
       price: (decoration.price ?? 0).toString(),
       costPrice: (decoration.costPrice ?? 0).toString(),
       stock: (decoration.stock ?? 0).toString(),
-      image: decoration.image || "",
     });
     setIsDialogOpen(true);
   };
@@ -491,7 +518,6 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
           price: selectedDecorationForStock.price,
           costPrice: selectedDecorationForStock.costPrice,
           stock: newStock,
-          image: selectedDecorationForStock.image,
         }),
       });
 
@@ -568,7 +594,6 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
           price: decoration.price,
           costPrice: decoration.costPrice,
           stock: newStock,
-          image: decoration.image,
         }),
       });
       
@@ -732,25 +757,36 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
 
         <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg">
           <div className="p-4 sm:p-6 border-b border-slate-200">
-            <h2 className="text-lg font-bold text-slate-900">Decoration Inventory</h2>
-            <p className="text-slate-600 mt-1 text-sm">
-              Showing {decorations.length} item{decorations.length !== 1 ? "s" : ""}
-            </p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Decoration Inventory</h2>
+                <p className="text-slate-600 mt-1 text-sm">
+                  Showing {filteredDecorations.length} item{filteredDecorations.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <div className="w-full sm:w-auto">
+                <Input
+                  placeholder="Search by name, SKU, or category..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-white border-slate-300 focus:border-slate-500"
+                />
+              </div>
+            </div>
           </div>
           <div className="p-4 sm:p-6">
             {isLoading ? (
               <div className="text-center py-8 text-slate-600">Loading decorations...</div>
-            ) : decorations.length === 0 ? (
+            ) : filteredDecorations.length === 0 ? (
               <div className="text-center py-8 text-slate-600">No decorations available</div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Image</TableHead>
+                      <TableHead>Category</TableHead>
                       <TableHead>SKU</TableHead>
                       <TableHead>Name</TableHead>
-                      <TableHead>Category</TableHead>
                       <TableHead>Sale Price</TableHead>
                       <TableHead>Cost Price</TableHead>
                       <TableHead>Stock</TableHead>
@@ -760,30 +796,13 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {decorations.map((decoration) => {
+                    {filteredDecorations.map((decoration) => {
                       const stockStatus = getStockStatus(decoration.stock || 0);
                       return (
                         <TableRow key={decoration.id}>
-                          <TableCell>
-                            <img
-                              src={decoration.image || "/placeholder.svg"}
-                              alt={decoration.name || "Decoration"}
-                              className="w-12 h-12 object-cover rounded-md"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = "/placeholder.svg";
-                              }}
-                            />
-                          </TableCell>
+                          <TableCell className="text-2xl">{getCategoryLogo(decoration.category)}</TableCell>
                           <TableCell className="font-mono text-sm">{decoration.sku || "N/A"}</TableCell>
                           <TableCell className="font-medium">{decoration.name || "N/A"}</TableCell>
-                          <TableCell>
-                            <Badge
-                              className={`${getCategoryBadgeColor(decoration.category)} border-0`}
-                              variant="secondary"
-                            >
-                              {decoration.category || "N/A"}
-                            </Badge>
-                          </TableCell>
                           <TableCell>₹{(decoration.price || 0).toLocaleString()}</TableCell>
                           <TableCell>₹{(decoration.costPrice || 0).toLocaleString()}</TableCell>
                           <TableCell className="font-bold">{decoration.stock || 0}</TableCell>
@@ -1126,7 +1145,7 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
             <div className="space-y-6">
               {!selectedDecorationForStock ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {decorations.map((decoration) => (
+                  {filteredDecorations.map((decoration) => (
                     <div 
                       key={decoration.id} 
                       className="group hover:shadow-xl transition-all duration-300 bg-white rounded-lg border border-slate-200 shadow-lg overflow-hidden cursor-pointer hover:border-slate-300"
@@ -1134,14 +1153,7 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
                     >
                         <div className="relative">
                           <div className="w-full h-32 flex items-center justify-center bg-gradient-to-br from-purple-50 to-purple-100">
-                            <img
-                              src={decoration.image || "/placeholder.svg"}
-                              alt={decoration.name}
-                              className="h-20 w-20 object-cover rounded-lg shadow-sm"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = "/placeholder.svg";
-                              }}
-                            />
+                            <span className="text-6xl">{getCategoryLogo(decoration.category)}</span>
                           </div>
                           <div className="absolute top-2 right-2">
                             <Badge 
@@ -1179,14 +1191,9 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
                 <form onSubmit={handleAddStock} className="space-y-4">
                   <div className="p-4 bg-slate-100 rounded-lg border border-slate-200">
                     <div className="flex items-center gap-4">
-                      <img
-                        src={selectedDecorationForStock.image || "/placeholder.svg"}
-                        alt={selectedDecorationForStock.name}
-                        className="w-16 h-16 object-cover rounded-lg"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/placeholder.svg";
-                        }}
-                      />
+                      <div className="w-16 h-16 flex items-center justify-center bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+                        <span className="text-4xl">{getCategoryLogo(selectedDecorationForStock.category)}</span>
+                      </div>
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg text-slate-900">{selectedDecorationForStock.name}</h3>
                         <p className="text-sm text-slate-600">SKU: {selectedDecorationForStock.sku}</p>

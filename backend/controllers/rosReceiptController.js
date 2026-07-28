@@ -258,13 +258,35 @@ const processBillsAndUpdateStatuses = async (rosReceiptId, bills) => {
       console.log(`Processing bill: ${doc_type} - ${bill_number} - ${amount}`);
       
       if (doc_type === 'SR') {
-        // Update invoice status - match by invoice number and amount
-        const invoiceQuery = `
+        // Update invoice status - try multiple matching strategies
+        // Strategy 1: Exact match by invoice number and amount
+        let invoiceQuery = `
           UPDATE invoices 
           SET status = 'cleared' 
           WHERE invoice_number = ? AND ABS(total_amount - ?) < 0.01
         `;
-        const [invoiceResult] = await db.execute(invoiceQuery, [bill_number, amount]);
+        let [invoiceResult] = await db.execute(invoiceQuery, [bill_number, amount]);
+        
+        // Strategy 2: Match by invoice number only (if amount doesn't match)
+        if (invoiceResult.affectedRows === 0) {
+          invoiceQuery = `
+            UPDATE invoices 
+            SET status = 'cleared' 
+            WHERE invoice_number = ?
+          `;
+          [invoiceResult] = await db.execute(invoiceQuery, [bill_number]);
+        }
+        
+        // Strategy 3: Try to match partial invoice number (remove prefixes/suffixes)
+        if (invoiceResult.affectedRows === 0) {
+          const cleanBillNumber = bill_number.replace(/^[A-Z\/]+/, '').replace(/[\/\d]+$/, '');
+          invoiceQuery = `
+            UPDATE invoices 
+            SET status = 'cleared' 
+            WHERE invoice_number LIKE ? OR invoice_number LIKE ?
+          `;
+          [invoiceResult] = await db.execute(invoiceQuery, [`%${cleanBillNumber}%`, `%${bill_number}%`]);
+        }
         
         console.log(`Invoice update result: ${invoiceResult.affectedRows} rows affected`);
         
@@ -273,22 +295,33 @@ const processBillsAndUpdateStatuses = async (rosReceiptId, bills) => {
           const clearQuery = `
             INSERT INTO ros_receipt_cleared_items 
             (ros_receipt_id, item_type, item_id, bill_number, amount) 
-            VALUES (?, 'invoice', (SELECT id FROM invoices WHERE invoice_number = ? AND ABS(total_amount - ?) < 0.01), ?, ?)
+            VALUES (?, 'invoice', (SELECT id FROM invoices WHERE invoice_number = ? LIMIT 1), ?, ?)
           `;
-          await db.execute(clearQuery, [rosReceiptId, bill_number, amount, bill_number, amount]);
+          await db.execute(clearQuery, [rosReceiptId, bill_number, bill_number, amount]);
           console.log(`Recorded clearing for invoice: ${bill_number}`);
         } else {
           console.log(`No matching invoice found for: ${bill_number} with amount ${amount}`);
         }
       } else if (doc_type === 'CN') {
-        // Update credit note status - match by credit note number only
-        // For credit notes, we match by number only since amounts may differ due to deductions
-        const creditNoteQuery = `
+        // Update credit note status - try multiple matching strategies
+        // Strategy 1: Exact match by credit note number
+        let creditNoteQuery = `
           UPDATE credit_notes 
           SET status = 'cleared' 
           WHERE credit_note_number = ?
         `;
-        const [creditNoteResult] = await db.execute(creditNoteQuery, [bill_number]);
+        let [creditNoteResult] = await db.execute(creditNoteQuery, [bill_number]);
+        
+        // Strategy 2: Match by partial credit note number
+        if (creditNoteResult.affectedRows === 0) {
+          const cleanBillNumber = bill_number.replace(/^[A-Z\/]+/, '').replace(/[\/\d]+$/, '');
+          creditNoteQuery = `
+            UPDATE credit_notes 
+            SET status = 'cleared' 
+            WHERE credit_note_number LIKE ? OR credit_note_number LIKE ?
+          `;
+          [creditNoteResult] = await db.execute(creditNoteQuery, [`%${cleanBillNumber}%`, `%${bill_number}%`]);
+        }
         
         console.log(`Credit note update result: ${creditNoteResult.affectedRows} rows affected`);
         

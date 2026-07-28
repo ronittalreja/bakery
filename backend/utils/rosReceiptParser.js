@@ -306,12 +306,12 @@ function extractBillsData(text) {
       }
     }
 
-    // Pattern 2: Look for SR (Sales Return) entries - specific format for MUM2526/XXXXX
-    const srMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM2526\/\d{5})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/gi);
+    // Pattern 2: Look for SR (Sales Return) entries - flexible format for MUMXXXXX/XXXXX
+    const srMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{2}\/\d{5})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/gi);
     if (srMatches) {
       console.log('Found SR matches:', srMatches.length);
       srMatches.forEach(match => {
-        const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM2526\/\d{5})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/i);
+        const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{2}\/\d{5})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/i);
         if (parts) {
           bills.push({
             doc_type: 'SR',
@@ -324,23 +324,19 @@ function extractBillsData(text) {
       });
     }
     
-    // Pattern 2.1: Fallback for SR entries with different format
+    // Pattern 2.1: Fallback for SR entries with different format (MUM2627, etc.)
     if (bills.filter(b => b.doc_type === 'SR').length === 0) {
-      console.log('Trying fallback SR pattern...');
-      const srFallbackMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})([A-Z0-9\/-]+?)(\d{3,}(?:\.\d{2})?)(Cr|Dr)/gi);
+      console.log('Trying fallback SR pattern for MUM2627 format...');
+      const srFallbackMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/\d{5})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/gi);
       if (srFallbackMatches) {
         console.log('Found SR fallback matches:', srFallbackMatches.length);
         srFallbackMatches.forEach(match => {
-          const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})([A-Z0-9\/-]+?)(\d{3,}(?:\.\d{2})?)(Cr|Dr)/i);
+          const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/\d{5})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/i);
           if (parts) {
-            // Clean up bill number - take only the part before the amount
-            let billNumber = parts[2].trim();
-            // Remove any trailing digits that got mixed in
-            billNumber = billNumber.replace(/\d+$/, '');
             bills.push({
               doc_type: 'SR',
               bill_date: formatDate(parts[1]),
-              bill_number: billNumber,
+              bill_number: parts[2].trim(),
               amount: parseFloat(parts[3]),
               dr_cr: parts[4].toUpperCase()
             });

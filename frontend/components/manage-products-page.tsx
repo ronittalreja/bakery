@@ -37,8 +37,10 @@ interface ManageProductsPageProps {
 
 export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
   const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState({
     item_code: "",
     name: "",
@@ -46,7 +48,6 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
     invoice_price: "",
     sale_price: "",
     grm_value: "",
-    image_url: "",
     is_active: "1",
     category: "",
     shelf_life_days: "",
@@ -55,6 +56,40 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Category-based logo mapping
+  const getCategoryLogo = (category: string | null | undefined) => {
+    const categoryMap: { [key: string]: string } = {
+      'cakes': '🎂',
+      'pastries': '🧁',
+      'savouries': '🥐',
+      'breads': '🍞',
+      'packing_material': '📦',
+      'cookies': '🍪',
+      'assorted_cakes': '🍰',
+      'cake': '🎂',
+      'pastry': '🧁',
+      'savoury': '🥐',
+      'dry': '🍪',
+      'decoration': '🎀',
+      'packaging': '📦',
+    };
+    return categoryMap[category?.toLowerCase() || ''] || '📦';
+  };
+
+  // Search and filter products
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredProducts(products);
+    } else {
+      const query = searchQuery.toLowerCase();
+      setFilteredProducts(products.filter(product =>
+        (product.name?.toLowerCase() || '').includes(query) ||
+        (product.item_code?.toLowerCase() || '').includes(query) ||
+        (product.category?.toLowerCase() || '').includes(query)
+      ));
+    }
+  }, [searchQuery, products]);
 
   const categories = [
     { value: "cake", label: "Cake" },
@@ -222,7 +257,6 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
         invoicePrice: invoice_price,
         salePrice: sale_price,
         grmValue: grm_value,
-        imageUrl: formData.image_url?.trim() || "/placeholder.svg",
         isActive: formData.is_active === "1",
         category: formData.category || undefined,
         shelfLifeDays: formData.shelf_life_days ? Number(formData.shelf_life_days) : undefined,
@@ -411,29 +445,40 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
 
         <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg">
           <div className="p-4 sm:p-6 border-b border-slate-200">
-            <h2 className="text-lg font-bold text-slate-900">Product Inventory</h2>
-            <p className="text-slate-600 mt-1 text-sm">
-              Showing {products.length} item{products.length !== 1 ? "s" : ""}
-            </p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Product Inventory</h2>
+                <p className="text-slate-600 mt-1 text-sm">
+                  Showing {filteredProducts.length} item{filteredProducts.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <div className="w-full sm:w-auto">
+                <Input
+                  placeholder="Search by name, item code, or category..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-white border-slate-300 focus:border-slate-500"
+                />
+              </div>
+            </div>
           </div>
           <div className="p-4 sm:p-6">
             {isLoading ? (
               <div className="text-center py-8 text-slate-600">Loading products...</div>
-            ) : products.length === 0 ? (
+            ) : filteredProducts.length === 0 ? (
               <div className="text-center py-8 text-slate-600">No products available</div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Image</TableHead>
+                      <TableHead>Category</TableHead>
                       <TableHead>Item Code</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>HSN</TableHead>
                       <TableHead>Sale Price</TableHead>
                       <TableHead>Invoice Price</TableHead>
                       <TableHead>Stock</TableHead>
-                      <TableHead>Category</TableHead>
                       <TableHead>Next Expiry</TableHead>
                       <TableHead>Shelf Life</TableHead>
                       <TableHead>Status</TableHead>
@@ -441,30 +486,20 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {products.map((product) => {
+                    {filteredProducts.map((product) => {
                       const stock = Number(product.total_available || 0);
                       const stockStatus = getStockStatus(stock);
                       const dte = product.next_expiry ? new Date(product.next_expiry) : null;
                       const daysLeft = daysUntil(product.next_expiry);
                       return (
                         <TableRow key={product.id}>
-                          <TableCell>
-                            <img
-                              src={product.image_url || "/placeholder.svg"}
-                              alt={product.name || "Product"}
-                              className="w-12 h-12 object-cover rounded-md"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = "/placeholder.svg";
-                              }}
-                            />
-                          </TableCell>
+                          <TableCell className="text-2xl">{getCategoryLogo(product.category)}</TableCell>
                           <TableCell className="font-mono text-sm">{product.item_code || "N/A"}</TableCell>
                           <TableCell className="font-medium">{product.name || "N/A"}</TableCell>
                           <TableCell>{product.hsn_code || "-"}</TableCell>
                           <TableCell>₹{(product.sale_price || 0).toLocaleString()}</TableCell>
                           <TableCell>₹{(product.invoice_price || 0).toLocaleString()}</TableCell>
                           <TableCell className="font-bold">{stock}</TableCell>
-                          <TableCell className="capitalize">{product.category || "-"}</TableCell>
                           <TableCell className="font-mono text-sm">{dte ? dte.toISOString().split("T")[0] : "-"}</TableCell>
                           <TableCell>{
                             product.shelf_life_days != null

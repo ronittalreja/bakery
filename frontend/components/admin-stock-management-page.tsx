@@ -27,7 +27,6 @@ interface StockItem {
   batchNumber?: string;
   addedDate: string;
   invoiceDate?: string;
-  image: string;
 }
 
 interface Product {
@@ -38,7 +37,6 @@ interface Product {
   shelf_life_days?: number;
   invoice_price: number;
   sale_price: number;
-  image_url?: string;
 }
 
 interface AdminStockManagementPageProps {
@@ -64,7 +62,6 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
     mrp: "",
     expiryDate: "",
     batchNumber: "",
-    image: "",
     invoiceDate: "",
   });
   const [successMessage, setSuccessMessage] = useState("");
@@ -79,6 +76,19 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
     { value: "Decorations", label: "Decorations" },
     { value: "Packaging", label: "Packaging" },
   ];
+
+  // Category-based logo mapping
+  const getCategoryLogo = (category: string) => {
+    const categoryMap: { [key: string]: string } = {
+      'cakes': '🎂',
+      'pastries': '🧁',
+      'savouries': '🥐',
+      'dry items': '🍪',
+      'decorations': '🎀',
+      'packaging': '📦',
+    };
+    return categoryMap[category?.toLowerCase() || ''] || '📦';
+  };
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -117,7 +127,6 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
           shelf_life_days: p.shelf_life_days ?? null,
           invoice_price: Number(p.invoice_price || 0),
           sale_price: Number(p.sale_price || 0),
-          image_url: p.image_url || "/placeholder.svg",
         }));
         setProducts(mapped);
       }
@@ -174,7 +183,6 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
             batchNumber: row.invoice_reference || undefined,
             addedDate: row.invoice_date || new Date().toISOString().split('T')[0],
             invoiceDate: row.invoice_date || undefined,
-            image: row.image_url || "/placeholder.svg",
           }));
           setStockItems(mapped);
         }
@@ -200,7 +208,6 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
       mrp: "",
       expiryDate: "",
       batchNumber: "",
-      image: "",
       invoiceDate: "",
     });
     setEditingItem(null);
@@ -222,7 +229,6 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
       mrp: product.sale_price.toString(),
       expiryDate: "",
       batchNumber: "",
-      image: product.image_url || "/placeholder.svg",
       invoiceDate: new Date().toISOString().split('T')[0],
     });
     setIsProductSelectionOpen(false);
@@ -246,7 +252,6 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
       mrp: (item.mrp ?? 0).toString(),
       expiryDate: item.expiryDate || "",
       batchNumber: item.batchNumber || "",
-      image: item.image || "",
       invoiceDate: item.invoiceDate || "",
     });
     setIsDialogOpen(true);
@@ -349,7 +354,6 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
           batchNumber: row.invoice_reference || undefined,
           addedDate: row.invoice_date || new Date().toISOString().split('T')[0],
           invoiceDate: row.invoice_date || undefined,
-          image: row.image_url || "/placeholder.svg",
         })) : [];
         setStockItems(mapped);
       }
@@ -414,7 +418,6 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
         batchNumber: row.invoice_reference || undefined,
         addedDate: row.invoice_date || new Date().toISOString().split('T')[0],
         invoiceDate: row.invoice_date || undefined,
-        image: row.image_url || "/placeholder.svg",
       })) : [];
       setStockItems(mapped);
       
@@ -605,9 +608,8 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Image</TableHead>
-                      <TableHead>Product</TableHead>
                       <TableHead>Category</TableHead>
+                      <TableHead>Product</TableHead>
                       <TableHead>Quantity</TableHead>
                       <TableHead>Invoice Price</TableHead>
                       <TableHead>MRP</TableHead>
@@ -624,25 +626,8 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
                       const expiringSoon = isExpiringSoon(item.expiryDate);
                       return (
                         <TableRow key={item.id}>
-                          <TableCell>
-                            <img
-                              src={item.image || "/placeholder.svg"}
-                              alt={item.productName || "Product"}
-                              className="w-12 h-12 object-cover rounded-md"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = "/placeholder.svg";
-                              }}
-                            />
-                          </TableCell>
+                          <TableCell className="text-2xl">{getCategoryLogo(item.category || "")}</TableCell>
                           <TableCell className="font-medium">{item.productName || "N/A"}</TableCell>
-                          <TableCell>
-                            <Badge
-                              className={`${getCategoryBadgeColor(item.category)} border-0`}
-                              variant="secondary"
-                            >
-                              {item.category || "N/A"}
-                            </Badge>
-                          </TableCell>
                           <TableCell className="font-bold">{item.quantity || 0}</TableCell>
                           <TableCell>₹{(item.invoicePrice || 0).toLocaleString()}</TableCell>
                           <TableCell>₹{(item.mrp || 0).toLocaleString()}</TableCell>
@@ -722,14 +707,7 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
                   >
                     <div className="relative">
                       <div className="w-full h-32 flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
-                        <img
-                          src={product.image_url || "/placeholder.svg"}
-                          alt={product.name}
-                          className="h-20 w-20 object-cover rounded-lg shadow-sm"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/placeholder.svg";
-                          }}
-                        />
+                        <span className="text-6xl">{getCategoryLogo(product.category || "")}</span>
                       </div>
                       <div className="absolute top-2 right-2">
                         <Badge 
@@ -808,14 +786,9 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
               <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">Selected Product</Label>
                   <div className="flex items-center space-x-3 p-3 bg-slate-100 rounded-lg border border-slate-200">
-                    <img
-                      src={selectedProduct.image_url || "/placeholder.svg"}
-                      alt={selectedProduct.name}
-                      className="w-10 h-10 object-cover rounded-md"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/placeholder.svg";
-                      }}
-                    />
+                    <div className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 rounded-md">
+                      <span className="text-2xl">{getCategoryLogo(selectedProduct.category || "")}</span>
+                    </div>
                     <div className="flex-1">
                       <p className="font-medium text-sm text-slate-900">{selectedProduct.name}</p>
                       <p className="text-xs text-slate-500">{selectedProduct.item_code || "No code"}</p>
