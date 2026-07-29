@@ -335,11 +335,12 @@ function extractBillsData(text) {
       console.log('Trying fallback SR pattern for MUM2627 format...');
       // Handle case where invoice number comes after MUM2627/ before amount
       // Pattern: SR + date + MUM2627/ + [optional 5-digit invoice number] + amount + DR
-      const srFallbackMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{5})?([₹]?\s*[\d,]+(?:\.\d{2})?)(Cr|Dr)/gi);
+      // Amount can be with or without decimal, with or without commas
+      const srFallbackMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{5})?([₹]?\s*[\d,]+\.?\d*)(Cr|Dr)/gi);
       if (srFallbackMatches) {
         console.log('Found SR fallback matches:', srFallbackMatches.length);
         srFallbackMatches.forEach(match => {
-          const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{5})?([₹]?\s*[\d,]+(?:\.\d{2})?)(Cr|Dr)/i);
+          const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{5})?([₹]?\s*[\d,]+\.?\d*)(Cr|Dr)/i);
           if (parts) {
             let amountStr = parts[4];
             let billNumber = parts[2].trim();
