@@ -50,7 +50,7 @@ const getMonthlyInsights = async (req, res) => {
     // Fetch all raw data with simple queries, then calculate in JS
     
     // Get all invoices and items for the month with category
-    // Use invoice item rates (historical prices) instead of current product prices
+    // Use invoice item rates (historical prices) and current product sale prices for MRP
     const [invoicesData] = await db.execute(`
       SELECT 
         i.id,
@@ -60,7 +60,8 @@ const getMonthlyInsights = async (req, res) => {
         ii.total,
         ii.item_code,
         p.name,
-        p.category
+        p.category,
+        p.sale_price
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
       LEFT JOIN products p ON ii.item_code = p.item_code
@@ -165,27 +166,29 @@ const getMonthlyInsights = async (req, res) => {
     let productCostTotal = 0;
     let decorationCostTotal = 0;
 
-    // Process invoice items in JS using historical rates from invoice_items
+    // Process invoice items in JS using historical rates from invoice_items and actual sale prices from products
     invoicesData.forEach(item => {
       const costTotal = Number(item.total) || 0;
       const qty = Number(item.qty) || 0;
       const rate = Number(item.rate) || 0;
+      const salePrice = Number(item.sale_price) || 0;
       
       const category = item.category || '';
       const isDecoration = category.toLowerCase().includes('decoration');
       
-      // Compute MRP from historical rate (same formula used at time of invoice)
-      const historicalMrp = computeMrp(rate);
+      // Use actual sale_price from products table for MRP (represents actual margin set in manage products)
+      // If sale_price not available, fall back to computed MRP from historical rate
+      const actualMrp = salePrice > 0 ? salePrice : computeMrp(rate);
       
       if (isDecoration) {
-        // For decorations, use historical rate as cost and computed MRP
+        // For decorations, use historical rate as cost and actual/computed MRP
         decorationInvoiceTotal += costTotal;
-        decorationMRPTotal += historicalMrp * qty;
+        decorationMRPTotal += actualMrp * qty;
         decorationCostTotal += rate * qty;
       } else {
-        // For products, use historical rate as cost and computed MRP
+        // For products, use historical rate as cost and actual sale price (actual margin)
         productInvoiceTotal += costTotal;
-        productMRPTotal += historicalMrp * qty;
+        productMRPTotal += actualMrp * qty;
         productCostTotal += rate * qty;
       }
     });
