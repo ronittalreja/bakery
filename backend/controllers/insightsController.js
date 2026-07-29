@@ -122,9 +122,10 @@ const getMonthlyInsights = async (req, res) => {
     for (const invoice of invoicesForPacking) {
       try {
         const [items] = await db.execute(`
-          SELECT category, total_price
-          FROM invoice_items
-          WHERE invoice_id = ?
+          SELECT p.category, ii.total_price
+          FROM invoice_items ii
+          LEFT JOIN products p ON ii.item_code = p.item_code
+          WHERE ii.invoice_id = ?
         `, [invoice.id]);
 
         const packingCost = items.reduce((sum, item) => {

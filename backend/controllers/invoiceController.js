@@ -1099,10 +1099,11 @@ const getTotalPackingMaterialCosts = async (req, res) => {
       try {
         const itemsQuery = `
           SELECT 
-            category,
-            total_price
-          FROM invoice_items
-          WHERE invoice_id = ?
+            p.category,
+            ii.total_price
+          FROM invoice_items ii
+          LEFT JOIN products p ON ii.item_code = p.item_code
+          WHERE ii.invoice_id = ?
         `;
         
         const [items] = await db.execute(itemsQuery, [invoice.id]);
