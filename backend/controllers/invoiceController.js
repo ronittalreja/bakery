@@ -1080,6 +1080,8 @@ const getTotalPackingMaterialCosts = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Month and year parameters are required' });
     }
     
+    console.log(`Getting packing material costs for month=${month}, year=${year}`);
+    
     // Get all invoices for the month
     const query = `
       SELECT 
@@ -1090,6 +1092,7 @@ const getTotalPackingMaterialCosts = async (req, res) => {
     `;
     
     const [invoices] = await db.execute(query, [month, year]);
+    console.log(`Found ${invoices.length} invoices for the month`);
     
     let totalPackingCost = 0;
     let invoiceCount = 0;
@@ -1119,11 +1122,14 @@ const getTotalPackingMaterialCosts = async (req, res) => {
         if (packingCost > 0) {
           totalPackingCost += packingCost;
           invoiceCount++;
+          console.log(`Invoice ${invoice.id} has packing cost: ${packingCost}`);
         }
       } catch (e) {
         console.warn(`Error getting items for invoice ${invoice.id}:`, e);
       }
     }
+    
+    console.log(`Total packing cost: ${totalPackingCost}, Invoice count: ${invoiceCount}`);
     
     res.json({
       success: true,
