@@ -88,6 +88,63 @@ const getMonthlyInsights = async (req, res) => {
       WHERE DATE_FORMAT(expense_date, '%Y-%m') = ?
     `, [month]);
 
+    // Calculate total return charges (total loss) from credit notes for the month
+    const [creditNotesItemsData] = await db.execute(`
+      SELECT items
+      FROM credit_notes
+      WHERE DATE_FORMAT(COALESCE(return_date, date), '%Y-%m') = ?
+    `, [month]);
+
+    let totalReturnCharges = 0;
+    for (const row of creditNotesItemsData) {
+      try {
+        const items = typeof row.items === 'string' ? JSON.parse(row.items) : row.items;
+        if (Array.isArray(items)) {
+          const noteLoss = items.reduce((sum, item) => {
+            const rtdPercentage = item.rtd || 0;
+            return sum + ((item.total * rtdPercentage) / 100);
+          }, 0);
+          totalReturnCharges += noteLoss;
+        }
+      } catch (e) {
+        console.warn(`Error parsing items for credit note:`, e);
+      }
+    }
+
+    // Calculate total packing material costs from invoices for the month
+    const [invoicesForPacking] = await db.execute(`
+      SELECT id
+      FROM invoices
+      WHERE DATE_FORMAT(invoice_date, '%Y-%m') = ?
+    `, [month]);
+
+    let totalPackingMaterialCost = 0;
+    for (const invoice of invoicesForPacking) {
+      try {
+        const [items] = await db.execute(`
+          SELECT category, total_price
+          FROM invoice_items
+          WHERE invoice_id = ?
+        `, [invoice.id]);
+
+        const packingCost = items.reduce((sum, item) => {
+          const category = item.category?.toLowerCase();
+          if (category === 'packing_material' || category === 'packaging' || category === 'packing') {
+            return sum + (item.total_price || 0);
+          }
+          return sum;
+        }, 0);
+
+        totalPackingMaterialCost += packingCost;
+      } catch (e) {
+        console.warn(`Error getting items for invoice ${invoice.id}:`, e);
+      }
+    }
+
+    // Calculate total expenses in JS (includes manual expenses + auto-generated return charges + packing material)
+    const manualExpensesTotal = expensesData.reduce((sum, e) => sum + Number(e.amount), 0);
+    const totalExpenses = manualExpensesTotal + totalReturnCharges + totalPackingMaterialCost;
+
     // Calculate MRP from invoice rates (rate * 1.33 rounded to nearest 5)
     const roundUpToNearest5 = (value) => {
       const remainder = value % 5;
@@ -144,10 +201,7 @@ const getMonthlyInsights = async (req, res) => {
     const netRevenue = totalInvoiceMRP - totalReturns;
     const netCost = totalInvoiceCost - (totalInvoiceCost * returnRatio);
 
-    // Calculate total expenses in JS (includes automated RETURN LOSS)
-    const totalExpenses = expensesData.reduce((sum, e) => sum + Number(e.amount), 0);
-
-    // Calculate profit: Net Revenue - Net Cost - Expenses
+    // Calculate profit: Net Revenue - Net Cost - Expenses (includes auto-generated return charges and packing material)
     const totalProfit = netRevenue - netCost - totalExpenses;
     
     // Calculate product profit: Product MRP - Product Cost
