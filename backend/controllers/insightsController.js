@@ -21,26 +21,41 @@ const getMonthlyInsights = async (req, res) => {
       
       const totalSales = demoSales.reduce((sum, sale) => sum + sale.total_amount, 0);
       const totalCost = totalSales * 0.6; // 60% cost
-      const totalLoss = totalSales * 0.05; // 5% loss
-      const totalExpenses = demoExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-      const totalProfit = totalSales - totalCost - totalLoss - totalExpenses;
-      const totalMargin = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
+      const totalReturns = totalSales * 0.05; // 5% returns
+      const manualExpenses = demoExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+      const returnCharges = totalReturns * 0.15; // 15% RTD on returns
+      const packingMaterialCost = totalSales * 0.03; // 3% packing material
+      const totalExpenses = manualExpenses + returnCharges + packingMaterialCost;
+      
+      const netCost = totalCost - totalReturns;
+      const netRevenue = totalSales - (totalSales * (totalReturns / totalCost));
+      const totalProfit = netRevenue - netCost - totalExpenses;
+      
+      const productMRPTotal = totalSales * 0.75;
+      const decorationMRPTotal = totalSales * 0.25;
+      const productCostTotal = totalCost * 0.75 - (totalReturns * 0.75);
+      const decorationCostTotal = totalCost * 0.25 - (totalReturns * 0.25);
+      const productProfit = productMRPTotal - productCostTotal;
+      const decorationProfit = decorationMRPTotal - decorationCostTotal;
+      
+      const productMargin = productMRPTotal > 0 ? (productProfit / productMRPTotal) * 100 : 0;
+      const decorationMargin = decorationMRPTotal > 0 ? (decorationProfit / decorationMRPTotal) * 100 : 0;
+      const totalMargin = netRevenue > 0 ? (totalProfit / netRevenue) * 100 : 0;
 
       const insightsData = {
         month,
-        totalSales,
-        productMRPTotal: totalSales * 0.8,
-        decorationMRPTotal: totalSales * 0.2,
-        productCostTotal: totalCost * 0.8,
-        decorationCostTotal: totalCost * 0.2,
-        totalCost,
-        productProfit: totalSales * 0.8 - totalCost * 0.8,
-        decorationProfit: totalSales * 0.2 - totalCost * 0.2,
+        netRevenue,
+        netCost,
+        productMRPTotal,
+        decorationMRPTotal,
+        productCostTotal,
+        decorationCostTotal,
+        productProfit,
+        decorationProfit,
         totalProfit,
-        productMargin: 25,
-        decorationMargin: 30,
+        productMargin,
+        decorationMargin,
         totalMargin,
-        totalLoss,
         totalExpenses
       };
 

@@ -45,8 +45,8 @@ export function LoginForm() {
             <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
               <span className="text-2xl">🍰</span>
             </div>
-            <CardTitle className="text-2xl font-bold text-slate-900">Bakery Management</CardTitle>
-            <CardDescription className="text-slate-600 mt-2">Sign in to access your dashboard</CardDescription>
+            <CardTitle className="text-2xl font-bold text-slate-900">MONGINIE: BAKERY MANAGEMENT SYSTEM</CardTitle>
+            <CardDescription className="text-slate-600 mt-2">Enter your credentials to continue</CardDescription>
           </CardHeader>
           <CardContent className="px-6 pb-6">
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -90,7 +90,7 @@ export function LoginForm() {
                     Signing in...
                   </>
                 ) : (
-                  "Sign In"
+                  "Login"
                 )}
               </Button>
               <Button 

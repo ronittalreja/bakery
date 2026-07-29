@@ -247,7 +247,7 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
                 </Button>
               )}
               <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-2xl font-bold text-slate-900 truncate">Admin Dashboard</h1>
+                <h1 className="text-lg sm:text-2xl font-bold text-slate-900 truncate">🍰 Admin Dashboard 🍰</h1>
                 <p className="text-sm sm:text-base text-slate-600 truncate">Welcome back, {user?.username}</p>
               </div>
             </div>

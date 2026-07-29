@@ -25,6 +25,12 @@ const demoData = {
   expenses: [
     { id: 4001, expense_date: '2026-07-05', category: 'Utilities', description: 'Demo electricity bill', amount: 5000, staff_id: 0 },
     { id: 4002, expense_date: '2026-07-04', category: 'Supplies', description: 'Demo flour purchase', amount: 3000, staff_id: 0 },
+    { id: 4003, expense_date: '2026-07-10', category: 'Rent', description: 'Demo shop rent', amount: 15000, staff_id: 0 },
+    { id: 4004, expense_date: '2026-07-15', category: 'Staff Salary', description: 'Demo staff salaries', amount: 25000, staff_id: 0 },
+    { id: 4005, expense_date: '2026-07-20', category: 'Transportation', description: 'Demo fuel costs', amount: 2000, staff_id: 0 },
+    { id: 4006, expense_date: '2026-07-25', category: 'Marketing', description: 'Demo advertising', amount: 3000, staff_id: 0 },
+    { id: 4007, expense_date: '2026-07-28', category: 'Maintenance', description: 'Demo equipment repair', amount: 1500, staff_id: 0 },
+    { id: 4008, expense_date: '2026-07-30', category: 'Packaging', description: 'Demo packaging materials', amount: 4000, staff_id: 0 },
   ],
   returns: [
     {
@@ -502,60 +508,96 @@ const demoData = {
   ]
 };
 
-// Generate demo sales for last 7 days
+// Generate demo sales for last 30 days with more realistic data
 const generateDemoSales = () => {
   const sales = [];
   const today = new Date();
   
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 30; i++) {
     const saleDate = new Date(today);
     saleDate.setDate(saleDate.getDate() - i);
     const saleDateTime = saleDate.toISOString().slice(0, 16).replace('T', ' ');
     
-    const sale = {
-      id: 5000 + i,
-      sale_date: saleDateTime,
-      total_amount: 0,
-      payment_type: ['cash', 'card', 'upi'][Math.floor(Math.random() * 3)],
-      staff_id: 0,
-      product_mrp_total: 0,
-      decoration_mrp_total: 0,
-      product_cost_total: 0,
-      decoration_cost_total: 0,
-      total_cost: 0,
-      items: []
-    };
+    // Generate varying number of transactions per day (more on weekends)
+    const dayOfWeek = saleDate.getDay();
+    const numTransactions = (dayOfWeek === 0 || dayOfWeek === 6) ? 
+      Math.floor(Math.random() * 8) + 5 : // 5-12 transactions on weekends
+      Math.floor(Math.random() * 5) + 2;  // 2-6 transactions on weekdays
     
-    // Add random items
-    const numItems = Math.floor(Math.random() * 3) + 1;
-    for (let j = 0; j < numItems; j++) {
-      const randomProduct = demoData.products[Math.floor(Math.random() * demoData.products.length)];
-      const quantity = Math.floor(Math.random() * 5) + 1;
-      const unitPrice = randomProduct.sale_price;
-      const costPrice = randomProduct.invoice_price;
+    for (let j = 0; j < numTransactions; j++) {
+      const sale = {
+        id: 5000 + i * 20 + j,
+        sale_date: saleDateTime,
+        total_amount: 0,
+        payment_type: ['cash', 'card', 'upi'][Math.floor(Math.random() * 3)],
+        staff_id: 0,
+        product_mrp_total: 0,
+        decoration_mrp_total: 0,
+        product_cost_total: 0,
+        decoration_cost_total: 0,
+        total_cost: 0,
+        items: []
+      };
       
-      const itemTotal = quantity * unitPrice;
-      const itemCost = quantity * costPrice;
+      // Add random items (2-5 items per transaction)
+      const numItems = Math.floor(Math.random() * 4) + 2;
+      for (let k = 0; k < numItems; k++) {
+        const randomProduct = demoData.products[Math.floor(Math.random() * demoData.products.length)];
+        const quantity = Math.floor(Math.random() * 10) + 1;
+        const unitPrice = randomProduct.sale_price;
+        const costPrice = randomProduct.invoice_price;
+        
+        const itemTotal = quantity * unitPrice;
+        const itemCost = quantity * costPrice;
+        
+        sale.items.push({
+          id: 6000 + i * 100 + j * 10 + k,
+          sale_id: sale.id,
+          item_id: randomProduct.id,
+          batch_id: randomProduct.id,
+          quantity: quantity,
+          unit_price: unitPrice,
+          total_price: itemTotal,
+          name: randomProduct.name,
+          item_code: randomProduct.item_code
+        });
+        
+        sale.total_amount += itemTotal;
+        sale.product_mrp_total += itemTotal;
+        sale.product_cost_total += itemCost;
+        sale.total_cost += itemCost;
+      }
       
-      sale.items.push({
-        id: 6000 + i * 10 + j,
-        sale_id: sale.id,
-        item_id: randomProduct.id,
-        batch_id: randomProduct.id,
-        quantity: quantity,
-        unit_price: unitPrice,
-        total_price: itemTotal,
-        name: randomProduct.name,
-        item_code: randomProduct.item_code
-      });
+      // Occasionally add decoration items (30% chance)
+      if (Math.random() < 0.3) {
+        const randomDecoration = demoData.decorations[Math.floor(Math.random() * demoData.decorations.length)];
+        const quantity = Math.floor(Math.random() * 5) + 1;
+        const unitPrice = randomDecoration.sale_price;
+        const costPrice = randomDecoration.cost;
+        
+        const itemTotal = quantity * unitPrice;
+        const itemCost = quantity * costPrice;
+        
+        sale.items.push({
+          id: 7000 + i * 100 + j * 10 + 5,
+          sale_id: sale.id,
+          item_id: randomDecoration.id,
+          batch_id: randomDecoration.id,
+          quantity: quantity,
+          unit_price: unitPrice,
+          total_price: itemTotal,
+          name: randomDecoration.name,
+          item_code: randomDecoration.sku
+        });
+        
+        sale.total_amount += itemTotal;
+        sale.decoration_mrp_total += itemTotal;
+        sale.decoration_cost_total += itemCost;
+        sale.total_cost += itemCost;
+      }
       
-      sale.total_amount += itemTotal;
-      sale.product_mrp_total += itemTotal;
-      sale.product_cost_total += itemCost;
-      sale.total_cost += itemCost;
+      sales.push(sale);
     }
-    
-    sales.push(sale);
   }
   
   return sales;
