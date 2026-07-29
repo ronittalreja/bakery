@@ -15,6 +15,7 @@ import {
   RotateCcw,
   CreditCard,
   Shield,
+  User,
 } from "lucide-react";
 import { UploadInvoicePage } from "@/components/upload-invoice-page";
 import { RecordSalePage } from "@/components/record-sale-page";
@@ -215,7 +216,10 @@ export function StaffDashboard({ onSwitchToAdmin }: StaffDashboardProps) {
                 </Button>
               )}
               <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-2xl font-bold text-slate-900 truncate">🍰 Staff Dashboard 🍰</h1>
+                <div className="flex items-center gap-2">
+                  <User className="h-6 w-6 text-slate-900" />
+                  <h1 className="text-lg sm:text-2xl font-bold text-slate-900 truncate">Staff Dashboard</h1>
+                </div>
                 <p className="text-sm sm:text-base text-slate-600 truncate">Welcome back, {user?.username}</p>
               </div>
             </div>

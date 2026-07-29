@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAuth } from "@/hooks/use-auth"
+import { User } from "lucide-react"
 
 export function LoginForm() {
   const [username, setUsername] = useState("")
@@ -43,9 +44,9 @@ export function LoginForm() {
         <Card className="bg-gradient-to-br from-white via-slate-50 to-slate-100 border border-slate-200 shadow-lg">
           <CardHeader className="text-center pb-6">
             <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <span className="text-2xl">🍰</span>
+              <User className="h-8 w-8 text-white" />
             </div>
-            <CardTitle className="text-2xl font-bold text-slate-900">MONGINIE: BAKERY MANAGEMENT SYSTEM</CardTitle>
+            <CardTitle className="text-2xl font-bold text-slate-900">MONGINIE - BAKERY MANAGEMENT</CardTitle>
             <CardDescription className="text-slate-600 mt-2">Enter your credentials to continue</CardDescription>
           </CardHeader>
           <CardContent className="px-6 pb-6">

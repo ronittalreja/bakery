@@ -23,6 +23,7 @@ import {
   CreditCard,
   Edit3,
   Shield,
+  User,
 } from "lucide-react";
 import { AdminSalesPage } from "@/components/admin-sales-page";
 import { ManageProductsPage } from "@/components/manage-products-page";
@@ -247,7 +248,10 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
                 </Button>
               )}
               <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-2xl font-bold text-slate-900 truncate">🍰 Admin Dashboard 🍰</h1>
+                <div className="flex items-center gap-2">
+                  <User className="h-6 w-6 text-slate-900" />
+                  <h1 className="text-lg sm:text-2xl font-bold text-slate-900 truncate">Admin Dashboard</h1>
+                </div>
                 <p className="text-sm sm:text-base text-slate-600 truncate">Welcome back, {user?.username}</p>
               </div>
             </div>
