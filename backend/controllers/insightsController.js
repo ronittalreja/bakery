@@ -131,7 +131,7 @@ const getMonthlyInsights = async (req, res) => {
         const packingCost = items.reduce((sum, item) => {
           const category = item.category?.toLowerCase();
           if (category === 'packing_material' || category === 'packaging' || category === 'packing') {
-            return sum + (item.total || 0);
+            return sum + Number(item.total || 0);
           }
           return sum;
         }, 0);
