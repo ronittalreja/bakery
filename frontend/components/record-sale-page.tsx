@@ -20,6 +20,25 @@ const iconMap = {
   default: () => <span>📦</span>,
 };
 
+const getCategoryLogo = (category: string | null | undefined) => {
+  const categoryMap: { [key: string]: string } = {
+    'cakes': '🎂',
+    'pastries': '🧁',
+    'savouries': '🥐',
+    'breads': '🍞',
+    'packing_material': '📦',
+    'cookies': '🍪',
+    'assorted_cakes': '🍰',
+    'cake': '🎂',
+    'pastry': '🧁',
+    'savoury': '🥐',
+    'dry': '🍪',
+    'decoration': '🎀',
+    'packaging': '📦',
+  };
+  return categoryMap[category?.toLowerCase() || ''] || '📦';
+};
+
 interface Product {
   id: string;
   name: string;
@@ -597,13 +616,9 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
                           <CardContent className="p-0">
                             <div className="relative">
                               <div className="w-full h-24 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-                                {product.imageUrl ? (
-                                  <img src={product.imageUrl} alt={product.name} className="h-16 w-16 object-cover rounded-lg shadow-sm" />
-                                ) : (
-                                  <div className="h-16 w-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-slate-200">
-                                    <IconComponent />
-                                  </div>
-                                )}
+                                <div className="h-16 w-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-slate-200 text-3xl">
+                                  {getCategoryLogo(product.category)}
+                                </div>
                               </div>
                               <div className="absolute top-1 right-1">
                                 <Badge 
@@ -672,13 +687,9 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
                           <CardContent className="p-0">
                             <div className="relative">
                               <div className="w-full h-24 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-                                {product.imageUrl ? (
-                                  <img src={product.imageUrl} alt={product.name} className="h-16 w-16 object-cover rounded-lg shadow-sm" />
-                                ) : (
-                                  <div className="h-16 w-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-slate-200">
-                                    <IconComponent />
-                                  </div>
-                                )}
+                                <div className="h-16 w-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-slate-200 text-3xl">
+                                  {getCategoryLogo(product.category)}
+                                </div>
                               </div>
                               <div className="absolute top-1 right-1">
                                 <Badge 
@@ -747,13 +758,9 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
                           <CardContent className="p-0">
                             <div className="relative">
                               <div className="w-full h-24 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-                                {product.imageUrl ? (
-                                  <img src={product.imageUrl} alt={product.name} className="h-16 w-16 object-cover rounded-lg shadow-sm" />
-                                ) : (
-                                  <div className="h-16 w-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-slate-200">
-                                    <IconComponent />
-                                  </div>
-                                )}
+                                <div className="h-16 w-16 bg-white rounded-lg flex items-center justify-center shadow-sm border border-slate-200 text-3xl">
+                                  {getCategoryLogo(product.category)}
+                                </div>
                               </div>
                               <div className="absolute top-1 right-1">
                                 <Badge 
@@ -1153,13 +1160,9 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
                           <CardContent className="p-0">
                             <div className="relative">
                               <div className="w-full h-32 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-                              {product.imageUrl ? (
-                                  <img src={product.imageUrl} alt={product.name} className="h-20 w-20 object-cover rounded-lg shadow-sm" />
-                              ) : (
-                                  <div className="h-20 w-20 bg-white rounded-lg flex items-center justify-center shadow-sm border border-slate-200">
-                                    <IconComponent />
-                                  </div>
-                              )}
+                                <div className="h-20 w-20 bg-white rounded-lg flex items-center justify-center shadow-sm border border-slate-200 text-4xl">
+                                  {getCategoryLogo(product.category)}
+                                </div>
                             </div>
                               <div className="absolute top-2 right-2">
                                 <Badge 
@@ -1260,13 +1263,9 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
                                   <CardContent className="p-0">
                                     <div className="relative">
                                       <div className="w-full h-24 flex items-center justify-center bg-gradient-to-br from-orange-50 to-orange-100">
-                                      {product.imageUrl ? (
-                                          <img src={product.imageUrl} alt={product.name} className="h-14 w-14 object-cover rounded-lg shadow-sm" />
-                                      ) : (
-                                          <div className="h-14 w-14 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                                            <IconComponent />
-                                          </div>
-                                      )}
+                                        <div className="h-14 w-14 bg-white rounded-lg flex items-center justify-center shadow-sm text-3xl">
+                                          {getCategoryLogo(product.category)}
+                                        </div>
                                     </div>
                                       <div className="absolute top-2 right-2">
                                         <Badge 
@@ -1352,13 +1351,9 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
                                   <CardContent className="p-0">
                                     <div className="relative">
                                       <div className="w-full h-28 flex items-center justify-center bg-gradient-to-br from-purple-50 to-purple-100">
-                                      {product.imageUrl ? (
-                                          <img src={product.imageUrl} alt={product.name} className="h-16 w-16 object-cover rounded-lg shadow-sm" />
-                                      ) : (
-                                          <div className="h-16 w-16 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                                            <IconComponent />
-                                          </div>
-                                      )}
+                                        <div className="h-16 w-16 bg-white rounded-lg flex items-center justify-center shadow-sm text-3xl">
+                                          {getCategoryLogo(product.category)}
+                                        </div>
                                     </div>
                                       <div className="absolute top-2 right-2">
                                         <Badge 

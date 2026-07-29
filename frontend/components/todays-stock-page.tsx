@@ -171,6 +171,25 @@ export function TodaysStockPage({ onBack }: TodaysStockPageProps) {
     return { color: "bg-green-100 text-green-800", text: "In Stock" };
   };
 
+  const getCategoryLogo = (category: string | null | undefined) => {
+    const categoryMap: { [key: string]: string } = {
+      'cakes': '🎂',
+      'pastries': '🧁',
+      'savouries': '🥐',
+      'breads': '🍞',
+      'packing_material': '📦',
+      'cookies': '🍪',
+      'assorted_cakes': '🍰',
+      'cake': '🎂',
+      'pastry': '🧁',
+      'savoury': '🥐',
+      'dry': '🍪',
+      'decoration': '🎀',
+      'packaging': '📦',
+    };
+    return categoryMap[category?.toLowerCase() || ''] || '📦';
+  };
+
   const filteredItems = stockItems.filter((item) =>
     item.productName.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -252,9 +271,8 @@ export function TodaysStockPage({ onBack }: TodaysStockPageProps) {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Image</TableHead>
-                        <TableHead>Product</TableHead>
                         <TableHead>Category</TableHead>
+                        <TableHead>Product</TableHead>
                         <TableHead>Quantity</TableHead>
                         <TableHead>Invoice Price</TableHead>
                         <TableHead>MRP</TableHead>
@@ -270,14 +288,9 @@ export function TodaysStockPage({ onBack }: TodaysStockPageProps) {
                         return (
                           <TableRow key={`${item.id}-${item.batchId}`}>
                             <TableCell>
-                              <img
-                                src={item.image}
-                                alt={item.productName}
-                                className="w-12 h-12 object-cover rounded-md"
-                              />
+                              <div className="text-2xl">{getCategoryLogo(item.category)}</div>
                             </TableCell>
                             <TableCell className="font-medium">{item.productName}</TableCell>
-                            <TableCell className="capitalize">{item.category || '-'}</TableCell>
                             <TableCell className="font-bold">{item.quantity}</TableCell>
                             <TableCell>₹{(Number(item.invoicePrice) || 0).toLocaleString()}</TableCell>
                             <TableCell>₹{(Number(item.mrp) || 0).toLocaleString()}</TableCell>
@@ -322,11 +335,9 @@ export function TodaysStockPage({ onBack }: TodaysStockPageProps) {
                     return (
                       <div key={`${item.id}-${item.batchId}`} className="bg-white rounded-lg border border-slate-200 p-4 space-y-3">
                         <div className="flex items-start gap-3">
-                          <img
-                            src={item.image}
-                            alt={item.productName}
-                            className="w-16 h-16 object-cover rounded-md flex-shrink-0"
-                          />
+                          <div className="w-16 h-16 flex items-center justify-center bg-slate-100 rounded-md flex-shrink-0 text-3xl">
+                            {getCategoryLogo(item.category)}
+                          </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-slate-900 truncate">{item.productName}</h3>
                             <p className="text-sm text-slate-600 capitalize">{item.category || 'No category'}</p>
