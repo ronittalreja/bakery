@@ -285,31 +285,27 @@ function extractBillsData(text) {
     if (bills.filter(b => b.doc_type === 'CN').length === 0) {
       console.log('Trying fallback CN pattern...');
       // Handle case where invoice number might be concatenated with amount
-      const cnFallbackMatches = text.match(/CN(\d{2}\/\d{2}\/\d{4})(MU\d{4}\/CN\/?)(\d{3,}(?:\.\d{2})?)(Cr|Dr)/gi);
+      // Pattern: CN + date + MU2627/CN/XXXXX + amount + CR
+      const cnFallbackMatches = text.match(/CN(\d{2}\/\d{2}\/\d{4})(MU\d{4}\/CN\/)(\d{5})([₹]?\s*[\d,]+(?:\.\d{2})?)(Cr|Dr)/gi);
       if (cnFallbackMatches) {
         console.log('Found CN fallback matches:', cnFallbackMatches.length);
         cnFallbackMatches.forEach(match => {
-          const parts = match.match(/CN(\d{2}\/\d{2}\/\d{4})(MU\d{4}\/CN\/?)(\d{3,}(?:\.\d{2})?)(Cr|Dr)/i);
+          const parts = match.match(/CN(\d{2}\/\d{2}\/\d{4})(MU\d{4}\/CN\/)(\d{5})([₹]?\s*[\d,]+(?:\.\d{2})?)(Cr|Dr)/i);
           if (parts) {
-            // If the amount starts with 5 digits, those might be the invoice number
-            let amountStr = parts[3];
-            let billNumber = parts[2].trim();
-            let amount = parseFloat(amountStr);
+            // Invoice number is in parts[3], amount is in parts[4]
+            let amountStr = parts[4];
+            let billNumber = parts[2].trim() + parts[3];
             
-            // Check if amount looks like it has an invoice number prepended (5 digits followed by more digits)
-            const amountWithInvoiceMatch = amountStr.match(/^(\d{5})(\d{3,}(?:\.\d{2})?)$/);
-            if (amountWithInvoiceMatch) {
-              // First 5 digits are invoice number, rest is amount
-              billNumber = billNumber + amountWithInvoiceMatch[1];
-              amount = parseFloat(amountWithInvoiceMatch[2]);
-            }
+            // Remove currency symbol and spaces, then remove commas
+            let cleanAmountStr = amountStr.replace(/[₹\s]/g, '').replace(/,/g, '');
+            let amount = parseFloat(cleanAmountStr);
             
             bills.push({
               doc_type: 'CN',
               bill_date: formatDate(parts[1]),
               bill_number: billNumber,
               amount: amount,
-              dr_cr: parts[4].toUpperCase()
+              dr_cr: parts[5].toUpperCase()
             });
           }
         });
@@ -338,32 +334,79 @@ function extractBillsData(text) {
     if (bills.filter(b => b.doc_type === 'SR').length === 0) {
       console.log('Trying fallback SR pattern for MUM2627 format...');
       // Handle case where invoice number might be missing or concatenated with amount
-      const srFallbackMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{3,}(?:\.\d{2})?)(Cr|Dr)/gi);
+      // Pattern: SR + date + MUM2627/ + [optional invoice number] + amount + DR
+      const srFallbackMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)([₹]?\s*[\d,]+(?:\.\d{2})?)(Cr|Dr)/gi);
       if (srFallbackMatches) {
         console.log('Found SR fallback matches:', srFallbackMatches.length);
         srFallbackMatches.forEach(match => {
-          const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{3,}(?:\.\d{2})?)(Cr|Dr)/i);
+          const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)([₹]?\s*[\d,]+(?:\.\d{2})?)(Cr|Dr)/i);
           if (parts) {
-            // If the amount starts with 5 digits, those might be the invoice number
             let amountStr = parts[3];
             let billNumber = parts[2].trim();
-            let amount = parseFloat(amountStr);
             
-            // Check if amount looks like it has an invoice number prepended (5 digits followed by more digits)
-            const amountWithInvoiceMatch = amountStr.match(/^(\d{5})(\d{3,}(?:\.\d{2})?)$/);
-            if (amountWithInvoiceMatch) {
-              // First 5 digits are invoice number, rest is amount
-              billNumber = billNumber + amountWithInvoiceMatch[1];
-              amount = parseFloat(amountWithInvoiceMatch[2]);
+            console.log('SR Raw amount string:', amountStr);
+            console.log('SR Initial bill number:', billNumber);
+            
+            // Remove currency symbol and spaces
+            let cleanAmountStr = amountStr.replace(/[₹\s]/g, '');
+            console.log('SR Cleaned amount string:', cleanAmountStr);
+            
+            // Check if this is Indian number format with commas (lakhs/crores) FIRST
+            // Indian format: 3,62,16,12,190.00 (crores)
+            // Indian format alternates between 2 and 3 digit groups after the first
+            // Pattern: comma followed by 2 digits, then optionally more comma-separated groups
+            const hasIndianCommas = cleanAmountStr.match(/,\d{2}(?:,\d{2})*(?:,\d{3})?/);
+            if (hasIndianCommas) {
+              // This is a real Indian number format amount, not concatenated
+              // Remove all commas to get raw number
+              let rawNumber = cleanAmountStr.replace(/,/g, '');
+              const amount = parseFloat(rawNumber);
+              console.log('SR Detected Indian number format with commas, using as amount:', amount);
+              
+              bills.push({
+                doc_type: 'SR',
+                bill_date: formatDate(parts[1]),
+                bill_number: billNumber,
+                amount: amount,
+                dr_cr: parts[4].toUpperCase()
+              });
+            } else {
+              // No Indian commas - check if invoice number is prepended to amount
+              // Remove all commas to get raw number
+              let rawNumber = cleanAmountStr.replace(/,/g, '');
+              console.log('SR Raw number without commas:', rawNumber);
+              
+              // Pattern: 5 digits (invoice) followed by amount
+              // Example: 3656114898 -> invoice: 36561, amount: 14898
+              const amountWithInvoiceMatch = rawNumber.match(/^(\d{5})(\d+)(?:\.(\d{2}))?$/);
+              if (amountWithInvoiceMatch) {
+                billNumber = billNumber + amountWithInvoiceMatch[1];
+                const integerPart = amountWithInvoiceMatch[2];
+                const decimalPart = amountWithInvoiceMatch[3] || '00';
+                const amount = parseFloat(`${integerPart}.${decimalPart}`);
+                console.log('SR EXTRACTED - Invoice:', amountWithInvoiceMatch[1], 'Amount:', amount);
+                
+                bills.push({
+                  doc_type: 'SR',
+                  bill_date: formatDate(parts[1]),
+                  bill_number: billNumber,
+                  amount: amount,
+                  dr_cr: parts[4].toUpperCase()
+                });
+              } else {
+                // No invoice number prepended, use as-is
+                const amount = parseFloat(rawNumber);
+                console.log('SR No invoice number detected, using as amount:', amount);
+                
+                bills.push({
+                  doc_type: 'SR',
+                  bill_date: formatDate(parts[1]),
+                  bill_number: billNumber,
+                  amount: amount,
+                  dr_cr: parts[4].toUpperCase()
+                });
+              }
             }
-            
-            bills.push({
-              doc_type: 'SR',
-              bill_date: formatDate(parts[1]),
-              bill_number: billNumber,
-              amount: amount,
-              dr_cr: parts[4].toUpperCase()
-            });
           }
         });
       }
