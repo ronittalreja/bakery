@@ -202,14 +202,21 @@ const getMonthlyInsights = async (req, res) => {
     const netRevenue = totalInvoiceMRP - totalReturns;
     const netCost = totalInvoiceCost - (totalInvoiceCost * returnRatio);
 
+    // Deduct returns proportionally from individual cost totals
+    const productReturnRatio = productMRPTotal > 0 ? (totalReturns * (productMRPTotal / totalInvoiceMRP)) / productMRPTotal : 0;
+    const decorationReturnRatio = decorationMRPTotal > 0 ? (totalReturns * (decorationMRPTotal / totalInvoiceMRP)) / decorationMRPTotal : 0;
+    
+    const netProductCost = productCostTotal - (productCostTotal * productReturnRatio);
+    const netDecorationCost = decorationCostTotal - (decorationCostTotal * decorationReturnRatio);
+
     // Calculate profit: Net Revenue - Net Cost - Expenses (includes auto-generated return charges and packing material)
     const totalProfit = netRevenue - netCost - totalExpenses;
     
-    // Calculate product profit: Product MRP - Product Cost
-    const productProfit = productMRPTotal - productCostTotal;
+    // Calculate product profit: Product MRP - Net Product Cost (after returns)
+    const productProfit = productMRPTotal - netProductCost;
     
-    // Calculate decoration profit: Decoration MRP - Decoration Cost
-    const decorationProfit = decorationMRPTotal - decorationCostTotal;
+    // Calculate decoration profit: Decoration MRP - Net Decoration Cost (after returns)
+    const decorationProfit = decorationMRPTotal - netDecorationCost;
     
     // Calculate margins
     const productMargin = productMRPTotal > 0 ? (productProfit / productMRPTotal) * 100 : 0;
@@ -222,8 +229,8 @@ const getMonthlyInsights = async (req, res) => {
       netCost,
       productMRPTotal,
       decorationMRPTotal,
-      productCostTotal,
-      decorationCostTotal,
+      productCostTotal: netProductCost,
+      decorationCostTotal: netDecorationCost,
       productProfit,
       decorationProfit,
       totalProfit,

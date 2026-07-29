@@ -217,7 +217,7 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-slate-900">
                     <Package className="h-5 w-5 text-blue-600" />
-                    Products Analysis
+                    Monginis Products Analysis
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
