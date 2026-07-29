@@ -335,22 +335,17 @@ function extractBillsData(text) {
       console.log('Trying fallback SR pattern for MUM2627 format...');
       // Handle case where invoice number comes after MUM2627/ before amount
       // Pattern: SR + date + MUM2627/ + [optional 5-digit invoice number] + amount + DR
-      const srFallbackMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{5})([₹]?\s*[\d,]+(?:\.\d{2})?)(Cr|Dr)/gi);
+      const srFallbackMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{5})?([₹]?\s*[\d,]+(?:\.\d{2})?)(Cr|Dr)/gi);
       if (srFallbackMatches) {
         console.log('Found SR fallback matches:', srFallbackMatches.length);
         srFallbackMatches.forEach(match => {
-          const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{5})([₹]?\s*[\d,]+(?:\.\d{2})?)(Cr|Dr)/i);
+          const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{5})?([₹]?\s*[\d,]+(?:\.\d{2})?)(Cr|Dr)/i);
           if (parts) {
             let amountStr = parts[4];
             let billNumber = parts[2].trim();
             
-            // If 5-digit invoice number is present, append it to bill number
-            if (parts[3]) {
-              billNumber = billNumber + parts[3];
-            }
-            
             console.log('SR Raw amount string:', amountStr);
-            console.log('SR Complete bill number:', billNumber);
+            console.log('SR Initial bill number:', billNumber);
             console.log('SR Invoice number present:', !!parts[3], parts[3] || 'N/A');
             
             // Remove currency symbol and spaces
@@ -361,16 +356,51 @@ function extractBillsData(text) {
             let rawNumber = cleanAmountStr.replace(/,/g, '');
             console.log('SR Raw number without commas:', rawNumber);
             
-            const amount = parseFloat(rawNumber);
-            console.log('SR Final amount:', amount);
-            
-            bills.push({
-              doc_type: 'SR',
-              bill_date: formatDate(parts[1]),
-              bill_number: billNumber,
-              amount: amount,
-              dr_cr: parts[5].toUpperCase()
-            });
+            // Check if invoice number is prepended to amount (happens in bulk uploads)
+            // Pattern: 5 digits (invoice) followed by amount
+            // Example: 3522715627 -> invoice: 35227, amount: 15627
+            const amountWithInvoiceMatch = rawNumber.match(/^(\d{5})(\d+)(?:\.(\d{2}))?$/);
+            if (amountWithInvoiceMatch && !parts[3]) {
+              // Invoice number is prepended to amount, extract it
+              billNumber = billNumber + amountWithInvoiceMatch[1];
+              const integerPart = amountWithInvoiceMatch[2];
+              const decimalPart = amountWithInvoiceMatch[3] || '00';
+              const amount = parseFloat(`${integerPart}.${decimalPart}`);
+              console.log('SR EXTRACTED invoice from amount - Invoice:', amountWithInvoiceMatch[1], 'Amount:', amount);
+              
+              bills.push({
+                doc_type: 'SR',
+                bill_date: formatDate(parts[1]),
+                bill_number: billNumber,
+                amount: amount,
+                dr_cr: parts[5].toUpperCase()
+              });
+            } else if (parts[3]) {
+              // Invoice number is present as separate group
+              billNumber = billNumber + parts[3];
+              const amount = parseFloat(rawNumber);
+              console.log('SR Invoice from separate group - Bill number:', billNumber, 'Amount:', amount);
+              
+              bills.push({
+                doc_type: 'SR',
+                bill_date: formatDate(parts[1]),
+                bill_number: billNumber,
+                amount: amount,
+                dr_cr: parts[5].toUpperCase()
+              });
+            } else {
+              // No invoice number at all, use as-is
+              const amount = parseFloat(rawNumber);
+              console.log('SR No invoice number detected, using as amount:', amount);
+              
+              bills.push({
+                doc_type: 'SR',
+                bill_date: formatDate(parts[1]),
+                bill_number: billNumber,
+                amount: amount,
+                dr_cr: parts[5].toUpperCase()
+              });
+            }
           }
         });
       }
