@@ -8,6 +8,7 @@ const {
   verifyInvoice,
   checkInvoice,
   getInvoicesByMonth,
+  getTotalPackingMaterialCosts,
   getInvoiceById,
   getInvoiceItems,
   updateInvoiceStatus,
@@ -31,6 +32,9 @@ router.post('/check', invoiceUpload.single('file'), checkInvoice);
 
 // Get invoices by month (for payments page)
 router.get('/', getInvoicesByMonth);
+
+// Get total packing material costs for a month
+router.get('/packing-material-total', getTotalPackingMaterialCosts);
 
 // Get invoices from ROS receipts that don't exist in invoices table
 router.get('/from-ros-receipts', getInvoicesFromRosReceipts);

@@ -20,6 +20,9 @@ router.post('/store', creditNoteController.storeCreditNote);
 // Get all credit notes with month filter
 router.get('/', creditNoteController.getAllCreditNotes);
 
+// Get total return charges (total loss) for a month
+router.get('/total-loss', creditNoteController.getTotalReturnCharges);
+
 // Get credit notes from ROS receipts that don't exist in credit_notes table
 router.get('/from-ros-receipts', creditNoteController.getCreditNotesFromRosReceipts);
 

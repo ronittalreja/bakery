@@ -1181,6 +1181,57 @@ const getCreditNotesFromRosReceipts = async (req, res) => {
   }
 };
 
+// Get total return charges (total loss) for a month
+const getTotalReturnCharges = async (req, res) => {
+  try {
+    const { month } = req.query;
+    
+    if (!month) {
+      return res.status(400).json({ success: false, error: 'Month parameter is required' });
+    }
+    
+    // Calculate total loss from credit note items
+    const query = `
+      SELECT 
+        id,
+        items
+      FROM credit_notes
+      WHERE DATE_FORMAT(COALESCE(return_date, date), '%Y-%m') = ?
+    `;
+    
+    const [creditNotes] = await db.execute(query, [month]);
+    
+    let totalLoss = 0;
+    let creditNoteCount = 0;
+    
+    for (const row of creditNotes) {
+      try {
+        const items = typeof row.items === 'string' ? JSON.parse(row.items) : row.items;
+        if (Array.isArray(items)) {
+          const noteLoss = items.reduce((sum, item) => {
+            const rtdPercentage = item.rtd || 0;
+            return sum + ((item.total * rtdPercentage) / 100);
+          }, 0);
+          totalLoss += noteLoss;
+          creditNoteCount++;
+        }
+      } catch (e) {
+        console.warn(`Error parsing items for credit note ${row.id}:`, e);
+      }
+    }
+    
+    res.json({
+      success: true,
+      totalLoss,
+      creditNoteCount,
+      month
+    });
+  } catch (error) {
+    console.error('Error getting total return charges:', error);
+    res.status(500).json({ success: false, error: 'Failed to get total return charges' });
+  }
+};
+
 module.exports = {
   uploadCreditNote,
   parseCreditNote,
@@ -1188,6 +1239,7 @@ module.exports = {
   getCreditNoteHistory,
   storeCreditNote,
   getAllCreditNotes,
+  getTotalReturnCharges,
   getCreditNoteDetails,
   updateCreditNoteStatus,
   getCreditNotesFromRosReceipts

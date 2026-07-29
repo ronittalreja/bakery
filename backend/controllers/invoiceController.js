@@ -1071,6 +1071,72 @@ const uploadMultipleInvoices = async (req, res) => {
   }
 };
 
+// Get total packing material costs for a month
+const getTotalPackingMaterialCosts = async (req, res) => {
+  try {
+    const { month, year } = req.query;
+    
+    if (!month || !year) {
+      return res.status(400).json({ success: false, error: 'Month and year parameters are required' });
+    }
+    
+    // Get all invoices for the month
+    const query = `
+      SELECT 
+        id,
+        invoice_number
+      FROM invoices
+      WHERE MONTH(invoice_date) = ? AND YEAR(invoice_date) = ?
+    `;
+    
+    const [invoices] = await db.execute(query, [month, year]);
+    
+    let totalPackingCost = 0;
+    let invoiceCount = 0;
+    
+    // For each invoice, get its items and sum packing material costs
+    for (const invoice of invoices) {
+      try {
+        const itemsQuery = `
+          SELECT 
+            category,
+            total_price
+          FROM invoice_items
+          WHERE invoice_id = ?
+        `;
+        
+        const [items] = await db.execute(itemsQuery, [invoice.id]);
+        
+        const packingCost = items.reduce((sum, item) => {
+          const category = item.category?.toLowerCase();
+          if (category === 'packing_material' || category === 'packaging' || category === 'packing') {
+            return sum + (item.total_price || 0);
+          }
+          return sum;
+        }, 0);
+        
+        if (packingCost > 0) {
+          totalPackingCost += packingCost;
+          invoiceCount++;
+        }
+      } catch (e) {
+        console.warn(`Error getting items for invoice ${invoice.id}:`, e);
+      }
+    }
+    
+    res.json({
+      success: true,
+      totalPackingCost,
+      invoiceCount,
+      month: parseInt(month),
+      year: parseInt(year)
+    });
+  } catch (error) {
+    console.error('Error getting total packing material costs:', error);
+    res.status(500).json({ success: false, error: 'Failed to get total packing material costs' });
+  }
+};
+
 module.exports = { 
   parseMultipleInvoices,
   uploadInvoice, 
@@ -1078,6 +1144,7 @@ module.exports = {
   verifyInvoice, 
   checkInvoice,
   getInvoicesByMonth,
+  getTotalPackingMaterialCosts,
   getInvoiceById,
   getInvoiceItems,
   updateInvoiceStatus,
