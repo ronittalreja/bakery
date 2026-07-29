@@ -528,7 +528,7 @@ async function parseRosReceiptPDFFromBuffer(buffer) {
     // Parse the PDF buffer
     const pdfData = await pdf(buffer);
     const text = pdfData.text;
-    
+    fs.writeFileSync("ros-debug.txt", text);
     console.log('PDF text extracted from buffer, length:', text.length);
     
     // Parse the receipt data
