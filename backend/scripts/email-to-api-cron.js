@@ -14,7 +14,12 @@ const config = {
     password: process.env.GMAIL_APP_PASSWORD || 'jgyl mhui ewjj mjcj',
     host: 'imap.gmail.com',
     port: 993,
-    tls: true
+    tls: true,
+    connTimeout: 10000, // 10 seconds connection timeout
+    authTimeout: 5000,   // 5 seconds auth timeout
+    tlsOptions: {
+      rejectUnauthorized: false // Accept self-signed certificates
+    }
   },
   recipientEmail: process.env.RECIPIENT_EMAIL || 'receipt5@mongini.in',
   apiBaseUrl: process.env.API_URL || 'https://r3309.vercel.app/api',
