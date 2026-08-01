@@ -89,8 +89,8 @@ async function processEmail(imap, email) {
   try {
     console.log(`\n📧 Processing email: ${email.subject}`);
     
-    // Parse email
-    const parsed = await simpleParser(email);
+    // Parse email using the full source
+    const parsed = await simpleParser(email.source || email);
     
     // Check if email is from the correct sender
     if (!parsed.from?.value?.[0]?.address?.toLowerCase().includes(config.recipientEmail.toLowerCase())) {
@@ -99,9 +99,9 @@ async function processEmail(imap, email) {
     }
     
     // Classify email based on subject
-    const emailType = classifyEmail(email.subject);
+    const emailType = classifyEmail(parsed.subject || email.subject);
     if (!emailType) {
-      console.log(`⏭️  Skipping email - no matching type in subject: ${email.subject}`);
+      console.log(`⏭️  Skipping email - no matching type in subject: ${parsed.subject || email.subject}`);
       return false;
     }
     
@@ -215,7 +215,7 @@ async function fetchAndProcessEmails() {
           
           console.log(`📨 Found ${results.length} new emails to process`);
           
-          // Fetch emails
+          // Fetch emails with full body
           const fetch = imap.fetch(results, {
             bodies: '',
             markSeen: false
@@ -225,20 +225,22 @@ async function fetchAndProcessEmails() {
           let processedPromises = [];
           
           fetch.on('message', (msg, seqno) => {
+            let buffer = '';
             msg.on('body', (stream) => {
-              let buffer = '';
               stream.on('data', (chunk) => {
                 buffer += chunk.toString('utf8');
               });
-              stream.once('end', () => {
-                const email = Imap.parseHeader(buffer);
-                email.uid = results[seqno - 1];
-                
-                const promise = processEmail(imap, email).then(success => {
-                  if (success) processedCount++;
-                });
-                processedPromises.push(promise);
+            });
+            
+            msg.once('end', async () => {
+              const email = Imap.parseHeader(buffer);
+              email.uid = results[seqno - 1];
+              email.source = buffer; // Store full email source for parsing
+              
+              const promise = processEmail(imap, email).then(success => {
+                if (success) processedCount++;
               });
+              processedPromises.push(promise);
             });
           });
           
