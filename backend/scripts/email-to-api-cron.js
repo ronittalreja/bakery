@@ -22,7 +22,7 @@ const config = {
     }
   },
   recipientEmail: process.env.RECIPIENT_EMAIL || 'receipt5@mongini.in',
-  apiBaseUrl: process.env.API_URL || 'https://r3309.vercel.app/api',
+  apiBaseUrl: process.env.API_URL || 'https://bakery-backend-kpeo.onrender.com',
   processedFolder: 'PROCESSED_EMAILS',
   tempDir: path.join(__dirname, '../temp-emails')
 };
