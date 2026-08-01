@@ -29,19 +29,10 @@ jobs:
       - name: Run email processor
         run: |
           cd backend
-          node simpleEmailProcessor.js --test
+          node scripts/email-to-api-cron.js
         env:
-          GMAIL_EMAIL: ${{ secrets.GMAIL_EMAIL }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          BACKEND_URL: ${{ secrets.BACKEND_URL }}
-          API_TOKEN: ${{ secrets.API_TOKEN }}
-          TEST_SENDER_EMAIL: talrejaronit16@gmail.com
+          API_URL: https://r3309.vercel.app/api
+          GMAIL_EMAIL: monginisshahad@gmail.com
+          GMAIL_APP_PASSWORD: jgyl mhui ewjj mjcj
+          RECIPIENT_EMAIL: receipt5@mongini.in
           NODE_ENV: production
-          
-      - name: Upload processed emails log
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: processed-emails-log
-          path: backend/processed_emails.json
-          retention-days: 30

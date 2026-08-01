@@ -1,0 +1,264 @@
+const Imap = require('imap');
+const { simpleParser } = require('mailparser');
+const fs = require('fs');
+const path = require('path');
+const FormData = require('form-data');
+const axios = require('axios');
+
+// Configuration
+const config = {
+  email: process.env.GMAIL_EMAIL || 'monginisshahad@gmail.com',
+  password: process.env.GMAIL_APP_PASSWORD || 'jgyl mhui ewjj mjcj',
+  imap: {
+    user: process.env.GMAIL_EMAIL || 'monginisshahad@gmail.com',
+    password: process.env.GMAIL_APP_PASSWORD || 'jgyl mhui ewjj mjcj',
+    host: 'imap.gmail.com',
+    port: 993,
+    tls: true
+  },
+  recipientEmail: process.env.RECIPIENT_EMAIL || 'receipt5@mongini.in',
+  apiBaseUrl: process.env.API_URL || 'https://r3309.vercel.app/api',
+  processedFolder: 'PROCESSED_EMAILS',
+  tempDir: path.join(__dirname, '../temp-emails')
+};
+
+// Ensure temp directory exists
+if (!fs.existsSync(config.tempDir)) {
+  fs.mkdirSync(config.tempDir, { recursive: true });
+}
+
+// Email classification based on subject
+function classifyEmail(subject) {
+  const upperSubject = subject.toUpperCase();
+  
+  if (upperSubject.includes('INVOICE')) {
+    return 'invoice';
+  } else if (upperSubject.includes('CRDR')) {
+    return 'credit-note';
+  } else if (upperSubject.includes('ROSRECEIPT')) {
+    return 'ros-receipt';
+  }
+  
+  return null;
+}
+
+// Upload PDF to API
+async function uploadToApi(pdfPath, emailType) {
+  const formData = new FormData();
+  
+  let endpoint;
+  switch (emailType) {
+    case 'invoice':
+      endpoint = '/api/invoices/upload';
+      formData.append('file', fs.createReadStream(pdfPath));
+      break;
+    case 'credit-note':
+      endpoint = '/api/credit-notes/upload';
+      formData.append('file', fs.createReadStream(pdfPath));
+      break;
+    case 'ros-receipt':
+      endpoint = '/api/ros-receipts/upload';
+      formData.append('rosReceipt', fs.createReadStream(pdfPath)); // ROS uses different field name
+      break;
+    default:
+      throw new Error(`Unknown email type: ${emailType}`);
+  }
+  
+  try {
+    const response = await axios.post(`${config.apiBaseUrl}${endpoint}`, formData, {
+      headers: formData.getHeaders(),
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity
+    });
+    
+    console.log(`✅ Successfully uploaded ${emailType} to API:`, response.data);
+    return true;
+  } catch (error) {
+    console.error(`❌ Failed to upload ${emailType} to API:`, error.response?.data || error.message);
+    return false;
+  }
+}
+
+// Process email
+async function processEmail(imap, email) {
+  try {
+    console.log(`\n📧 Processing email: ${email.subject}`);
+    
+    // Parse email
+    const parsed = await simpleParser(email);
+    
+    // Check if email is from the correct sender
+    if (!parsed.from?.value?.[0]?.address?.toLowerCase().includes(config.recipientEmail.toLowerCase())) {
+      console.log(`⏭️  Skipping email from: ${parsed.from?.value?.[0]?.address}`);
+      return false;
+    }
+    
+    // Classify email based on subject
+    const emailType = classifyEmail(email.subject);
+    if (!emailType) {
+      console.log(`⏭️  Skipping email - no matching type in subject: ${email.subject}`);
+      return false;
+    }
+    
+    console.log(`📋 Email classified as: ${emailType}`);
+    
+    // Find PDF attachment
+    const pdfAttachment = parsed.attachments?.find(att => 
+      att.contentType === 'application/pdf' || att.filename?.toLowerCase().endsWith('.pdf')
+    );
+    
+    if (!pdfAttachment) {
+      console.log(`⏭️  No PDF attachment found in email`);
+      return false;
+    }
+    
+    console.log(`📎 Found PDF attachment: ${pdfAttachment.filename}`);
+    
+    // Save PDF to temp file
+    const tempFilePath = path.join(config.tempDir, `${Date.now()}_${pdfAttachment.filename}`);
+    fs.writeFileSync(tempFilePath, pdfAttachment.content);
+    
+    console.log(`💾 Saved PDF to: ${tempFilePath}`);
+    
+    // Upload to API
+    const uploadSuccess = await uploadToApi(tempFilePath, emailType);
+    
+    // Clean up temp file
+    fs.unlinkSync(tempFilePath);
+    console.log(`🗑️  Cleaned up temp file`);
+    
+    if (uploadSuccess) {
+      // Move email to processed folder
+      imap.move(email.uid, config.processedFolder, (err) => {
+        if (err) {
+          console.error(`⚠️  Could not move email to processed folder:`, err.message);
+          // Mark as read instead
+          imap.addFlags(email.uid, ['\\Seen'], (err) => {
+            if (err) console.error(`⚠️  Could not mark email as read:`, err.message);
+          });
+        } else {
+          console.log(`📁 Moved email to ${config.processedFolder} folder`);
+        }
+      });
+      return true;
+    }
+    
+    return false;
+    
+  } catch (error) {
+    console.error(`❌ Error processing email:`, error.message);
+    return false;
+  }
+}
+
+// Fetch and process emails
+function fetchAndProcessEmails() {
+  console.log(`\n🚀 Starting email fetch at ${new Date().toISOString()}`);
+  
+  const imap = new Imap(config.imap);
+  
+  imap.once('ready', () => {
+    console.log('✅ Connected to Gmail IMAP');
+    
+    // Open INBOX
+    imap.openBox('INBOX', false, (err, box) => {
+      if (err) {
+        console.error('❌ Error opening INBOX:', err);
+        imap.end();
+        return;
+      }
+      
+      console.log(`📬 INBOX opened. Total messages: ${box.messages.total}`);
+      
+      // Create processed folder if it doesn't exist
+      imap.getBoxes((err, boxes) => {
+        if (err) {
+          console.error('❌ Error getting mailbox list:', err);
+        } else if (!boxes[config.processedFolder]) {
+          imap.addBox(config.processedFolder, (err) => {
+            if (err) {
+              console.error(`⚠️  Could not create ${config.processedFolder} folder:`, err.message);
+            } else {
+              console.log(`✅ Created ${config.processedFolder} folder`);
+            }
+          });
+        }
+      });
+      
+      // Search for unread emails from the specific sender
+      const searchCriteria = [
+        ['UNSEEN'],
+        ['FROM', config.recipientEmail]
+      ];
+      
+      imap.search(searchCriteria, (err, results) => {
+        if (err) {
+          console.error('❌ Error searching emails:', err);
+          imap.end();
+          return;
+        }
+        
+        if (results.length === 0) {
+          console.log('✅ No new emails to process');
+          imap.end();
+          return;
+        }
+        
+        console.log(`📨 Found ${results.length} new emails to process`);
+        
+        // Fetch emails
+        const fetch = imap.fetch(results, {
+          bodies: '',
+          markSeen: false
+        });
+        
+        let processedCount = 0;
+        
+        fetch.on('message', (msg, seqno) => {
+          msg.on('body', (stream) => {
+            let buffer = '';
+            stream.on('data', (chunk) => {
+              buffer += chunk.toString('utf8');
+            });
+            stream.once('end', async () => {
+              const email = Imap.parseHeader(buffer);
+              email.uid = results[seqno - 1];
+              
+              const success = await processEmail(imap, email);
+              if (success) processedCount++;
+            });
+          });
+        });
+        
+        fetch.once('error', (err) => {
+          console.error('❌ Fetch error:', err);
+          imap.end();
+        });
+        
+        fetch.once('end', () => {
+          console.log(`\n📊 Processing complete. Successfully processed: ${processedCount}/${results.length} emails`);
+          imap.end();
+        });
+      });
+    });
+  });
+  
+  imap.once('error', (err) => {
+    console.error('❌ IMAP error:', err);
+    process.exit(1);
+  });
+  
+  imap.once('end', () => {
+    console.log('👋 IMAP connection ended');
+    process.exit(0);
+  });
+  
+  imap.connect();
+}
+
+// Run the email processor
+console.log('🚀 Email-to-API processor started!');
+console.log(`📧 Monitoring emails from: ${config.recipientEmail}`);
+console.log(`🔗 API Base URL: ${config.apiBaseUrl}`);
+
+fetchAndProcessEmails();
