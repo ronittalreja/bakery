@@ -151,18 +151,24 @@ async function processEmail(imap, email) {
     console.log(`🗑️  Cleaned up temp file`);
     
     if (uploadSuccess) {
-      // Move email to processed folder
+      // Mark email as seen to prevent reprocessing
+      imap.addFlags(email.uid, ['\\Seen'], (err) => {
+        if (err) {
+          console.error(`⚠️  Could not mark email as seen:`, err.message);
+        } else {
+          console.log(`✅ Marked email as seen`);
+        }
+      });
+      
+      // Move email to processed folder (async, don't wait for it)
       imap.move(email.uid, config.processedFolder, (err) => {
         if (err) {
           console.error(`⚠️  Could not move email to processed folder:`, err.message);
-          // Mark as read instead
-          imap.addFlags(email.uid, ['\\Seen'], (err) => {
-            if (err) console.error(`⚠️  Could not mark email as read:`, err.message);
-          });
         } else {
           console.log(`📁 Moved email to ${config.processedFolder} folder`);
         }
       });
+      
       return true;
     }
     

@@ -37,6 +37,6 @@ jobs:
           API_URL: https://bakery-backend-kpeo.onrender.com
           GMAIL_EMAIL: monginisshahad@gmail.com
           GMAIL_APP_PASSWORD: jgyl mhui ewjj mjcj
-          RECIPIENT_EMAIL: ${{ github.event.inputs.test_email || 'talrejaronit13@gmail.com' }}
+          RECIPIENT_EMAIL: ${{ github.event.inputs.test_email || 'receipt5@mongini.in' }}
           JWT_SECRET: your_jwt_secret
           NODE_ENV: production
