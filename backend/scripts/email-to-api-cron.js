@@ -15,10 +15,11 @@ const config = {
     host: 'imap.gmail.com',
     port: 993,
     tls: true,
-    connTimeout: 10000, // 10 seconds connection timeout
-    authTimeout: 5000,   // 5 seconds auth timeout
-    tlsOptions: {
-      rejectUnauthorized: false // Accept self-signed certificates
+    connTimeout: 30000, // 30 seconds connection timeout
+    authTimeout: 15000,   // 15 seconds auth timeout
+    keepalive: {
+      interval: 10000,
+      idleInterval: 300000
     }
   },
   recipientEmail: process.env.RECIPIENT_EMAIL || 'receipt5@mongini.in',
