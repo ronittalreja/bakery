@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const FormData = require('form-data');
 const axios = require('axios');
+const jwt = require('jsonwebtoken');
 
 // Configuration
 const config = {
@@ -23,6 +24,7 @@ const config = {
   },
   recipientEmail: process.env.RECIPIENT_EMAIL || 'receipt5@mongini.in',
   apiBaseUrl: process.env.API_URL || 'https://bakery-backend-kpeo.onrender.com',
+  jwtSecret: process.env.JWT_SECRET || 'your_jwt_secret',
   processedFolder: 'PROCESSED_EMAILS',
   tempDir: path.join(__dirname, '../temp-emails')
 };
@@ -45,6 +47,18 @@ function classifyEmail(subject) {
   }
   
   return null;
+}
+
+// Generate JWT token for authentication
+function generateAuthToken() {
+  const payload = {
+    id: 1,
+    username: 'admin',
+    role: 'admin'
+  };
+  
+  const token = jwt.sign(payload, config.jwtSecret, { expiresIn: '1h' });
+  return token;
 }
 
 // Upload PDF to API
@@ -70,8 +84,12 @@ async function uploadToApi(pdfPath, emailType) {
   }
   
   try {
+    const token = generateAuthToken();
+    const headers = formData.getHeaders();
+    headers['Authorization'] = `Bearer ${token}`;
+    
     const response = await axios.post(`${config.apiBaseUrl}${endpoint}`, formData, {
-      headers: formData.getHeaders(),
+      headers: headers,
       maxBodyLength: Infinity,
       maxContentLength: Infinity
     });

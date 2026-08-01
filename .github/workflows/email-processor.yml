@@ -38,4 +38,5 @@ jobs:
           GMAIL_EMAIL: monginisshahad@gmail.com
           GMAIL_APP_PASSWORD: jgyl mhui ewjj mjcj
           RECIPIENT_EMAIL: ${{ github.event.inputs.test_email || 'talrejaronit13@gmail.com' }}
+          JWT_SECRET: your_jwt_secret
           NODE_ENV: production
