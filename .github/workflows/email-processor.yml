@@ -34,7 +34,7 @@ jobs:
           cd backend
           node scripts/email-to-api-cron.js
         env:
-          API_URL: https://bakery-backend-kpeo.onrender.com
+          API_URL: https://bakery-backend-e92k.onrender.com
           GMAIL_EMAIL: monginisshahad@gmail.com
           GMAIL_APP_PASSWORD: jgyl mhui ewjj mjcj
           RECIPIENT_EMAIL: ${{ github.event.inputs.test_email || 'receipt5@mongini.in' }}

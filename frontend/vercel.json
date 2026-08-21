@@ -5,6 +5,6 @@
   "installCommand": "npm install",
   "devCommand": "npm run dev",
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://bakery-backend-kpeo.onrender.com"
+    "NEXT_PUBLIC_API_URL": "https://bakery-backend-e92k.onrender.com"
   }
 }

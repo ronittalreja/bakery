@@ -6,8 +6,8 @@ const http = require('http');
 const https = require('https');
 
 // Configuration
-const BASE_URL = 'https://bakery-backend-kpeo.onrender.com';
-const DOWNLOADS_DIR = path.join(__dirname, '../downloads');
+const BASE_URL = 'https://bakery-backend-e92k.onrender.com';
+const DOWNLOADS_DIR = path.join(__dirname, '../2025');
 
 // API endpoints
 const ENDPOINTS = {
@@ -118,13 +118,13 @@ async function main() {
 
   try {
     // Process Invoices
-    allResults.invoices = await processDirectory('Invoices', ENDPOINTS.invoices);
+    allResults.invoices = await processDirectory('INVOICE', ENDPOINTS.invoices);
     
     // Process Credit Notes (CRDR)
     allResults.creditNotes = await processDirectory('CRDR', ENDPOINTS.creditNotes);
     
     // Process ROS Receipts
-    allResults.rosReceipts = await processDirectory('ROSReceipts', ENDPOINTS.rosReceipts);
+    allResults.rosReceipts = await processDirectory('ROS', ENDPOINTS.rosReceipts);
 
     // Print summary
     console.log('\n=== FINAL SUMMARY ===');

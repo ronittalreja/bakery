@@ -1,38 +1,14 @@
 [
   {
-    "fileName": "CRDR_2_R3309_20260629050611.Pdf",
-    "error": "HTTP 400: Invalid credit note format"
+    "fileName": "CRDR_2_R3309_20251818091805.Pdf",
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"No credit notes found in document\"]}"
   },
   {
-    "fileName": "CRDR_2_R3309_20261709041753.Pdf",
-    "error": "HTTP 400: Invalid credit note format"
+    "fileName": "CRDR_2_R3309_20253617053659.Pdf",
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"No credit notes found in document\"]}"
   },
   {
-    "fileName": "CRDR_2_R3309_20262729122702.Pdf",
-    "error": "HTTP 400: Invalid credit note format"
-  },
-  {
-    "fileName": "CRDR_2_R3309_20262830042824.Pdf",
-    "error": "HTTP 400: Invalid credit note format"
-  },
-  {
-    "fileName": "CRDR_2_R3309_20263229053226.Pdf",
-    "error": "HTTP 400: Invalid credit note format"
-  },
-  {
-    "fileName": "CRDR_2_R3309_20264127064125.Pdf",
-    "error": "HTTP 400: Invalid credit note format"
-  },
-  {
-    "fileName": "CRDR_2_R3309_20264609124608.Pdf",
-    "error": "HTTP 400: Invalid credit note format"
-  },
-  {
-    "fileName": "CRDR_2_R3309_20265425055445.Pdf",
-    "error": "HTTP 400: Invalid credit note format"
-  },
-  {
-    "fileName": "CRDR_2_R3309_20265921045914.Pdf",
-    "error": "HTTP 400: Invalid credit note format"
+    "fileName": "CRDR_2_R3309_20253824113835.Pdf",
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"No credit notes found in document\"]}"
   }
 ]

@@ -1,6 +1,10 @@
 [
   {
-    "fileName": "Invoice_2_R3309_20262730062707.Pdf",
-    "error": "Failed to parse response: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON. Raw response: <!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <title>502</title>\n    <style>@font-face {\n  font-fami"
+    "fileName": "Invoice_2_R3309_20250518060509.Pdf",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Failed to process invoice: connect ETIMEDOUT 151.101.21.137:443; connect ENETUNREACH 2a04:4e42:5::393:443 - Local (:::0)\"}"
+  },
+  {
+    "fileName": "Invoice_2_R3309_20255403065426.Pdf",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Failed to process invoice: connect ETIMEDOUT 146.75.41.137:443; connect ENETUNREACH 2606:4700::6810:4e06:443 - Local (:::0); connect ENETUNREACH 2606:4700::6810:4f06:443 - Local (:::0)\"}"
   }
 ]

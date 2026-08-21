@@ -1,0 +1,586 @@
+[
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250026040053.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250027100012.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250028040033.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250028040042.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250030050015.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250119050136.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250126060122.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250202050216.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250203110259.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250204090217.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250305050320.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250416050435.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250504060500.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250526060506.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250530040538.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250614040602.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250630050648.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250631040638.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250709050728.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250721060746.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250722040743.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250725040753.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250801030826.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250815050833.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250817040811.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250829050826.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250902070954.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250913040918.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20250921050942.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251017051035.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251019051057.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251021121041.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251024041025.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251103041110.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251125041157.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251216041212.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251221041220.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251303041346.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251303101356.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251305041334.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251321041332.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251402041438.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251408041416.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251413041441.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251417041421.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251423041402.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251506041513.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251517041531.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251604041619.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251620061633.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251711041737.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251717051704.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251719041724.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251724041725.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251805041838.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20251807051833.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252015052037.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252115042109.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252129052158.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252203052202.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252210052210.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252307052311.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252313052334.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252401042432.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252410052424.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252418052401.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252418052456.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252518042549.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252524042504.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252529062526.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252603052658.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252608052632.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252611042632.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252612042602.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252618052611.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252731042717.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252807042819.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252810042836.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252816042855.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252905052921.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252929042958.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20252931042919.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253103053135.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253115073141.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253314053350.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253318043300.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253412043444.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253416053459.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253417043402.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253508043507.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253511093518.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253512033535.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253531043524.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253705043752.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253708033706.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253818033836.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253820043845.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253824063818.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20253922043946.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254014044018.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254120044132.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254225054257.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254311044351.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254320044358.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254331044308.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254425044414.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254426094423.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254428044456.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254507034509.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254601044612.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254604044617.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254611044656.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254630044623.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254705084749.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254710044732.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254830044807.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254909034940.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254911044911.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254923034955.Pdf",
+    "error": "HTTP 500: connect ETIMEDOUT 146.75.41.137:443; connect ENETUNREACH 2606:4700::6810:4f06:443 - Local (:::0); connect ENETUNREACH 2606:4700::6810:4e06:443 - Local (:::0)"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20254924034946.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255011045000.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255025035029.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255028045008.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255202045252.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255223035210.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255301045336.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255318045306.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255403045421.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255411055413.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255422055409.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255511045513.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255604045623.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255606045646.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255617035658.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255619045616.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255626035644.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255628045634.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255630045630.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255701045741.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255724045737.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255729055700.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255805035851.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255809045835.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255812045815.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255909045933.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20255915035937.Pdf",
+    "error": "HTTP 500: Column 'item_id' cannot be null"
+  }
+]

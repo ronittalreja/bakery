@@ -1,0 +1,42 @@
+name: Cloudinary Cleanup Cron Job
+
+on:
+  schedule:
+    # Run every Sunday at 2 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch: # Allow manual triggering
+    inputs:
+      days_old:
+        description: 'Delete files older than X days (default: 7)'
+        required: false
+        type: number
+        default: 7
+
+jobs:
+  cleanup-cloudinary:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: |
+          cd backend
+          npm install
+          
+      - name: Run Cloudinary cleanup
+        run: |
+          cd backend
+          node scripts/cleanupCloudinary.js ${{ github.event.inputs.days_old || 7 }}
+        env:
+          CLOUDINARY_CLOUD_NAME: nazmrjoo
+          CLOUDINARY_API_KEY: 778688323978463
+          CLOUDINARY_API_SECRET: e2flnup3p67hyMt3d0g3pAzpi0E
+          CLOUDINARY_URL: cloudinary://778688323978463:e2flnup3p67hyMt3d0g3pAzpi0E@nazmrjoo
+          NODE_ENV: production

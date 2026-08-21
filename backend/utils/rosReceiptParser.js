@@ -263,12 +263,12 @@ function extractBillsData(text) {
     
     // Look for bill patterns - try multiple approaches
     
-    // Pattern 1: Look for CN (Credit Note) entries - specific format with /CN/ followed by 5 digits
-    const cnMatches = text.match(/CN(\d{2}\/\d{2}\/\d{4})([A-Z0-9\/-]*\/CN\/\d{5})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/gi);
+    // Pattern 1: Look for CN (Credit Note) entries - specific format with /CN/ followed by 5 or 6 digits
+    const cnMatches = text.match(/CN(\d{2}\/\d{2}\/\d{4})([A-Z0-9\/-]*\/CN\/\d{5,6})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/gi);
     if (cnMatches) {
       console.log('Found CN matches:', cnMatches.length);
       cnMatches.forEach(match => {
-        const parts = match.match(/CN(\d{2}\/\d{2}\/\d{4})([A-Z0-9\/-]*\/CN\/\d{5})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/i);
+        const parts = match.match(/CN(\d{2}\/\d{2}\/\d{4})([A-Z0-9\/-]*\/CN\/\d{5,6})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/i);
         if (parts) {
           bills.push({
             doc_type: 'CN',
@@ -285,12 +285,12 @@ function extractBillsData(text) {
     if (bills.filter(b => b.doc_type === 'CN').length === 0) {
       console.log('Trying fallback CN pattern...');
       // Handle case where invoice number might be concatenated with amount
-      // Pattern: CN + date + MU2627/CN/XXXXX + amount + CR
-      const cnFallbackMatches = text.match(/CN(\d{2}\/\d{2}\/\d{4})(MU\d{4}\/CN\/)(\d{5})([₹]?\s*[\d,]+(?:\.\d{2})?)(Cr|Dr)/gi);
+      // Pattern: CN + date + MU2627/CN/ + 5 or 6 digit invoice number + amount + CR
+      const cnFallbackMatches = text.match(/CN(\d{2}\/\d{2}\/\d{4})(MU\d{4}\/CN\/)(\d{5,6})([₹]?\s*[\d,]+(?:\.\d{2})?)(Cr|Dr)/gi);
       if (cnFallbackMatches) {
         console.log('Found CN fallback matches:', cnFallbackMatches.length);
         cnFallbackMatches.forEach(match => {
-          const parts = match.match(/CN(\d{2}\/\d{2}\/\d{4})(MU\d{4}\/CN\/)(\d{5})([₹]?\s*[\d,]+(?:\.\d{2})?)(Cr|Dr)/i);
+          const parts = match.match(/CN(\d{2}\/\d{2}\/\d{4})(MU\d{4}\/CN\/)(\d{5,6})([₹]?\s*[\d,]+(?:\.\d{2})?)(Cr|Dr)/i);
           if (parts) {
             // Invoice number is in parts[3], amount is in parts[4]
             let amountStr = parts[4];
@@ -312,12 +312,12 @@ function extractBillsData(text) {
       }
     }
 
-    // Pattern 2: Look for SR (Sales Return) entries - flexible format for MUMXXXXX/XXXXX
-    const srMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{2}\/\d{5})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/gi);
+    // Pattern 2: Look for SR (Sales Return) entries - flexible format for MUMXXXXX/XXXXX (5 or 6 digits)
+    const srMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{2}\/\d{5,6})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/gi);
     if (srMatches) {
       console.log('Found SR matches:', srMatches.length);
       srMatches.forEach(match => {
-        const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{2}\/\d{5})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/i);
+        const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{2}\/\d{5,6})(\d{3,}(?:\.\d{2})?)(Cr|Dr)/i);
         if (parts) {
           bills.push({
             doc_type: 'SR',
@@ -334,13 +334,13 @@ function extractBillsData(text) {
     if (bills.filter(b => b.doc_type === 'SR').length === 0) {
       console.log('Trying fallback SR pattern for MUM2627 format...');
       // Handle case where invoice number comes after MUM2627/ before amount
-      // Pattern: SR + date + MUM2627/ + [optional 5-digit invoice number] + amount + DR
+      // Pattern: SR + date + MUM2627/ + [optional 5 or 6 digit invoice number] + amount + DR
       // Amount can be with or without decimal, with or without commas
-      const srFallbackMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{5})?([₹]?\s*[\d,]+\.?\d*)(Cr|Dr)/gi);
+      const srFallbackMatches = text.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{5,6})?([₹]?\s*[\d,]+\.?\d*)(Cr|Dr)/gi);
       if (srFallbackMatches) {
         console.log('Found SR fallback matches:', srFallbackMatches.length);
         srFallbackMatches.forEach(match => {
-          const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{5})?([₹]?\s*[\d,]+\.?\d*)(Cr|Dr)/i);
+          const parts = match.match(/SR(\d{2}\/\d{2}\/\d{4})(MUM\d{4}\/?)(\d{5,6})?([₹]?\s*[\d,]+\.?\d*)(Cr|Dr)/i);
           if (parts) {
             let amountStr = parts[4];
             let billNumber = parts[2].trim();
@@ -358,9 +358,10 @@ function extractBillsData(text) {
             console.log('SR Raw number without commas:', rawNumber);
             
             // Check if invoice number is prepended to amount (happens in bulk uploads)
-            // Pattern: 5 digits (invoice) followed by amount
+            // Pattern: 5 or 6 digits (invoice) followed by amount
             // Example: 3522715627 -> invoice: 35227, amount: 15627
-            const amountWithInvoiceMatch = rawNumber.match(/^(\d{5})(\d+)(?:\.(\d{2}))?$/);
+            // Example: 10000015627 -> invoice: 100000, amount: 15627
+            const amountWithInvoiceMatch = rawNumber.match(/^(\d{5,6})(\d+)(?:\.(\d{2}))?$/);
             if (amountWithInvoiceMatch && !parts[3]) {
               // Invoice number is prepended to amount, extract it
               billNumber = billNumber + amountWithInvoiceMatch[1];

@@ -23,7 +23,7 @@ const config = {
     }
   },
   recipientEmail: process.env.RECIPIENT_EMAIL || 'receipt5@mongini.in',
-  apiBaseUrl: process.env.API_URL || 'https://bakery-backend-kpeo.onrender.com',
+  apiBaseUrl: process.env.API_URL || 'https://bakery-backend-e92k.onrender.com',
   jwtSecret: process.env.JWT_SECRET || 'your_jwt_secret',
   processedFolder: 'PROCESSED_EMAILS',
   tempDir: path.join(__dirname, '../temp-emails')

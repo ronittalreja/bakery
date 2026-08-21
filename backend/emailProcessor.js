@@ -172,8 +172,21 @@ class EmailProcessor {
       // Upload to backend
       await this.uploadToBackend(emailData, attachments);
       
-      // Mark as processed
+      // Mark as processed locally
       this.markEmailAsProcessed(messageId, emailType, 'success');
+      
+      // Add BAKERY-PROCESSED label to email in Gmail
+      try {
+        msg.addFlags(['BAKERY-PROCESSED'], (err) => {
+          if (err) {
+            console.error('Failed to add label to email:', err);
+          } else {
+            console.log(`✅ Added BAKERY-PROCESSED label to email: ${parsed.subject}`);
+          }
+        });
+      } catch (labelError) {
+        console.error('Error adding label:', labelError);
+      }
 
     } catch (error) {
       console.error(`❌ Error processing email:`, error);
@@ -198,35 +211,65 @@ class EmailProcessor {
 
           console.log(`📬 Total messages in INBOX: ${box.messages.total}`);
 
-          // Search for unread emails from receipt5@mongini.in
-          imap.search(['UNSEEN', ['FROM', 'receipt5@mongini.in']], (err, results) => {
+          // Get today's date in the format IMAP expects (DD-MMM-YYYY)
+          const today = new Date();
+          const todayStr = today.toLocaleDateString('en-US', { 
+            day: '2-digit', 
+            month: 'short', 
+            year: 'numeric' 
+          }).replace(',', '');
+
+          console.log(`📅 Searching for emails from: ${todayStr}`);
+
+          // Search for emails from today that are NOT labeled as "BAKERY-PROCESSED"
+          // This allows processing even if email was read on phone
+          // We use a custom label to track processed emails instead of UNSEEN
+          imap.search(
+            ['FROM', 'receipt5@mongini.in', ['SINCE', todayStr], ['NOT', ['KEYWORD', 'BAKERY-PROCESSED']]],
+            (err, results) => {
             if (err) {
+              console.error('Search error:', err);
+              imap.end();
               reject(err);
               return;
             }
 
             if (!results || results.length === 0) {
-              console.log('📭 No new emails from receipt5@mongini.in');
+              console.log('📭 No new emails from receipt5@mongini.in for today');
               imap.end();
               resolve();
               return;
             }
 
-            console.log(`📨 Found ${results.length} new emails from receipt5@mongini.in`);
+            console.log(`📨 Found ${results.length} new emails from receipt5@mongini.in for today`);
 
-            const fetch = imap.fetch(results, { bodies: '' });
+            // Process emails sequentially to avoid overwhelming the system
+            const fetch = imap.fetch(results, { bodies: '', struct: true });
+            let processedCount = 0;
+            let errorCount = 0;
             
             fetch.on('message', (msg, seqno) => {
-              this.processEmail(msg, seqno);
+              msg.on('body', (stream, info) => {
+                this.processEmail(msg, seqno)
+                  .then(() => {
+                    processedCount++;
+                    console.log(`✅ Processed ${processedCount}/${results.length} emails`);
+                  })
+                  .catch((error) => {
+                    errorCount++;
+                    console.error(`❌ Error processing email ${processedCount + errorCount}:`, error.message);
+                  });
+              });
             });
 
             fetch.once('error', (err) => {
               console.error('Fetch error:', err);
+              imap.end();
               reject(err);
             });
 
             fetch.once('end', () => {
-              console.log('✅ Done fetching all messages');
+              console.log(`✅ Done fetching all messages. Success: ${processedCount}, Errors: ${errorCount}`);
               imap.end();
               resolve();
             });
@@ -242,6 +285,13 @@ class EmailProcessor {
       imap.once('end', () => {
         console.log('🔌 Connection ended');
       });
+
+      // Add timeout to prevent infinite loops
+      setTimeout(() => {
+        console.log('⏱️ Timeout reached, forcing connection close');
+        imap.end();
+        resolve();
+      }, 300000); // 5 minutes max
 
       imap.connect();
     });

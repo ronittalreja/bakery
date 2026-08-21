@@ -2,56 +2,40 @@ const fs = require('fs');
 const fsPromises = require('fs').promises;
 const path = require('path');
 const FormData = require('form-data');
-const http = require('http');
-const https = require('https');
+const axios = require('axios');
 
 // Configuration
-const BASE_URL = 'https://bakery-backend-kpeo.onrender.com';
-const DOWNLOADS_DIR = path.join(__dirname, '../downloads');
+const BASE_URL = 'https://bakery-backend-e92k.onrender.com';
+const DOWNLOADS_DIR = path.join(__dirname, '../2025');
 const ENDPOINT = '/api/credit-notes/upload';
 const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTYsInVzZXJuYW1lIjoiUjMzMDkiLCJyb2xlIjoic3RhZmYiLCJpc0RlbW8iOmZhbHNlLCJpYXQiOjE3ODUwNzU2MTgsImV4cCI6MTgxNjYxMTYxOH0.KnhlHYCbdce9-hRI25m2KMc_0R9tkoByrcvMH2DARzs';
 
 // Helper function to make HTTP request with file upload
-function uploadFile(filePath, token) {
-  return new Promise((resolve, reject) => {
-    const form = new FormData();
-    const fileStream = fs.createReadStream(filePath);
-    form.append('file', fileStream, path.basename(filePath));
-    
-    const url = new URL(BASE_URL + ENDPOINT);
-    const options = {
-      method: 'POST',
+async function uploadFile(filePath, token) {
+  const form = new FormData();
+  form.append('file', fs.createReadStream(filePath));
+  
+  try {
+    const response = await axios.post(`${BASE_URL}${ENDPOINT}`, form, {
       headers: {
         ...form.getHeaders(),
         'Authorization': `Bearer ${token}`
-      }
-    };
-
-    const protocol = url.protocol === 'https:' ? https : http;
-    const req = protocol.request(url, options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          const response = JSON.parse(data);
-          if (res.statusCode >= 200 && res.statusCode < 300) {
-            resolve(response);
-          } else {
-            reject(new Error(`HTTP ${res.statusCode}: ${response.error || response.message || 'Upload failed'}`));
-          }
-        } catch (e) {
-          reject(new Error(`Failed to parse response: ${e.message}. Raw response: ${data.substring(0, 200)}`));
-        }
-      });
-    });
-
-    req.on('error', (err) => {
-      console.error(`  Request error: ${err.message}`);
-      reject(err);
+      },
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
+      timeout: 60000 // 60 second timeout
     });
     
-    form.pipe(req);
-  });
+    return response.data;
+  } catch (error) {
+    if (error.response) {
+      throw new Error(`HTTP ${error.response.status}: ${JSON.stringify(error.response.data)}`);
+    } else if (error.request) {
+      throw new Error('No response from server - connection timeout or server down');
+    } else {
+      throw new Error(`Request setup error: ${error.message}`);
+    }
+  }
 }
 
 // Main function
