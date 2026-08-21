@@ -32,7 +32,7 @@ jobs:
       - name: Run email processor
         run: |
           cd backend
-          node scripts/email-to-api-cron.js
+          node emailProcessor.js
         env:
           API_URL: https://bakery-backend-e92k.onrender.com
           GMAIL_EMAIL: monginisshahad@gmail.com
