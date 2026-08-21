@@ -225,7 +225,7 @@ class EmailProcessor {
           // This allows processing even if email was read on phone
           // We use a custom label to track processed emails instead of UNSEEN
           imap.search(
-            ['FROM', 'receipt5@mongini.in', ['SINCE', todayStr], ['NOT', ['KEYWORD', 'BAKERY-PROCESSED']]],
+            [['FROM', 'receipt5@mongini.in'], ['SINCE', todayStr], ['UNKEYWORD', 'BAKERY-PROCESSED']],
             (err, results) => {
             if (err) {
               console.error('Search error:', err);
