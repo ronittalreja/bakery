@@ -117,9 +117,9 @@ class EmailProcessor {
     }
   }
 
-  async processEmail(msg, seqno) {
+  async processEmail(buffer, seqno) {
     try {
-      const parsed = await simpleParser(msg);
+      const parsed = await simpleParser(buffer);
       const messageId = parsed.messageId;
       
       // Skip if already processed
@@ -175,22 +175,12 @@ class EmailProcessor {
       // Mark as processed locally
       this.markEmailAsProcessed(messageId, emailType, 'success');
       
-      // Add BAKERY-PROCESSED label to email in Gmail
-      try {
-        msg.addFlags(['BAKERY-PROCESSED'], (err) => {
-          if (err) {
-            console.error('Failed to add label to email:', err);
-          } else {
-            console.log(`✅ Added BAKERY-PROCESSED label to email: ${parsed.subject}`);
-          }
-        });
-      } catch (labelError) {
-        console.error('Error adding label:', labelError);
-      }
+      // Note: Label functionality disabled due to stream handling changes
+      // Labels will be added in a future update with proper message handling
 
     } catch (error) {
       console.error(`❌ Error processing email:`, error);
-      if (parsed.messageId) {
+      if (parsed && parsed.messageId) {
         this.markEmailAsProcessed(parsed.messageId, 'error', error.message);
       }
     }
@@ -216,16 +206,17 @@ class EmailProcessor {
           const todayStr = today.toLocaleDateString('en-US', { 
             day: '2-digit', 
             month: 'short', 
-            year: 'numeric' 
+            year: 'numeric',
+            timeZone: 'Asia/Kolkata'
           }).replace(',', '');
 
           console.log(`📅 Searching for emails from: ${todayStr}`);
 
-          // Search for emails from today that are NOT labeled as "BAKERY-PROCESSED"
-          // This allows processing even if email was read on phone
-          // We use a custom label to track processed emails instead of UNSEEN
+          // Search for emails from today
+          // Label functionality disabled due to stream handling changes
+          // We rely on local processed_emails.json to track processed emails
           imap.search(
-            [['FROM', 'receipt5@mongini.in'], ['SINCE', todayStr], ['UNKEYWORD', 'BAKERY-PROCESSED']],
+            [['FROM', 'receipt5@mongini.in'], ['SINCE', todayStr]],
             (err, results) => {
             if (err) {
               console.error('Search error:', err);
@@ -249,16 +240,23 @@ class EmailProcessor {
             let errorCount = 0;
             
             fetch.on('message', (msg, seqno) => {
+              let buffer = '';
+              
               msg.on('body', (stream, info) => {
-                this.processEmail(msg, seqno)
-                  .then(() => {
+                stream.on('data', (chunk) => {
+                  buffer += chunk.toString('utf8');
+                });
+                
+                stream.once('end', async () => {
+                  try {
+                    await this.processEmail(buffer, seqno);
                     processedCount++;
                     console.log(`✅ Processed ${processedCount}/${results.length} emails`);
-                  })
-                  .catch((error) => {
+                  } catch (error) {
                     errorCount++;
                     console.error(`❌ Error processing email ${processedCount + errorCount}:`, error.message);
-                  });
+                  }
+                });
               });
             });
 
