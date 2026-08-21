@@ -10,7 +10,9 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   ssl: process.env.NODE_ENV === 'production' ? {
     rejectUnauthorized: false
-  } : false
+  } : (process.env.DB_HOST && process.env.DB_HOST.includes('aivencloud.com') ? {
+    rejectUnauthorized: false
+  } : false)
 });
 
 module.exports = pool;
