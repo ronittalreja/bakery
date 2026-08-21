@@ -189,12 +189,14 @@ class EmailProcessor {
   async fetchEmails() {
     return new Promise((resolve, reject) => {
       const imap = new Imap(this.imapConfig);
+      let timeoutId;
 
       imap.once('ready', () => {
         console.log('🔗 Connected to Gmail');
         
         imap.openBox('INBOX', false, (err, box) => {
           if (err) {
+            clearTimeout(timeoutId);
             reject(err);
             return;
           }
@@ -219,6 +221,7 @@ class EmailProcessor {
             [['FROM', 'receipt5@mongini.in'], ['SINCE', todayStr]],
             (err, results) => {
             if (err) {
+              clearTimeout(timeoutId);
               console.error('Search error:', err);
               imap.end();
               reject(err);
@@ -227,6 +230,7 @@ class EmailProcessor {
 
             if (!results || results.length === 0) {
               console.log('📭 No new emails from receipt5@mongini.in for today');
+              clearTimeout(timeoutId);
               imap.end();
               resolve();
               return;
@@ -261,6 +265,7 @@ class EmailProcessor {
             });
 
             fetch.once('error', (err) => {
+              clearTimeout(timeoutId);
               console.error('Fetch error:', err);
               imap.end();
               reject(err);
@@ -268,6 +273,7 @@ class EmailProcessor {
 
             fetch.once('end', () => {
               console.log(`✅ Done fetching all messages. Success: ${processedCount}, Errors: ${errorCount}`);
+              clearTimeout(timeoutId);
               imap.end();
               resolve();
             });
@@ -276,16 +282,18 @@ class EmailProcessor {
       });
 
       imap.once('error', (err) => {
+        clearTimeout(timeoutId);
         console.error('IMAP error:', err);
         reject(err);
       });
 
       imap.once('end', () => {
+        clearTimeout(timeoutId);
         console.log('🔌 Connection ended');
       });
 
       // Add timeout to prevent infinite loops
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         console.log('⏱️ Timeout reached, forcing connection close');
         imap.end();
         resolve();
