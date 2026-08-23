@@ -3,6 +3,7 @@ const { simpleParser } = require('mailparser');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+const FormData = require('form-data');
 require('dotenv').config();
 
 class EmailProcessor {
@@ -81,8 +82,10 @@ class EmailProcessor {
       // Add attachments if any
       if (attachments && attachments.length > 0) {
         attachments.forEach((attachment, index) => {
-          const buffer = Buffer.isBuffer(attachment.content) ? attachment.content : Buffer.from(attachment.content);
-          formData.append('file', buffer, attachment.filename);
+          formData.append('file', attachment.content, {
+            filename: attachment.filename,
+            contentType: attachment.contentType
+          });
         });
       }
 
@@ -161,9 +164,21 @@ class EmailProcessor {
         for (const attachment of parsed.attachments) {
           if (attachment.contentType === 'application/pdf' || 
               attachment.contentType.includes('image')) {
+            // Handle different attachment content formats
+            let content;
+            if (Buffer.isBuffer(attachment.content)) {
+              content = attachment.content;
+            } else if (attachment.content instanceof Uint8Array) {
+              content = Buffer.from(attachment.content);
+            } else if (typeof attachment.content === 'string') {
+              content = Buffer.from(attachment.content, 'base64');
+            } else {
+              content = Buffer.from(attachment.content);
+            }
+            
             attachments.push({
               filename: attachment.filename,
-              content: attachment.content,
+              content: content,
               contentType: attachment.contentType
             });
           }
