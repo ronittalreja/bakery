@@ -101,8 +101,12 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
           throw new Error('No authentication token found');
         }
 
-        console.log('Fetching insights for month:', selectedMonth);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/insights/monthly/${selectedMonth}`, {
+        // Construct month string from selectedMonthOnly and selectedYear
+        const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
+        const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
+
+        console.log('Fetching insights for month:', monthStr);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/insights/monthly/${monthStr}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -126,7 +130,7 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
     };
 
     fetchInsights();
-  }, [selectedMonth]);
+  }, [selectedMonthOnly, selectedYear]);
 
   const formatCurrency = (amount: number | undefined) => `₹${(amount || 0).toLocaleString()}`;
   const formatPercentage = (value: number | undefined) => `${(value || 0).toFixed(1)}%`;
@@ -161,7 +165,7 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
                 Business Insights
               </h1>
               <p className="text-slate-600 mt-1 text-sm sm:text-base">
-                Comprehensive financial analysis and performance metrics for {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                Comprehensive financial analysis and performance metrics for {selectedMonthOnly === 0 ? 'Full Year' : getAvailableMonths(selectedYear).find(m => m.value === selectedMonthOnly)?.label} {selectedYear}
               </p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">

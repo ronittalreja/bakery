@@ -327,7 +327,8 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
   // Initialize with current month, then drive via selectedYear and selectedMonthOnly
   useEffect(() => {
     if (mainTab === 'summary') {
-      const monthStr = selectedYear.toString() + '-' + selectedMonthOnly.toString().padStart(2, '0');
+      const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
+      const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
       setCustomMonth(monthStr);
       fetchReturns(monthStr);
     }
@@ -598,7 +599,7 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
                 Returns Summary
               </h1>
               <p className="text-slate-600 mt-1 text-sm sm:text-base">
-                Returns overview for {new Date(customMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                Returns overview for {selectedMonthOnly === 0 ? 'Full Year' : getAvailableMonths(selectedYear).find(m => m.value === selectedMonthOnly)?.label} {selectedYear}
               </p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">

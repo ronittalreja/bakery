@@ -83,7 +83,8 @@ export function ExpensesTrackingPage({ onBack }: ExpensesTrackingPageProps) {
         }
 
         // Fetch expenses
-        const expensesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/expenses?month=${selectedMonth}&year=${selectedYear}`, {
+        const monthParam = selectedMonth === 0 ? 'all' : selectedMonth;
+        const expensesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/expenses?month=${monthParam}&year=${selectedYear}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
