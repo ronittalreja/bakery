@@ -35,6 +35,7 @@ jobs:
           node emailProcessor.js
         env:
           API_URL: https://bakery-backend-e92k.onrender.com
+          BACKEND_URL: https://bakery-backend-e92k.onrender.com
           GMAIL_EMAIL: monginisshahad@gmail.com
           GMAIL_APP_PASSWORD: jgyl mhui ewjj mjcj
           RECIPIENT_EMAIL: ${{ github.event.inputs.test_email || 'receipt5@mongini.in' }}
