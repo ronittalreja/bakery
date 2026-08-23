@@ -175,7 +175,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       const token = getAuthToken();
       if (!token) return;
 
-      const monthParam = selectedMonth === 0 ? 'all' : selectedMonth;
+      const monthParam = selectedMonth === 0 ? `${selectedYear}-all` : selectedMonth;
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/invoices?month=${monthParam}&year=${selectedYear}`,
         {
@@ -212,7 +212,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       }
 
       // Use the same API endpoint as staff dashboard
-      const monthParam = selectedMonth === 0 ? 'all' : selectedMonth.toString().padStart(2, '0');
+      const monthParam = selectedMonth === 0 ? `${selectedYear}-all` : selectedMonth.toString().padStart(2, '0');
       const yearStr = selectedYear.toString();
       const monthYear = selectedMonth === 0 ? `${yearStr}-all` : `${yearStr}-${monthParam}`;
       
@@ -263,7 +263,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
         return;
       }
 
-      const monthParam = selectedMonth === 0 ? 'all' : selectedMonth.toString().padStart(2, '0');
+      const monthParam = selectedMonth === 0 ? `${selectedYear}-all` : selectedMonth.toString().padStart(2, '0');
       const yearStr = selectedYear.toString();
       const monthYear = selectedMonth === 0 ? `${yearStr}-all` : `${yearStr}-${monthParam}`;
       
@@ -304,7 +304,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       const token = getAuthToken();
       if (!token) return;
 
-      const monthParam = selectedMonth === 0 ? 'all' : selectedMonth;
+      const monthParam = selectedMonth === 0 ? `${selectedYear}-all` : selectedMonth;
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/invoices/from-ros-receipts?month=${monthParam}&year=${selectedYear}`,
         {
@@ -332,7 +332,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       const token = getAuthToken();
       if (!token) return;
 
-      const monthParam = selectedMonth === 0 ? 'all' : selectedMonth;
+      const monthParam = selectedMonth === 0 ? `${selectedYear}-all` : selectedMonth;
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/credit-notes/from-ros-receipts?month=${monthParam}&year=${selectedYear}`,
         {

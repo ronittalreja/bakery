@@ -83,7 +83,7 @@ export function ExpensesTrackingPage({ onBack }: ExpensesTrackingPageProps) {
         }
 
         // Fetch expenses
-        const monthParam = selectedMonth === 0 ? 'all' : selectedMonth;
+        const monthParam = selectedMonth === 0 ? `${selectedYear}-all` : selectedMonth;
         const expensesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/expenses?month=${monthParam}&year=${selectedYear}`, {
           headers: {
             Authorization: `Bearer ${token}`,

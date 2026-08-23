@@ -7,6 +7,64 @@ const getAllRosReceipts = async (req, res) => {
   try {
     const { month } = req.query;
     
+    // Handle "all" case for full year data
+    if (month && (month === 'all' || month.includes('-all'))) {
+      let yearToUse;
+      if (month.includes('-all')) {
+        yearToUse = month.split('-')[0];
+      } else {
+        yearToUse = new Date().getFullYear().toString();
+      }
+      
+      if (!yearToUse || !/^\d{4}$/.test(yearToUse)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid year format' 
+        });
+      }
+      
+      // Return demo data if demo user
+      if (req.isDemo) {
+        const demoRosReceipts = getDemoData('rosReceipts');
+        const filteredReceipts = demoRosReceipts.filter(receipt => {
+          const receiptDate = new Date(receipt.receipt_date);
+          return receiptDate.getFullYear().toString() === yearToUse;
+        });
+        
+        const rosReceipts = filteredReceipts.map(row => ({
+          id: row.id,
+          receiptNumber: row.receipt_number,
+          receiptDate: row.receipt_date,
+          bills: row.bills,
+          createdAt: row.created_at
+        }));
+        
+        return res.json({ 
+          success: true, 
+          rosReceipts 
+        });
+      }
+      
+      const query = `
+        SELECT 
+          id,
+          receipt_number,
+          receipt_date,
+          bills,
+          created_at
+        FROM ros_receipts
+        WHERE YEAR(receipt_date) = ?
+        ORDER BY receipt_date DESC, created_at DESC
+      `;
+      
+      const [rosReceipts] = await db.execute(query, [yearToUse]);
+      
+      return res.json({ 
+        success: true, 
+        rosReceipts 
+      });
+    }
+    
     // Return demo data if demo user
     if (req.isDemo) {
       const demoRosReceipts = getDemoData('rosReceipts');
@@ -20,18 +78,13 @@ const getAllRosReceipts = async (req, res) => {
         id: row.id,
         receiptNumber: row.receipt_number,
         receiptDate: row.receipt_date,
-        receivedFrom: row.received_from,
-        totalAmount: parseFloat(row.total_amount),
-        paymentMethod: row.payment_method,
         bills: row.bills,
-        fileName: row.file_name,
-        originalName: row.original_name,
         createdAt: row.created_at
       }));
       
-      return res.json({
-        success: true,
-        rosReceipts
+      return res.json({ 
+        success: true, 
+        rosReceipts 
       });
     }
     
@@ -40,12 +93,7 @@ const getAllRosReceipts = async (req, res) => {
         id,
         receipt_number,
         receipt_date,
-        received_from,
-        total_amount,
-        payment_method,
         bills,
-        file_name,
-        original_name,
         created_at
       FROM ros_receipts
     `;
