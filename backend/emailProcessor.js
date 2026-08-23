@@ -288,7 +288,7 @@ class EmailProcessor {
                     console.log(`✅ Processed ${processedCount}/${results.length} emails`);
                     
                     // Add BAKERY-PROCESSED label to email after successful processing
-                    msg.addFlags(['BAKERY-PROCESSED'], (err) => {
+                    imap.addFlags(seqno, ['BAKERY-PROCESSED'], (err) => {
                       if (err) {
                         console.error('Failed to add label:', err.message);
                       } else {

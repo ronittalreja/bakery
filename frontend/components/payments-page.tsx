@@ -101,6 +101,12 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
     return { value: monthNumber, label: monthName };
   });
 
+  // Generate year options from 2023 to current year
+  const yearOptions = Array.from({ length: currentYear - 2023 + 1 }, (_, i) => {
+    const year = 2023 + i;
+    return { value: year, label: year.toString() };
+  });
+
   useEffect(() => {
     if (user) {
       fetchRosReceipts().then(() => {
@@ -466,7 +472,11 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={currentYear.toString()}>{currentYear}</SelectItem>
+                {yearOptions.map((year) => (
+                  <SelectItem key={year.value} value={year.value.toString()}>
+                    {year.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
