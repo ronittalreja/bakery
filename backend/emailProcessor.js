@@ -205,8 +205,7 @@ class EmailProcessor {
       // Mark as processed locally
       this.markEmailAsProcessed(messageId, emailType, 'success');
       
-      // Note: Label functionality disabled due to stream handling changes
-      // Labels will be added in a future update with proper message handling
+      // Note: Label is added in fetch handler after successful processing
 
     } catch (error) {
       console.error(`❌ Error processing email:`, error.message);
@@ -245,11 +244,11 @@ class EmailProcessor {
 
           console.log(`📅 Searching for emails from: ${todayStr}`);
 
-          // Search for emails from today
-          // Label functionality disabled due to stream handling changes
-          // We rely on local processed_emails.json to track processed emails
+          // Search for emails from today that are NOT labeled as "BAKERY-PROCESSED"
+          // This allows processing even if email was read on phone
+          // We use a custom label to track processed emails instead of UNSEEN
           imap.search(
-            [['FROM', 'receipt5@mongini.in'], ['SINCE', todayStr]],
+            [['FROM', 'receipt5@mongini.in'], ['SINCE', todayStr], ['UNKEYWORD', 'BAKERY-PROCESSED']],
             (err, results) => {
             if (err) {
               clearTimeout(timeoutId);
@@ -287,6 +286,15 @@ class EmailProcessor {
                     await this.processEmail(buffer, seqno);
                     processedCount++;
                     console.log(`✅ Processed ${processedCount}/${results.length} emails`);
+                    
+                    // Add BAKERY-PROCESSED label to email after successful processing
+                    msg.addFlags(['BAKERY-PROCESSED'], (err) => {
+                      if (err) {
+                        console.error('Failed to add label:', err.message);
+                      } else {
+                        console.log(`✅ Added BAKERY-PROCESSED label to email`);
+                      }
+                    });
                   } catch (error) {
                     errorCount++;
                     console.error(`❌ Error processing email ${processedCount + errorCount}:`, error.message);
