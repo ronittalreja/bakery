@@ -81,7 +81,8 @@ class EmailProcessor {
       // Add attachments if any
       if (attachments && attachments.length > 0) {
         attachments.forEach((attachment, index) => {
-          formData.append(`file`, attachment.content, attachment.filename);
+          const buffer = Buffer.isBuffer(attachment.content) ? attachment.content : Buffer.from(attachment.content);
+          formData.append('file', buffer, attachment.filename);
         });
       }
 
