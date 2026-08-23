@@ -55,11 +55,17 @@ const getAllRosReceipts = async (req, res) => {
     if (month) {
       query += ` WHERE DATE_FORMAT(receipt_date, '%Y-%m') = ?`;
       params.push(month);
+      console.log('Filtering ROS receipts by month:', month);
     }
     
     query += ` ORDER BY receipt_date DESC, created_at DESC`;
     
+    console.log('ROS receipts query:', query);
+    console.log('ROS receipts params:', params);
+    
     const [rows] = await db.execute(query, params);
+    
+    console.log('ROS receipts found:', rows.length);
     
     const rosReceipts = rows.map(row => ({
       id: row.id,
