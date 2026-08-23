@@ -74,8 +74,13 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
     return years;
   };
 
-  const getAvailableMonths = () => {
+  const getAvailableMonths = (year: number) => {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1;
+    
     const months = [
+      { value: 0, label: 'Full Year' },
       { value: 1, label: 'January' },
       { value: 2, label: 'February' },
       { value: 3, label: 'March' },
@@ -89,6 +94,13 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
       { value: 11, label: 'November' },
       { value: 12, label: 'December' }
     ];
+    
+    // If current year, only show months up to current month
+    if (year === currentYear) {
+      return months.filter(m => m.value === 0 || m.value <= currentMonth);
+    }
+    
+    // For past years, show all months
     return months;
   };
 
@@ -595,7 +607,7 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
                   <SelectValue placeholder="Month" />
                 </SelectTrigger>
                 <SelectContent>
-                  {getAvailableMonths().map((month) => (
+                  {getAvailableMonths(selectedYear).map((month) => (
                     <SelectItem key={month.value} value={month.value.toString()}>
                       {month.label}
                     </SelectItem>
