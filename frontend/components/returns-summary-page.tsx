@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileText, Calendar, TrendingDown, ArrowLeft, BarChart3, TrendingUp, Activity, AlertTriangle, DollarSign } from "lucide-react";
 import { useDateContext } from "@/hooks/use-date-context";
 import { formatDisplayDate, formatDate } from "@/lib/dateUtils";
@@ -54,6 +55,8 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [customMonth, setCustomMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonthOnly, setSelectedMonthOnly] = useState(new Date().getMonth() + 1);
 
   // Insider tab states
   const [insiderDate, setInsiderDate] = useState(new Date().toISOString().split('T')[0]);
@@ -61,6 +64,33 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
   const [grmProcessedItems, setGrmProcessedItems] = useState<any[]>([]);
   const [insiderLoading, setInsiderLoading] = useState(false);
   const [insiderError, setInsiderError] = useState("");
+
+  const getAvailableYears = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let year = currentYear; year >= 2023; year--) {
+      years.push({ value: year, label: year.toString() });
+    }
+    return years;
+  };
+
+  const getAvailableMonths = () => {
+    const months = [
+      { value: 1, label: 'January' },
+      { value: 2, label: 'February' },
+      { value: 3, label: 'March' },
+      { value: 4, label: 'April' },
+      { value: 5, label: 'May' },
+      { value: 6, label: 'June' },
+      { value: 7, label: 'July' },
+      { value: 8, label: 'August' },
+      { value: 9, label: 'September' },
+      { value: 10, label: 'October' },
+      { value: 11, label: 'November' },
+      { value: 12, label: 'December' }
+    ];
+    return months;
+  };
 
   const fetchReturns = async (month: string) => {
     setIsLoading(true);
@@ -158,7 +188,7 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
         }, {})
       );
       
-      setReturns(monthlyGrouped);
+      setReturns(monthlyGrouped as ReturnItem[]);
       setSummary(monthlySummary);
       
     } catch (err: any) {
@@ -282,12 +312,14 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
     }
   }, [insiderDate]);
 
-  // Initialize with current month, then drive via customMonth
+  // Initialize with current month, then drive via selectedYear and selectedMonthOnly
   useEffect(() => {
     if (mainTab === 'summary') {
-      fetchReturns(customMonth);
+      const monthStr = selectedYear.toString() + '-' + selectedMonthOnly.toString().padStart(2, '0');
+      setCustomMonth(monthStr);
+      fetchReturns(monthStr);
     }
-  }, [customMonth, mainTab]);
+  }, [selectedYear, selectedMonthOnly, mainTab]);
 
   // Auto-trigger insider analysis when date changes
   useEffect(() => {
@@ -558,13 +590,30 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
               </p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Input
-                type="month"
-                value={customMonth}
-                onChange={(e) => setCustomMonth(e.target.value)}
-                className="h-9 w-full sm:w-[160px] bg-white border-slate-300 focus:border-slate-500"
-                max={new Date().toISOString().slice(0, 7)}
-              />
+              <Select value={selectedMonthOnly.toString()} onValueChange={(value) => setSelectedMonthOnly(parseInt(value))}>
+                <SelectTrigger className="h-9 w-[140px] bg-white border-slate-300 focus:border-slate-500">
+                  <SelectValue placeholder="Month" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAvailableMonths().map((month) => (
+                    <SelectItem key={month.value} value={month.value.toString()}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                <SelectTrigger className="h-9 w-[100px] bg-white border-slate-300 focus:border-slate-500">
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAvailableYears().map((year) => (
+                    <SelectItem key={year.value} value={year.value.toString()}>
+                      {year.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>

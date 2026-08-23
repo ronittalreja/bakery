@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -44,9 +45,38 @@ interface InsightsPageProps {
 
 export function InsightsPage({ onBack }: InsightsPageProps) {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonthOnly, setSelectedMonthOnly] = useState(new Date().getMonth() + 1);
   const [insights, setInsights] = useState<InsightsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const getAvailableYears = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let year = currentYear; year >= 2023; year--) {
+      years.push({ value: year, label: year.toString() });
+    }
+    return years;
+  };
+
+  const getAvailableMonths = () => {
+    const months = [
+      { value: 1, label: 'January' },
+      { value: 2, label: 'February' },
+      { value: 3, label: 'March' },
+      { value: 4, label: 'April' },
+      { value: 5, label: 'May' },
+      { value: 6, label: 'June' },
+      { value: 7, label: 'July' },
+      { value: 8, label: 'August' },
+      { value: 9, label: 'September' },
+      { value: 10, label: 'October' },
+      { value: 11, label: 'November' },
+      { value: 12, label: 'December' }
+    ];
+    return months;
+  };
 
   useEffect(() => {
     const fetchInsights = async () => {
@@ -124,12 +154,30 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <label className="text-sm font-medium text-slate-700">Month:</label>
-              <Input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="h-9 w-full sm:w-[160px] bg-white border-slate-300 focus:border-slate-500"
-              />
+              <Select value={selectedMonthOnly.toString()} onValueChange={(value) => setSelectedMonthOnly(parseInt(value))}>
+                <SelectTrigger className="h-9 w-[140px] bg-white border-slate-300 focus:border-slate-500">
+                  <SelectValue placeholder="Month" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAvailableMonths().map((month) => (
+                    <SelectItem key={month.value} value={month.value.toString()}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                <SelectTrigger className="h-9 w-[100px] bg-white border-slate-300 focus:border-slate-500">
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAvailableYears().map((year) => (
+                    <SelectItem key={year.value} value={year.value.toString()}>
+                      {year.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>

@@ -298,6 +298,20 @@ class EmailProcessor {
                   } catch (error) {
                     errorCount++;
                     console.error(`❌ Error processing email ${processedCount + errorCount}:`, error.message);
+                    
+                    // Add label if error indicates duplicate/already exists to prevent reprocessing
+                    const errorMessage = error.message || '';
+                    if (errorMessage.toLowerCase().includes('already') || 
+                        errorMessage.toLowerCase().includes('duplicate') ||
+                        errorMessage.toLowerCase().includes('exists')) {
+                      imap.addFlags(seqno, ['BAKERY-PROCESSED'], (err) => {
+                        if (err) {
+                          console.error('Failed to add label on duplicate error:', err.message);
+                        } else {
+                          console.log(`✅ Added BAKERY-PROCESSED label to email (duplicate case)`);
+                        }
+                      });
+                    }
                   }
                 });
               });

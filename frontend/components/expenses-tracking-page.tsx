@@ -380,22 +380,30 @@ export function ExpensesTrackingPage({ onBack }: ExpensesTrackingPageProps) {
   };
 
   const getAvailableMonths = () => {
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1;
-    const currentYear = currentDate.getFullYear();
-    const months = [];
-    
-    // Generate only months from current year, from current month going backwards
-    for (let month = currentMonth; month >= 1; month--) {
-      months.push({
-        value: `${currentYear}-${month.toString().padStart(2, '0')}`,
-        label: `${getMonthName(month)} ${currentYear}`,
-        month,
-        year: currentYear
-      });
-    }
-    
+    const months = [
+      { value: '1', label: 'January' },
+      { value: '2', label: 'February' },
+      { value: '3', label: 'March' },
+      { value: '4', label: 'April' },
+      { value: '5', label: 'May' },
+      { value: '6', label: 'June' },
+      { value: '7', label: 'July' },
+      { value: '8', label: 'August' },
+      { value: '9', label: 'September' },
+      { value: '10', label: 'October' },
+      { value: '11', label: 'November' },
+      { value: '12', label: 'December' }
+    ];
     return months;
+  };
+
+  const getAvailableYears = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let year = currentYear; year >= 2023; year--) {
+      years.push({ value: year, label: year.toString() });
+    }
+    return years;
   };
 
   const handleMonthChange = (monthValue: string) => {
@@ -434,17 +442,33 @@ export function ExpensesTrackingPage({ onBack }: ExpensesTrackingPageProps) {
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-slate-500" />
                 <Select 
-                  value={`${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`} 
-                  onValueChange={handleMonthChange}
+                  value={selectedMonth.toString()} 
+                  onValueChange={(value) => setSelectedMonth(parseInt(value))}
                   disabled={isLoading}
                 >
-                  <SelectTrigger className="w-48 bg-white border-slate-300 focus:border-slate-500">
-                    <SelectValue placeholder="Select month" />
+                  <SelectTrigger className="w-32 bg-white border-slate-300 focus:border-slate-500">
+                    <SelectValue placeholder="Month" />
                   </SelectTrigger>
                   <SelectContent>
                     {getAvailableMonths().map((month) => (
                       <SelectItem key={month.value} value={month.value}>
                         {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select 
+                  value={selectedYear.toString()} 
+                  onValueChange={(value) => setSelectedYear(parseInt(value))}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger className="w-24 bg-white border-slate-300 focus:border-slate-500">
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAvailableYears().map((year) => (
+                      <SelectItem key={year.value} value={year.value.toString()}>
+                        {year.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
