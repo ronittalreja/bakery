@@ -127,15 +127,18 @@ class EmailProcessor {
       return response.data;
 
     } catch (error) {
-      console.error(`❌ Failed to upload ${emailData.type} email:`, error.response?.data || error.message);
+      console.error(`❌ Failed to upload ${emailData.type} email:`, error.response?.data?.error || error.message);
       throw error;
     }
   }
 
   async processEmail(buffer, seqno) {
+    let parsed = null;
+    let messageId = null;
+    
     try {
-      const parsed = await simpleParser(buffer);
-      const messageId = parsed.messageId;
+      parsed = await simpleParser(buffer);
+      messageId = parsed.messageId;
       
       // Skip if already processed
       if (this.isEmailProcessed(messageId)) {
@@ -206,9 +209,10 @@ class EmailProcessor {
       // Labels will be added in a future update with proper message handling
 
     } catch (error) {
-      console.error(`❌ Error processing email:`, error);
-      if (parsed && parsed.messageId) {
-        this.markEmailAsProcessed(parsed.messageId, 'error', error.message);
+      console.error(`❌ Error processing email:`, error.message);
+      // Mark as processed even on failure to prevent duplicate attempts
+      if (messageId) {
+        this.markEmailAsProcessed(messageId, 'error', error.message);
       }
     }
   }
