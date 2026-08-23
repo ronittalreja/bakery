@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const FormData = require('form-data');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 class EmailProcessor {
@@ -53,6 +54,16 @@ class EmailProcessor {
       processedAt: new Date().toISOString()
     };
     this.saveProcessedEmails();
+  }
+
+  generateAuthToken() {
+    const payload = {
+      id: 1,
+      username: 'admin',
+      role: 'admin'
+    };
+    const token = jwt.sign(payload, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1h' });
+    return token;
   }
 
   detectEmailType(subject) {
@@ -107,7 +118,7 @@ class EmailProcessor {
       const response = await axios.post(`${this.backendUrl}${endpoint}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${process.env.API_TOKEN}`
+          'Authorization': `Bearer ${this.generateAuthToken()}`
         },
         timeout: 30000
       });
