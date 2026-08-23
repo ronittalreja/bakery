@@ -113,7 +113,6 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
   const [analytics, setAnalytics] = useState<SalesAnalytics | null>(null);
   const [ytdMtdData, setYtdMtdData] = useState<YTDMTDData | null>(null);
   const [error, setError] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonthOnly, setSelectedMonthOnly] = useState(new Date().getMonth() + 1);
   const [comparisonYear, setComparisonYear] = useState(new Date().getFullYear() - 1); // Previous year
@@ -149,7 +148,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
         console.log('Sales rows:', rows.length, 'items');
         const flattened: SaleItem[] = rows.flatMap((sale: any) => {
           const saleId = sale.id || sale.sale_id;
-          const saleDate = sale.sale_date || selectedMonth;
+          const saleDate = sale.sale_date || monthStr;
           const timeStr = saleDate ? formatTime(saleDate) : '';
           const payment = sale.payment_type || sale.paymentType || '';
           const items = Array.isArray(sale.items) ? sale.items : [];
@@ -233,7 +232,12 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
       try {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('No authentication token found');
-        const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/summary-accurate/${selectedMonth}`, {
+        
+        // Construct month string from selectedMonthOnly and selectedYear
+        const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
+        const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
+        
+        const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/summary-accurate/${monthStr}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await resp.json();
@@ -324,6 +328,10 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
   // Replace front-end calculated revenue by summaryAccurate if available
   const totalRevenue = summaryAccurate ? summaryAccurate.totalSales : sales.reduce((sum, sale) => sum + sale.total, 0);
   
+  // Construct month string for calculations
+  const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
+  const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
+  
   // Calculate average daily revenue
   const calculateAvgDailyRevenue = (revenue: number, monthStr: string) => {
     const [year, month] = monthStr.split('-').map(Number);
@@ -343,7 +351,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
     return daysInMonth > 0 ? revenue / daysInMonth : 0;
   };
   
-  const avgDailyRevenue = calculateAvgDailyRevenue(totalRevenue, selectedMonth);
+  const avgDailyRevenue = calculateAvgDailyRevenue(totalRevenue, monthStr);
   
   // Calculate last month avg daily revenue
   const lastMonthAvgDailyRevenue = analytics && analytics.lastMonth 
@@ -477,7 +485,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
                 Most Sold Items
               </h2>
               <p className="text-slate-600 mt-1">
-                Top performing products for {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                Top performing products for {selectedMonthOnly === 0 ? 'Full Year' : getAvailableMonths(selectedYear).find(m => m.value === selectedMonthOnly)?.label} {selectedYear}
               </p>
             </div>
             <div className="p-6">

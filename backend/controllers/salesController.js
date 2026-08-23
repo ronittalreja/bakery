@@ -995,6 +995,207 @@ const getSalesByDate = async (req, res) => {
 const getMonthlySales = async (req, res) => {
   try {
     const { month } = req.params;
+    
+    // Handle "all" case for full year data
+    if (month.includes('-all')) {
+      const year = month.split('-')[0];
+      if (!/^\d{4}$/.test(year)) {
+        return res.status(400).json({ success: false, error: 'Invalid year format' });
+      }
+      
+      // Return demo data if demo user
+      if (req.isDemo) {
+        const demoSales = getDemoData('sales');
+        const demoProducts = getDemoData('products');
+        
+        const filteredSales = demoSales.filter(sale => {
+          const saleYear = new Date(sale.sale_date).getFullYear().toString();
+          return saleYear === year;
+        });
+        
+        const salesMap = new Map();
+        filteredSales.forEach(sale => {
+          if (!salesMap.has(sale.id)) {
+            salesMap.set(sale.id, {
+              sale_id: sale.id,
+              sale_date: sale.sale_date,
+              total_amount: sale.total_amount,
+              payment_type: sale.payment_type,
+              items: []
+            });
+          }
+          sale.items.forEach(item => {
+            const product = demoProducts.find(p => p.id === item.item_id);
+            salesMap.get(sale.id).items.push({
+              item_id: item.item_id,
+              product_id: item.item_id,
+              batch_id: item.batch_id,
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              total_price: item.total_price,
+              name: item.name,
+              item_type: 'product',
+              item_code: product?.item_code || 'DEMO',
+              hsn_code: product?.hsn_code || '19059010'
+            });
+          });
+        });
+        
+        return res.json({ 
+          success: true, 
+          data: Array.from(salesMap.values()),
+          summary: {
+          totalQuantity: filteredSales.reduce((sum, s) => sum + s.items.reduce((is, i) => is + i.quantity, 0), 0),
+          totalValue: filteredSales.reduce((sum, s) => sum + s.total_amount, 0),
+          totalTransactions: filteredSales.length
+        }
+      });
+      }
+
+      // Fetch invoices for the entire year
+      const [invoices] = await db.execute(
+        `SELECT id, invoice_number, invoice_date, total_amount FROM invoices 
+         WHERE YEAR(invoice_date) = ?`,
+        [year]
+      );
+
+      // Fetch credit notes with return date in the year
+      const [creditNotes] = await db.execute(
+        `SELECT id, credit_note_number, date, return_date, items FROM credit_notes 
+         WHERE YEAR(return_date) = ? OR YEAR(date) = ?`,
+        [year, year]
+      );
+
+      // Fetch all products to get categories and MRP (sale_price)
+      const [products] = await db.execute(
+        `SELECT id, item_code, name, category, sale_price FROM products WHERE is_active = 1`
+      );
+
+      // Create a map of product name to product info (for category and MRP)
+      const productMap = new Map();
+      products.forEach(p => {
+        productMap.set(p.name, {
+          category: p.category,
+          mrp: p.sale_price,
+          item_code: p.item_code
+        });
+      });
+
+      if (invoices.length === 0) {
+        return res.json({ 
+          success: true, 
+          data: [], 
+          summary: {
+            totalQuantity: 0, 
+            totalValue: 0,
+            totalTransactions: 0
+          },
+          message: `No invoices found for ${year}`
+        });
+      }
+
+      // Parse credit note items into a map for easy lookup
+      const creditNoteItemsMap = new Map();
+      creditNotes.forEach(cn => {
+        let items;
+        try {
+          items = typeof cn.items === 'string' ? JSON.parse(cn.items) : cn.items;
+          if (Array.isArray(items)) {
+            items.forEach(item => {
+              const key = item.itemCode || item.description;
+              if (key) {
+                const existing = creditNoteItemsMap.get(key) || { quantity: 0 };
+                creditNoteItemsMap.set(key, {
+                  quantity: existing.quantity + (item.quantity || 0),
+                  total: (existing.total || 0) + (item.total || 0)
+                });
+              }
+            });
+          }
+        } catch (e) {
+          console.warn(`Failed to parse credit note items for CN ${cn.id}:`, e);
+        }
+      });
+
+      // Calculate sales from invoices minus credit notes
+      const salesData = [];
+      let totalQuantity = 0;
+      let totalValue = 0;
+
+      // Process each invoice
+      for (const invoice of invoices) {
+        try {
+          // Fetch invoice items
+          const [invoiceItems] = await db.execute(
+            `SELECT item_name, qty, rate, total FROM invoice_items 
+             WHERE invoice_id = ?`,
+            [invoice.id]
+          );
+
+          const saleItems = [];
+          let invoiceTotal = 0;
+
+          // Calculate sold items (invoice items - credit note items)
+          invoiceItems.forEach(item => {
+            const key = item.item_name;
+            const productInfo = productMap.get(key);
+            
+            // Skip items that don't exist in products or are in excluded categories
+            if (!productInfo) {
+              console.log(`Skipping item ${key}: not found in products`);
+              return;
+            }
+
+            const creditNoteItem = creditNoteItemsMap.get(key);
+            const soldQuantity = Math.max(0, item.qty - (creditNoteItem?.quantity || 0));
+            const soldTotal = Math.max(0, item.total - (creditNoteItem?.total || 0));
+
+            if (soldQuantity > 0) {
+              saleItems.push({
+                item_id: item.item_name,
+                product_id: item.item_name,
+                batch_id: null,
+                quantity: soldQuantity,
+                unit_price: item.rate,
+                total_price: soldTotal,
+                name: item.item_name,
+                item_type: 'product',
+                item_code: productInfo.item_code,
+                hsn_code: '19059010'
+              });
+              totalQuantity += soldQuantity;
+              invoiceTotal += soldTotal;
+            }
+          });
+
+          if (saleItems.length > 0) {
+            salesData.push({
+              sale_id: invoice.id,
+              sale_date: invoice.invoice_date,
+              total_amount: invoiceTotal,
+              payment_type: 'cash',
+              items: saleItems
+            });
+            totalValue += invoiceTotal;
+          }
+        } catch (e) {
+          console.error(`Error processing invoice ${invoice.id}:`, e);
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        data: salesData,
+        summary: {
+          totalQuantity, 
+          totalValue,
+          totalTransactions: salesData.length
+        }
+      });
+      return;
+    }
+
+    // Handle regular YYYY-MM format
     if (!/^\d{4}-\d{2}$/.test(month)) {
       return res.status(400).json({ success: false, error: 'Invalid month format. Use YYYY-MM' });
     }
@@ -1231,6 +1432,81 @@ const getMonthlySales = async (req, res) => {
 const getMonthlySalesAnalytics = async (req, res) => {
   try {
     const { month, year } = req.params;
+    
+    // Handle "all" case for full year data
+    if (month.includes('-all')) {
+      const year = month.split('-')[0];
+      if (!/^\d{4}$/.test(year)) {
+        return res.status(400).json({ success: false, error: 'Invalid year format' });
+      }
+      
+      // Return demo data if demo user
+      if (req.isDemo) {
+        const demoSales = getDemoData('sales');
+        const filteredSales = demoSales.filter(sale => {
+          const saleYear = new Date(sale.sale_date).getFullYear().toString();
+          return saleYear === year;
+        });
+        
+        const currentTotalTransactions = filteredSales.length;
+        const currentTotalSales = filteredSales.reduce((sum, s) => sum + s.total_amount, 0);
+        const currentTotalItems = filteredSales.reduce((sum, s) => sum + s.items.reduce((is, i) => is + i.quantity, 0), 0);
+        
+        return res.json({
+          success: true,
+          data: {
+            currentMonth: {
+              totalTransactions: currentTotalTransactions,
+              totalSales: currentTotalSales,
+              totalItems: currentTotalItems
+            },
+            lastMonth: {
+              totalTransactions: Math.floor(currentTotalTransactions * 0.9),
+              totalSales: Math.floor(currentTotalSales * 0.85),
+              totalItems: Math.floor(currentTotalItems * 0.9)
+            },
+            previousYear: {
+              totalTransactions: Math.floor(currentTotalTransactions * 0.8),
+              totalSales: Math.floor(currentTotalSales * 0.75),
+              totalItems: Math.floor(currentTotalItems * 0.8)
+            }
+          }
+        });
+      }
+
+      // Fetch analytics for full year
+      const [currentYearData] = await db.execute(
+        `SELECT COUNT(*) as total, COALESCE(SUM(total_amount), 0) as totalSales FROM invoices WHERE YEAR(invoice_date) = ?`,
+        [year]
+      );
+      
+      const [lastYearData] = await db.execute(
+        `SELECT COUNT(*) as total, COALESCE(SUM(total_amount), 0) as totalSales FROM invoices WHERE YEAR(invoice_date) = ?`,
+        [parseInt(year) - 1]
+      );
+
+      return res.json({
+        success: true,
+        data: {
+          currentMonth: {
+            totalTransactions: currentYearData[0].total,
+            totalSales: currentYearData[0].totalSales,
+            totalItems: 0 // Would need to calculate from items
+          },
+          lastMonth: {
+            totalTransactions: 0,
+            totalSales: 0,
+            totalItems: 0
+          },
+          previousYear: {
+            totalTransactions: lastYearData[0].total,
+            totalSales: lastYearData[0].totalSales,
+            totalItems: 0
+          }
+        }
+      });
+    }
+    
     if (!/^\d{4}-\d{2}$/.test(month)) {
       return res.status(400).json({ success: false, error: 'Invalid month format. Use YYYY-MM' });
     }
