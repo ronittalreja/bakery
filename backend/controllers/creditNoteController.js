@@ -813,6 +813,123 @@ const getAllCreditNotes = async (req, res) => {
   try {
     const { month } = req.query;
     
+    // Handle "all" case for full year data
+    if (month && (month === 'all' || month.includes('-all'))) {
+      let yearToUse;
+      if (month.includes('-all')) {
+        yearToUse = month.split('-')[0];
+      } else {
+        yearToUse = new Date().getFullYear().toString();
+      }
+      
+      if (!yearToUse || !/^\d{4}$/.test(yearToUse)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid year format' 
+        });
+      }
+      
+      // Return demo data if demo user
+      if (req.isDemo) {
+        const demoCreditNotes = getDemoData('creditNotes');
+        const filteredCreditNotes = demoCreditNotes.filter(cn => {
+          const cnDate = new Date(cn.date || cn.return_date);
+          return cnDate.getFullYear().toString() === yearToUse;
+        });
+        
+        const transformedCreditNotes = filteredCreditNotes.map(cn => ({
+          id: cn.id,
+          creditNoteNumber: cn.credit_note_number,
+          date: cn.date,
+          returnDate: cn.return_date || cn.date,
+          receiverName: cn.receiver_name,
+          receiverGstin: cn.receiver_gstin,
+          reason: cn.reason,
+          totalItems: cn.total_items,
+          grossValue: Number(cn.gross_value) || 0,
+          netValue: Number(cn.net_value) || 0,
+          fileName: cn.file_name,
+          originalName: cn.original_name,
+          status: cn.status || 'processed',
+          items: cn.items,
+          createdAt: cn.created_at
+        }));
+        
+        return res.json({ 
+          success: true, 
+          creditNotes: transformedCreditNotes 
+        });
+      }
+      
+      const query = `
+        SELECT 
+          id,
+          credit_note_number,
+          date,
+          return_date,
+          receiver_name,
+          receiver_gstin,
+          reason,
+          total_items,
+          gross_value,
+          net_value,
+          file_name,
+          original_name,
+          items,
+          created_at,
+          COALESCE(status, 'pending') as status
+        FROM credit_notes
+        WHERE YEAR(COALESCE(return_date, date)) = ?
+        ORDER BY date DESC, created_at DESC LIMIT 100
+      `;
+      
+      const [creditNotes] = await db.execute(query, [yearToUse]);
+      
+      const validCreditNotes = creditNotes.filter(row => {
+        try {
+          if (row.items && typeof row.items === 'string') {
+            JSON.parse(row.items);
+          }
+          return true;
+        } catch (e) {
+          console.warn(`Skipping credit note ${row.id} due to invalid items JSON`);
+          return false;
+        }
+      });
+      
+      return res.json({
+        success: true,
+        creditNotes: validCreditNotes.map(row => ({
+          id: row.id,
+          creditNoteNumber: row.credit_note_number,
+          date: row.date,
+          returnDate: row.return_date || row.date,
+          receiverName: row.receiver_name,
+          receiverGstin: row.receiver_gstin,
+          reason: row.reason,
+          totalItems: row.total_items,
+          grossValue: Number(row.gross_value) || 0,
+          netValue: Number(row.net_value) || 0,
+          fileName: row.file_name,
+          originalName: row.original_name,
+          status: row.status || 'pending',
+          items: (() => {
+            try {
+              if (!row.items) return [];
+              if (typeof row.items === 'string') {
+                return JSON.parse(row.items);
+              }
+              return row.items;
+            } catch (e) {
+              console.warn('Failed to parse items JSON:', e.message);
+              return [];
+            }
+          })(),
+          createdAt: row.created_at
+        }))
+      });
+    }
+    
     // Return demo data if demo user
     if (req.isDemo) {
       const demoCreditNotes = getDemoData('creditNotes');
@@ -836,7 +953,10 @@ const getAllCreditNotes = async (req, res) => {
         createdAt: cn.created_at
       }));
       
-      return res.json({ success: true, creditNotes: transformedCreditNotes });
+      return res.json({ 
+        success: true, 
+        creditNotes: transformedCreditNotes 
+      });
     }
     
     let query = `

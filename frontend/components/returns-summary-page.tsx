@@ -74,8 +74,13 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
     return years;
   };
 
-  const getAvailableMonths = () => {
+  const getAvailableMonths = (year: number) => {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1;
+    
     const months = [
+      { value: 0, label: 'Full Year' },
       { value: 1, label: 'January' },
       { value: 2, label: 'February' },
       { value: 3, label: 'March' },
@@ -89,6 +94,13 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
       { value: 11, label: 'November' },
       { value: 12, label: 'December' }
     ];
+    
+    // If current year, only show months up to current month
+    if (year === currentYear) {
+      return months.filter(m => m.value === 0 || m.value <= currentMonth);
+    }
+    
+    // For past years, show all months
     return months;
   };
 
@@ -315,7 +327,8 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
   // Initialize with current month, then drive via selectedYear and selectedMonthOnly
   useEffect(() => {
     if (mainTab === 'summary') {
-      const monthStr = selectedYear.toString() + '-' + selectedMonthOnly.toString().padStart(2, '0');
+      const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
+      const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
       setCustomMonth(monthStr);
       fetchReturns(monthStr);
     }
@@ -586,7 +599,7 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
                 Returns Summary
               </h1>
               <p className="text-slate-600 mt-1 text-sm sm:text-base">
-                Returns overview for {new Date(customMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                Returns overview for {selectedMonthOnly === 0 ? 'Full Year' : getAvailableMonths(selectedYear).find(m => m.value === selectedMonthOnly)?.label} {selectedYear}
               </p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -595,7 +608,7 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
                   <SelectValue placeholder="Month" />
                 </SelectTrigger>
                 <SelectContent>
-                  {getAvailableMonths().map((month) => (
+                  {getAvailableMonths(selectedYear).map((month) => (
                     <SelectItem key={month.value} value={month.value.toString()}>
                       {month.label}
                     </SelectItem>

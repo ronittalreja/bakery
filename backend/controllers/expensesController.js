@@ -6,6 +6,40 @@ const getExpenses = async (req, res) => {
   try {
     const { month, year } = req.query;
     
+    // Handle "all" case for full year data
+    if (month === 'all' || month.includes('-all')) {
+      let yearToUse;
+      if (month.includes('-all')) {
+        yearToUse = month.split('-')[0];
+      } else {
+        yearToUse = year;
+      }
+      
+      if (!yearToUse || !/^\d{4}$/.test(yearToUse)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid year format' 
+        });
+      }
+      
+      // Return demo data if demo user
+      if (req.isDemo) {
+        const demoExpenses = getDemoData('expenses');
+        const filteredExpenses = demoExpenses.filter(exp => {
+          const expDate = new Date(exp.expense_date);
+          return expDate.getFullYear().toString() === yearToUse;
+        });
+        return res.json({ success: true, expenses: filteredExpenses });
+      }
+      
+      const [expenses] = await db.execute(
+        'SELECT * FROM expenses WHERE YEAR(expense_date) = ?',
+        [yearToUse]
+      );
+      
+      return res.json({ success: true, expenses });
+    }
+    
     // Return demo data if demo user
     if (req.isDemo) {
       const demoExpenses = getDemoData('expenses');

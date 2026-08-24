@@ -8,6 +8,135 @@ const router = express.Router();
 const getMonthlyInsights = async (req, res) => {
   try {
     const { month } = req.params;
+    
+    // Handle "all" case for full year data
+    if (month.includes('-all')) {
+      const year = month.split('-')[0];
+      if (!/^\d{4}$/.test(year)) {
+        return res.status(400).json({ success: false, error: 'Invalid year format' });
+      }
+
+      console.log(`Fetching insights for full year: ${year}`);
+
+      // Return demo data if demo user
+      if (req.isDemo) {
+        const demoSales = getDemoData('sales');
+        const demoExpenses = getDemoData('expenses');
+        
+        const filteredSales = demoSales.filter(sale => {
+          const saleYear = new Date(sale.sale_date).getFullYear().toString();
+          return saleYear === year;
+        });
+        
+        const totalSales = filteredSales.reduce((sum, sale) => sum + sale.total_amount, 0);
+        const totalCost = totalSales * 0.6;
+        const totalReturns = totalSales * 0.05;
+        const manualExpenses = demoExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+        const returnCharges = totalReturns * 0.15;
+        const packingMaterialCost = totalSales * 0.03;
+        const totalExpenses = manualExpenses + returnCharges + packingMaterialCost;
+        
+        const netCost = totalCost - totalReturns;
+        const netRevenue = totalSales - (totalSales * (totalReturns / totalCost));
+        const totalProfit = netRevenue - netCost - totalExpenses;
+        
+        const productMRPTotal = totalSales * 0.75;
+        const decorationMRPTotal = totalSales * 0.25;
+        const productCostTotal = totalCost * 0.75 - (totalReturns * 0.75);
+        const decorationCostTotal = totalCost * 0.25 - (totalReturns * 0.25);
+        const productProfit = productMRPTotal - productCostTotal;
+        const decorationProfit = decorationMRPTotal - decorationCostTotal;
+        
+        const productMargin = productMRPTotal > 0 ? (productProfit / productMRPTotal) * 100 : 0;
+        const decorationMargin = decorationMRPTotal > 0 ? (decorationProfit / decorationMRPTotal) * 100 : 0;
+        const totalMargin = netRevenue > 0 ? (totalProfit / netRevenue) * 100 : 0;
+
+        const insightsData = {
+          month: `${year}-all`,
+          netRevenue,
+          netCost,
+          productMRPTotal,
+          decorationMRPTotal,
+          productCostTotal,
+          decorationCostTotal,
+          productProfit,
+          decorationProfit,
+          totalProfit,
+          productMargin,
+          decorationMargin,
+          totalMargin,
+          totalSales,
+          totalCost,
+          totalReturns,
+          manualExpenses,
+          returnCharges,
+          packingMaterialCost,
+          totalExpenses
+        };
+
+        return res.json({ success: true, data: insightsData });
+      }
+
+      // Fetch full year data from database
+      const [salesData] = await db.execute(
+        `SELECT COALESCE(SUM(total_amount), 0) as totalSales FROM invoices WHERE YEAR(invoice_date) = ?`,
+        [year]
+      );
+      
+      const [expensesData] = await db.execute(
+        `SELECT COALESCE(SUM(amount), 0) as totalExpenses FROM expenses WHERE YEAR(expense_date) = ?`,
+        [year]
+      );
+
+      const totalSales = salesData[0].totalSales;
+      const totalCost = totalSales * 0.6;
+      const totalReturns = totalSales * 0.05;
+      const manualExpenses = expensesData[0].totalExpenses;
+      const returnCharges = totalReturns * 0.15;
+      const packingMaterialCost = totalSales * 0.03;
+      const totalExpenses = manualExpenses + returnCharges + packingMaterialCost;
+      
+      const netCost = totalCost - totalReturns;
+      const netRevenue = totalSales - (totalSales * (totalReturns / totalCost));
+      const totalProfit = netRevenue - netCost - totalExpenses;
+      
+      const productMRPTotal = totalSales * 0.75;
+      const decorationMRPTotal = totalSales * 0.25;
+      const productCostTotal = totalCost * 0.75 - (totalReturns * 0.75);
+      const decorationCostTotal = totalCost * 0.25 - (totalReturns * 0.25);
+      const productProfit = productMRPTotal - productCostTotal;
+      const decorationProfit = decorationMRPTotal - decorationCostTotal;
+      
+      const productMargin = productMRPTotal > 0 ? (productProfit / productMRPTotal) * 100 : 0;
+      const decorationMargin = decorationMRPTotal > 0 ? (decorationProfit / decorationMRPTotal) * 100 : 0;
+      const totalMargin = netRevenue > 0 ? (totalProfit / netRevenue) * 100 : 0;
+
+      const insightsData = {
+        month: `${year}-all`,
+        netRevenue: Math.round(netRevenue),
+        netCost: Math.round(netCost),
+        productMRPTotal: Math.round(productMRPTotal),
+        decorationMRPTotal: Math.round(decorationMRPTotal),
+        productCostTotal: Math.round(productCostTotal),
+        decorationCostTotal: Math.round(decorationCostTotal),
+        productProfit: Math.round(productProfit),
+        decorationProfit: Math.round(decorationProfit),
+        totalProfit: Math.round(totalProfit),
+        productMargin: Math.round(productMargin * 10) / 10,
+        decorationMargin: Math.round(decorationMargin * 10) / 10,
+        totalMargin: Math.round(totalMargin * 10) / 10,
+        totalSales: Math.round(totalSales),
+        totalCost: Math.round(totalCost),
+        totalReturns: Math.round(totalReturns),
+        manualExpenses: Math.round(manualExpenses),
+        returnCharges: Math.round(returnCharges),
+        packingMaterialCost: Math.round(packingMaterialCost),
+        totalExpenses: Math.round(totalExpenses)
+      };
+
+      return res.json({ success: true, data: insightsData });
+    }
+
     if (!/^\d{4}-\d{2}$/.test(month)) {
       return res.status(400).json({ success: false, error: 'Invalid month format. Use YYYY-MM' });
     }
@@ -44,19 +173,25 @@ const getMonthlyInsights = async (req, res) => {
 
       const insightsData = {
         month,
-        netRevenue,
-        netCost,
-        productMRPTotal,
-        decorationMRPTotal,
-        productCostTotal,
-        decorationCostTotal,
-        productProfit,
-        decorationProfit,
-        totalProfit,
-        productMargin,
-        decorationMargin,
-        totalMargin,
-        totalExpenses
+        netRevenue: Math.round(netRevenue),
+        netCost: Math.round(netCost),
+        productMRPTotal: Math.round(productMRPTotal),
+        decorationMRPTotal: Math.round(decorationMRPTotal),
+        productCostTotal: Math.round(productCostTotal),
+        decorationCostTotal: Math.round(decorationCostTotal),
+        productProfit: Math.round(productProfit),
+        decorationProfit: Math.round(decorationProfit),
+        totalProfit: Math.round(totalProfit),
+        productMargin: Math.round(productMargin * 10) / 10,
+        decorationMargin: Math.round(decorationMargin * 10) / 10,
+        totalMargin: Math.round(totalMargin * 10) / 10,
+        totalExpenses: Math.round(totalExpenses),
+        totalSales: Math.round(totalSales),
+        totalCost: Math.round(totalCost),
+        totalReturns: Math.round(totalReturns),
+        manualExpenses: Math.round(manualExpenses),
+        returnCharges: Math.round(returnCharges),
+        packingMaterialCost: Math.round(packingMaterialCost)
       };
 
       return res.json({ success: true, data: insightsData });
@@ -241,19 +376,19 @@ const getMonthlyInsights = async (req, res) => {
 
     const insightsData = {
       month,
-      netRevenue,
-      netCost,
-      productMRPTotal: netProductMRP,
-      decorationMRPTotal: netDecorationMRP,
-      productCostTotal: netProductCost,
-      decorationCostTotal: netDecorationCost,
-      productProfit,
-      decorationProfit,
-      totalProfit,
-      productMargin,
-      decorationMargin,
-      totalMargin,
-      totalExpenses
+      netRevenue: Math.round(netRevenue),
+      netCost: Math.round(netCost),
+      productMRPTotal: Math.round(netProductMRP),
+      decorationMRPTotal: Math.round(netDecorationMRP),
+      productCostTotal: Math.round(netProductCost),
+      decorationCostTotal: Math.round(netDecorationCost),
+      productProfit: Math.round(productProfit),
+      decorationProfit: Math.round(decorationProfit),
+      totalProfit: Math.round(totalProfit),
+      productMargin: Math.round(productMargin * 10) / 10,
+      decorationMargin: Math.round(decorationMargin * 10) / 10,
+      totalMargin: Math.round(totalMargin * 10) / 10,
+      totalExpenses: Math.round(totalExpenses)
     };
 
     console.log('Insights data calculated:', {

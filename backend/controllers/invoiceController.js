@@ -586,10 +586,51 @@ const checkInvoice = async (req, res) => {
   }
 };
 
-// Get all invoices for a specific month (for payments page)
 const getInvoicesByMonth = async (req, res) => {
   try {
     const { month, year } = req.query;
+    
+    // Handle "all" case for full year data
+    if (month === 'all' || month.includes('-all')) {
+      let yearToUse;
+      if (month.includes('-all')) {
+        yearToUse = month.split('-')[0];
+      } else {
+        yearToUse = year;
+      }
+      
+      if (!yearToUse || !/^\d{4}$/.test(yearToUse)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid year format' 
+        });
+      }
+      
+      // Return demo data if demo user
+      if (req.isDemo) {
+        const demoInvoices = getDemoData('invoices');
+        const filteredInvoices = demoInvoices.filter(invoice => {
+          const invoiceDate = new Date(invoice.invoice_date);
+          return invoiceDate.getFullYear().toString() === yearToUse;
+        });
+        
+        return res.json({ 
+          success: true, 
+          invoices: filteredInvoices 
+        });
+      }
+      
+      const [invoices] = await db.execute(
+        'SELECT * FROM invoices WHERE YEAR(invoice_date) = ? ORDER BY invoice_date DESC',
+        [parseInt(yearToUse)]
+      );
+      
+      res.json({ 
+        success: true, 
+        invoices 
+      });
+      return;
+    }
     
     // Return demo data if demo user
     if (req.isDemo) {
@@ -601,8 +642,7 @@ const getInvoicesByMonth = async (req, res) => {
       
       return res.json({ 
         success: true, 
-        invoices: filteredInvoices,
-        count: filteredInvoices.length 
+        invoices: filteredInvoices 
       });
     }
     
@@ -624,11 +664,8 @@ const getInvoicesByMonth = async (req, res) => {
       count: invoices.length 
     });
   } catch (error) {
-    console.error('Error fetching invoices:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    });
+    console.error('Error fetching invoices by month:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
@@ -790,6 +827,71 @@ const updateInvoiceStatus = async (req, res) => {
 const getInvoicesFromRosReceipts = async (req, res) => {
   try {
     const { month, year } = req.query;
+    
+    // Handle "all" case for full year data
+    if (month === 'all' || month.includes('-all')) {
+      let yearToUse;
+      if (month.includes('-all')) {
+        yearToUse = month.split('-')[0];
+      } else {
+        yearToUse = year;
+      }
+      
+      if (!yearToUse || !/^\d{4}$/.test(yearToUse)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid year format' 
+        });
+      }
+      
+      // Get all ROS receipts for the entire year
+      const [rosReceipts] = await db.execute(`
+        SELECT id, receipt_number, receipt_date, bills, created_at
+        FROM ros_receipts 
+        WHERE YEAR(receipt_date) = ?
+        ORDER BY receipt_date DESC
+      `, [parseInt(yearToUse)]);
+
+      const invoicesFromRos = [];
+
+      for (const rosReceipt of rosReceipts) {
+        const bills = typeof rosReceipt.bills === 'string' ? JSON.parse(rosReceipt.bills) : rosReceipt.bills;
+        
+        // Filter for SR (Sales Return) bills which are invoices
+        const srBills = bills.filter(bill => bill.doc_type === 'SR');
+        
+        for (const bill of srBills) {
+          // Check if this invoice already exists in invoices table
+          const [existingInvoice] = await db.execute(
+            'SELECT id FROM invoices WHERE invoice_number = ?',
+            [bill.bill_number]
+          );
+          
+          // If it doesn't exist, add it to the list
+          if (existingInvoice.length === 0) {
+            invoicesFromRos.push({
+              id: `ros_${rosReceipt.id}_${bill.bill_number}`, // Unique ID for frontend
+              invoice_number: bill.bill_number,
+              invoice_date: bill.bill_date,
+              store: 'From ROS Receipt', // Default store name
+              total_amount: Number(bill.amount) || 0,
+              file_reference: rosReceipt.receipt_number,
+              uploaded_at: rosReceipt.created_at,
+              status: 'cleared', // ROS receipts are already cleared
+              source: 'ros_receipt',
+              ros_receipt_id: rosReceipt.id,
+              ros_receipt_number: rosReceipt.receipt_number
+            });
+          }
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        creditNotes: invoicesFromRos 
+      });
+      return;
+    }
     
     if (!month || !year) {
       return res.status(400).json({ 

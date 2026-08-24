@@ -94,18 +94,44 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
-  // Generate month options (current year only)
-  const monthOptions = Array.from({ length: currentMonth }, (_, i) => {
-    const monthNumber = i + 1;
-    const monthName = new Date(2024, i, 1).toLocaleDateString('en-US', { month: 'long' });
-    return { value: monthNumber, label: monthName };
-  });
+  const getAvailableMonths = (year: number) => {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1;
+    
+    const months = [
+      { value: 0, label: 'Full Year' },
+      { value: 1, label: 'January' },
+      { value: 2, label: 'February' },
+      { value: 3, label: 'March' },
+      { value: 4, label: 'April' },
+      { value: 5, label: 'May' },
+      { value: 6, label: 'June' },
+      { value: 7, label: 'July' },
+      { value: 8, label: 'August' },
+      { value: 9, label: 'September' },
+      { value: 10, label: 'October' },
+      { value: 11, label: 'November' },
+      { value: 12, label: 'December' }
+    ];
+    
+    // If current year, only show months up to current month
+    if (year === currentYear) {
+      return months.filter(m => m.value === 0 || m.value <= currentMonth);
+    }
+    
+    // For past years, show all months
+    return months;
+  };
 
-  // Generate year options from 2023 to current year
-  const yearOptions = Array.from({ length: currentYear - 2023 + 1 }, (_, i) => {
-    const year = 2023 + i;
-    return { value: year, label: year.toString() };
-  });
+  const getAvailableYears = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let year = currentYear; year >= 2023; year--) {
+      years.push({ value: year, label: year.toString() });
+    }
+    return years;
+  };
 
   useEffect(() => {
     if (user) {
@@ -149,8 +175,9 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       const token = getAuthToken();
       if (!token) return;
 
+      const monthParam = selectedMonth === 0 ? `${selectedYear}-all` : selectedMonth;
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/invoices?month=${selectedMonth}&year=${selectedYear}`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/invoices?month=${monthParam}&year=${selectedYear}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -185,9 +212,9 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       }
 
       // Use the same API endpoint as staff dashboard
-      const monthStr = selectedMonth.toString().padStart(2, '0');
+      const monthParam = selectedMonth === 0 ? `${selectedYear}-all` : selectedMonth.toString().padStart(2, '0');
       const yearStr = selectedYear.toString();
-      const monthYear = `${yearStr}-${monthStr}`;
+      const monthYear = selectedMonth === 0 ? `${yearStr}-all` : `${yearStr}-${monthParam}`;
       
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/credit-notes?month=${monthYear}`,
@@ -236,9 +263,9 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
         return;
       }
 
-      const monthStr = selectedMonth.toString().padStart(2, '0');
+      const monthParam = selectedMonth === 0 ? `${selectedYear}-all` : selectedMonth.toString().padStart(2, '0');
       const yearStr = selectedYear.toString();
-      const monthYear = `${yearStr}-${monthStr}`;
+      const monthYear = selectedMonth === 0 ? `${yearStr}-all` : `${yearStr}-${monthParam}`;
       
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/ros-receipts?month=${monthYear}`,
@@ -277,8 +304,9 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       const token = getAuthToken();
       if (!token) return;
 
+      const monthParam = selectedMonth === 0 ? `${selectedYear}-all` : selectedMonth;
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/invoices/from-ros-receipts?month=${selectedMonth}&year=${selectedYear}`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/invoices/from-ros-receipts?month=${monthParam}&year=${selectedYear}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -304,8 +332,9 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       const token = getAuthToken();
       if (!token) return;
 
+      const monthParam = selectedMonth === 0 ? `${selectedYear}-all` : selectedMonth;
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/credit-notes/from-ros-receipts?month=${selectedMonth}&year=${selectedYear}`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/credit-notes/from-ros-receipts?month=${monthParam}&year=${selectedYear}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -460,7 +489,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {monthOptions.map((month) => (
+                {getAvailableMonths(selectedYear).map((month) => (
                   <SelectItem key={month.value} value={month.value.toString()}>
                     {month.label}
                   </SelectItem>
@@ -472,7 +501,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {yearOptions.map((year) => (
+                {getAvailableYears().map((year) => (
                   <SelectItem key={year.value} value={year.value.toString()}>
                     {year.label}
                   </SelectItem>
@@ -575,7 +604,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                     {invoicesSubTab === 'invoices' ? 'Invoices List' : 'Invoices from ROS Receipts'}
                   </h2>
                   <p className="text-slate-600 mt-1 text-sm">
-                    for {monthOptions[selectedMonth - 1]?.label} {selectedYear}
+                    for {getAvailableMonths(selectedYear).find(m => m.value === selectedMonth)?.label || 'All Months'} {selectedYear}
                   </p>
                 </div>
                 <div className="p-4 sm:p-6">

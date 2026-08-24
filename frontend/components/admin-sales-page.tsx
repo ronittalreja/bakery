@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart3, Clock, DollarSign, TrendingUp, Package, TrendingDown, Calendar, Star } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useDateContext } from "@/hooks/use-date-context";
@@ -112,7 +113,6 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
   const [analytics, setAnalytics] = useState<SalesAnalytics | null>(null);
   const [ytdMtdData, setYtdMtdData] = useState<YTDMTDData | null>(null);
   const [error, setError] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonthOnly, setSelectedMonthOnly] = useState(new Date().getMonth() + 1);
   const [comparisonYear, setComparisonYear] = useState(new Date().getFullYear() - 1); // Previous year
@@ -125,9 +125,14 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
         if (!token) {
           throw new Error('No authentication token found');
         }
-        console.log('Fetching sales for month:', selectedMonth);
+        
+        // Construct month string from selectedMonthOnly and selectedYear
+        const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
+        const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
+        
+        console.log('Fetching sales for month:', monthStr);
         // Use month-wise sales endpoint
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/monthly/${selectedMonth}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/monthly/${monthStr}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -143,7 +148,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
         console.log('Sales rows:', rows.length, 'items');
         const flattened: SaleItem[] = rows.flatMap((sale: any) => {
           const saleId = sale.id || sale.sale_id;
-          const saleDate = sale.sale_date || selectedMonth;
+          const saleDate = sale.sale_date || monthStr;
           const timeStr = saleDate ? formatTime(saleDate) : '';
           const payment = sale.payment_type || sale.paymentType || '';
           const items = Array.isArray(sale.items) ? sale.items : [];
@@ -171,8 +176,13 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
         if (!token) {
           throw new Error('No authentication token found');
         }
-        console.log('Fetching analytics for month:', selectedMonth, 'comparison year:', comparisonYear);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/analytics/monthly/${selectedMonth}/${comparisonYear}`, {
+        
+        // Construct month string from selectedMonthOnly and selectedYear
+        const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
+        const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
+        
+        console.log('Fetching analytics for month:', monthStr, 'comparison year:', comparisonYear);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/analytics/monthly/${monthStr}/${comparisonYear}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -222,7 +232,12 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
       try {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('No authentication token found');
-        const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/summary-accurate/${selectedMonth}`, {
+        
+        // Construct month string from selectedMonthOnly and selectedYear
+        const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
+        const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
+        
+        const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/summary-accurate/${monthStr}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await resp.json();
@@ -243,7 +258,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
     fetchAnalytics();
     fetchYTDMTD();
     fetchSummaryAccurate();
-  }, [selectedMonth, comparisonYear]);
+  }, [selectedMonthOnly, selectedYear, comparisonYear]);
 
   // Reset admin date back to today when leaving Admin Sales page
   useEffect(() => {
@@ -280,8 +295,13 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
     return years;
   };
 
-  const getAvailableMonths = () => {
+  const getAvailableMonths = (year: number) => {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1;
+    
     const months = [
+      { value: 0, label: 'Full Year' },
       { value: 1, label: 'January' },
       { value: 2, label: 'February' },
       { value: 3, label: 'March' },
@@ -295,11 +315,22 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
       { value: 11, label: 'November' },
       { value: 12, label: 'December' }
     ];
+    
+    // If current year, only show months up to current month
+    if (year === currentYear) {
+      return months.filter(m => m.value === 0 || m.value <= currentMonth);
+    }
+    
+    // For past years, show all months
     return months;
   };
 
   // Replace front-end calculated revenue by summaryAccurate if available
   const totalRevenue = summaryAccurate ? summaryAccurate.totalSales : sales.reduce((sum, sale) => sum + sale.total, 0);
+  
+  // Construct month string for calculations
+  const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
+  const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
   
   // Calculate average daily revenue
   const calculateAvgDailyRevenue = (revenue: number, monthStr: string) => {
@@ -320,7 +351,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
     return daysInMonth > 0 ? revenue / daysInMonth : 0;
   };
   
-  const avgDailyRevenue = calculateAvgDailyRevenue(totalRevenue, selectedMonth);
+  const avgDailyRevenue = calculateAvgDailyRevenue(totalRevenue, monthStr);
   
   // Calculate last month avg daily revenue
   const lastMonthAvgDailyRevenue = analytics && analytics.lastMonth 
@@ -351,7 +382,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
                 Sales Summary - Admin View
               </h1>
               <p className="text-slate-600 mt-1">
-                Complete sales overview with financial totals and analytics for {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                Complete sales overview with financial totals and analytics for {selectedMonthOnly === 0 ? 'Full Year' : getAvailableMonths(selectedYear).find(m => m.value === selectedMonthOnly)?.label} {selectedYear}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -361,7 +392,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
                   <SelectValue placeholder="Month" />
                 </SelectTrigger>
                 <SelectContent>
-                  {getAvailableMonths().map((month) => (
+                  {getAvailableMonths(selectedYear).map((month) => (
                     <SelectItem key={month.value} value={month.value.toString()}>
                       {month.label}
                     </SelectItem>
@@ -454,7 +485,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
                 Most Sold Items
               </h2>
               <p className="text-slate-600 mt-1">
-                Top performing products for {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                Top performing products for {selectedMonthOnly === 0 ? 'Full Year' : getAvailableMonths(selectedYear).find(m => m.value === selectedMonthOnly)?.label} {selectedYear}
               </p>
             </div>
             <div className="p-6">

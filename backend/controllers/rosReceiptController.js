@@ -55,30 +55,42 @@ const getAllRosReceipts = async (req, res) => {
     if (month) {
       query += ` WHERE DATE_FORMAT(receipt_date, '%Y-%m') = ?`;
       params.push(month);
-      console.log('Filtering ROS receipts by month:', month);
     }
     
     query += ` ORDER BY receipt_date DESC, created_at DESC`;
     
-    console.log('ROS receipts query:', query);
-    console.log('ROS receipts params:', params);
-    
     const [rows] = await db.execute(query, params);
     
-    console.log('ROS receipts found:', rows.length);
+    console.log('ROS receipts raw data:', rows);
     
-    const rosReceipts = rows.map(row => ({
-      id: row.id,
-      receiptNumber: row.receipt_number,
-      receiptDate: row.receipt_date,
-      receivedFrom: row.received_from,
-      totalAmount: parseFloat(row.total_amount),
-      paymentMethod: row.payment_method,
-      bills: typeof row.bills === 'string' ? JSON.parse(row.bills) : row.bills,
-      fileName: row.file_name,
-      originalName: row.original_name,
-      createdAt: row.created_at
-    }));
+    const rosReceipts = rows.map(row => {
+      let totalAmount = parseFloat(row.total_amount) || 0;
+      
+      // If total_amount is 0 or null, calculate from bills
+      if (totalAmount === 0 && row.bills) {
+        try {
+          const bills = typeof row.bills === 'string' ? JSON.parse(row.bills) : row.bills;
+          if (Array.isArray(bills)) {
+            totalAmount = bills.reduce((sum, bill) => sum + (parseFloat(bill.amount) || 0), 0);
+          }
+        } catch (e) {
+          console.warn('Error parsing bills for total amount calculation:', e);
+        }
+      }
+      
+      return {
+        id: row.id,
+        receiptNumber: row.receipt_number,
+        receiptDate: row.receipt_date,
+        receivedFrom: row.received_from,
+        totalAmount,
+        paymentMethod: row.payment_method,
+        bills: typeof row.bills === 'string' ? JSON.parse(row.bills) : row.bills,
+        fileName: row.file_name,
+        originalName: row.original_name,
+        createdAt: row.created_at
+      };
+    });
     
     res.json({
       success: true,

@@ -1023,6 +1023,106 @@ const getPendingReturns = async (req, res) => {
       });
     }
 
+    // Handle "all" case for full year data
+    if (month.includes('-all')) {
+      const year = month.split('-')[0];
+      if (!/^\d{4}$/.test(year)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid year format' 
+        });
+      }
+
+      // Get all pending returns for the entire year
+      const [grmReturns] = await db.execute(`
+        SELECT 
+          r.id,
+          r.product_id,
+          r.quantity,
+          r.return_date,
+          r.rtd,
+          p.name,
+          p.item_code
+        FROM returns r
+        JOIN products p ON r.product_id = p.id
+        WHERE r.type = 'GRM'
+          AND r.credit_status = 'pending'
+          AND YEAR(r.return_date) = ?
+        ORDER BY r.return_date DESC, r.id DESC
+      `, [year]);
+
+      const [gvnDamages] = await db.execute(`
+        SELECT 
+          r.id,
+          r.product_id,
+          r.quantity,
+          r.return_date,
+          r.rtd,
+          p.name,
+          p.item_code
+        FROM returns r
+        JOIN products p ON r.product_id = p.id
+        WHERE r.type = 'GVN'
+          AND r.credit_status = 'pending'
+          AND YEAR(r.return_date) = ?
+        ORDER BY r.return_date DESC, r.id DESC
+      `, [year]);
+
+      // Group and aggregate items to remove duplicates
+      const groupItems = (items) => {
+        const grouped = {};
+        items.forEach(row => {
+          const key = `${row.product_id}-${row.return_date}`;
+          if (!grouped[key]) {
+            grouped[key] = {
+              id: row.id,
+              product_id: row.product_id,
+              name: row.name,
+              item_code: row.item_code,
+              quantity: 0,
+              return_date: row.return_date,
+              rtd: row.rtd
+            };
+          }
+          grouped[key].quantity += row.quantity;
+        });
+        return Object.values(grouped);
+      };
+
+      const groupedGrm = groupItems(grmReturns);
+      const groupedGvn = groupItems(gvnDamages);
+
+      console.log(`Found ${grmReturns.length} GRM returns and ${gvnDamages.length} GVN returns for year ${year}`);
+      console.log(`After grouping: ${groupedGrm.length} GRM and ${groupedGvn.length} GVN`);
+
+      res.json({
+        success: true,
+        data: {
+          grm: groupedGrm.map(row => ({
+            id: row.id,
+            product_id: row.product_id,
+            name: row.name,
+            item_code: row.item_code,
+            quantity: row.quantity,
+            return_date: row.return_date,
+            rtd: row.rtd
+          })),
+          gvn: groupedGvn.map(row => ({
+            id: row.id,
+            product_id: row.product_id,
+            name: row.name,
+            item_code: row.item_code,
+            quantity: row.quantity,
+            return_date: row.return_date,
+            rtd: row.rtd
+          })),
+          month,
+          totalPending: groupedGrm.length + groupedGvn.length
+        }
+      });
+      return;
+    }
+
     // Validate month format (YYYY-MM)
     if (!/^\d{4}-\d{2}$/.test(month)) {
       return res.status(400).json({ 
@@ -1035,22 +1135,15 @@ const getPendingReturns = async (req, res) => {
     const [grmReturns] = await db.execute(`
       SELECT 
         r.id,
-        r.return_date as date,
+        r.product_id,
         r.quantity,
-        r.loss_amount as lossAmount,
-        r.credit_status,
-        p.name as productName,
-        p.item_code,
-        p.category,
-        p.image_url,
-        sb.invoice_reference,
-        sb.invoice_date,
-        sb.expiry_date,
-        r.rtd
+        r.return_date,
+        r.rtd,
+        p.name,
+        p.item_code
       FROM returns r
       JOIN products p ON r.product_id = p.id
-      JOIN stock_batches sb ON r.batch_id = sb.id
-      WHERE r.type = 'GRM' 
+      WHERE r.type = 'GRM'
         AND r.credit_status = 'pending'
         AND DATE_FORMAT(r.return_date, '%Y-%m') = ?
       ORDER BY r.return_date DESC, r.id DESC
