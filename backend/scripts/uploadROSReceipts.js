@@ -6,9 +6,10 @@ const axios = require('axios');
 
 // Configuration
 const BASE_URL = 'https://bakery-backend-e92k.onrender.com';
-const DOWNLOADS_DIR = path.join(__dirname, '../2025');
+const DOWNLOADS_DIR = path.join(__dirname, '../downloads');
 const ENDPOINT = '/api/ros-receipts/upload';
 const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTYsInVzZXJuYW1lIjoiUjMzMDkiLCJyb2xlIjoic3RhZmYiLCJpc0RlbW8iOmZhbHNlLCJpYXQiOjE3ODUwNzU2MTgsImV4cCI6MTgxNjYxMTYxOH0.KnhlHYCbdce9-hRI25m2KMc_0R9tkoByrcvMH2DARzs';
+const YEARS = ['2023', '2024', '2025', '2026'];
 
 // Helper function to make HTTP request with file upload
 async function uploadFile(filePath, token) {
@@ -38,48 +39,85 @@ async function uploadFile(filePath, token) {
   }
 }
 
+// Helper function to get all PDF files from a directory recursively
+async function getPdfFiles(dirPath) {
+  const files = [];
+  
+  try {
+    const entries = await fsPromises.readdir(dirPath, { withFileTypes: true });
+    
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+      
+      if (entry.isDirectory()) {
+        // Recursively get files from subdirectories
+        const subFiles = await getPdfFiles(fullPath);
+        files.push(...subFiles);
+      } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.pdf')) {
+        files.push(fullPath);
+      }
+    }
+  } catch (error) {
+    console.warn(`Warning: Could not read directory ${dirPath}: ${error.message}`);
+  }
+  
+  return files;
+}
+
 // Main function
 async function main() {
   console.log('=== ROS Receipts Upload Script ===');
   console.log(`Base URL: ${BASE_URL}`);
   console.log(`Directory: ${DOWNLOADS_DIR}/ROSReceipts`);
   
-  const dirPath = path.join(DOWNLOADS_DIR, 'ROS');
-  const files = await fsPromises.readdir(dirPath);
-  const pdfFiles = files.filter(f => f.toLowerCase().endsWith('.pdf'));
-  
-  console.log(`\nFound ${pdfFiles.length} ROS receipt files to process\n`);
-  
   const results = {
-    total: pdfFiles.length,
+    total: 0,
     success: 0,
     failed: 0,
     duplicates: 0,
     errors: []
   };
 
-  for (let i = 0; i < pdfFiles.length; i++) {
-    const fileName = pdfFiles[i];
-    const filePath = path.join(dirPath, fileName);
-    
-    console.log(`[${i + 1}/${pdfFiles.length}] ${fileName}...`);
+  for (const year of YEARS) {
+    const yearDir = path.join(DOWNLOADS_DIR, 'ROSReceipts', year);
     
     try {
-      const response = await uploadFile(filePath, AUTH_TOKEN);
-      console.log(`  ✓ Success`);
-      results.success++;
-    } catch (error) {
-      if (error.message.includes('already uploaded') || error.message.includes('Duplicate entry') || error.message.includes('already exists')) {
-        console.log(`  ⊘ Skipped (duplicate)`);
-        results.duplicates++;
-      } else {
-        console.error(`  ✗ Failed: ${error.message}`);
-        results.failed++;
-        results.errors.push({ fileName, error: error.message });
-      }
+      await fsPromises.access(yearDir);
+    } catch {
+      console.log(`Year ${year}: Directory not found, skipping`);
+      continue;
     }
     
-    await new Promise(resolve => setTimeout(resolve, 500));
+    console.log(`\nProcessing year ${year}...`);
+    
+    const pdfFiles = await getPdfFiles(yearDir);
+    console.log(`Found ${pdfFiles.length} ROS receipt files to process`);
+    
+    results.total += pdfFiles.length;
+    
+    for (let i = 0; i < pdfFiles.length; i++) {
+      const filePath = pdfFiles[i];
+      const fileName = path.basename(filePath);
+      
+      console.log(`[${i + 1}/${pdfFiles.length}] ${fileName}...`);
+      
+      try {
+        const response = await uploadFile(filePath, AUTH_TOKEN);
+        console.log(`  ✓ Success`);
+        results.success++;
+      } catch (error) {
+        if (error.message.includes('already uploaded') || error.message.includes('Duplicate entry') || error.message.includes('already exists')) {
+          console.log(`  ⊘ Skipped (duplicate)`);
+          results.duplicates++;
+        } else {
+          console.error(`  ✗ Failed: ${error.message}`);
+          results.failed++;
+          results.errors.push({ fileName, year, error: error.message });
+        }
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
   }
 
   console.log('\n=== SUMMARY ===');

@@ -1,14 +1,77 @@
 [
   {
-    "fileName": "CRDR_2_R3309_20251818091805.Pdf",
+    "fileName": "CRDR_2_R2831_20234631044657.Pdf",
+    "year": "2023",
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"Credit Note 2, Item 6: Invalid quantity\"]}"
+  },
+  {
+    "fileName": "CRDR_2_R3309_20231429041405.Pdf",
+    "year": "2023",
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"Credit Note 7, Item 2: Invalid quantity\"]}"
+  },
+  {
+    "fileName": "CRDR_2_R3309_20233001013039.Pdf",
+    "year": "2023",
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"Credit Note 7, Item 1: Invalid quantity\",\"Credit Note 7, Item 2: Invalid quantity\"]}"
+  },
+  {
+    "fileName": "CRDR_2_R3309_20235223065224.Pdf",
+    "year": "2023",
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"Credit Note 2, Item 1: Invalid quantity\",\"Credit Note 4, Item 4: Invalid quantity\"]}"
+  },
+  {
+    "fileName": "CRDR_2_R3309_20235922095919.Pdf",
+    "year": "2023",
     "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"No credit notes found in document\"]}"
   },
   {
-    "fileName": "CRDR_2_R3309_20253617053659.Pdf",
+    "fileName": "CRDR_2_R3309_20240204100239.Pdf",
+    "year": "2024",
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"No credit notes found in document\"]}"
+  },
+  {
+    "fileName": "CRDR_2_R3309_20240605050624.Pdf",
+    "year": "2024",
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"No credit notes found in document\"]}"
+  },
+  {
+    "fileName": "CRDR_2_R3309_20240811080831.Pdf",
+    "year": "2024",
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"No credit notes found in document\"]}"
+  },
+  {
+    "fileName": "CRDR_2_R3309_20242229062241.Pdf",
+    "year": "2024",
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"No credit notes found in document\"]}"
+  },
+  {
+    "fileName": "CRDR_2_R3309_20242918042935.Pdf",
+    "year": "2024",
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"No credit notes found in document\"]}"
+  },
+  {
+    "fileName": "CRDR_2_R3309_20243322113323.Pdf",
+    "year": "2024",
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"No credit notes found in document\"]}"
+  },
+  {
+    "fileName": "CRDR_2_R3309_20243601093657.Pdf",
+    "year": "2024",
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"No credit notes found in document\"]}"
+  },
+  {
+    "fileName": "CRDR_2_R3309_20244201094225.Pdf",
+    "year": "2024",
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"No credit notes found in document\"]}"
+  },
+  {
+    "fileName": "CRDR_2_R3309_20245825055859.Pdf",
+    "year": "2024",
     "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"No credit notes found in document\"]}"
   },
   {
     "fileName": "CRDR_2_R3309_20253824113835.Pdf",
+    "year": "2025",
     "error": "HTTP 400: {\"success\":false,\"error\":\"Invalid credit note format\",\"validationErrors\":[\"No credit notes found in document\"]}"
   }
 ]

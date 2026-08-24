@@ -309,14 +309,22 @@ const processBillsAndUpdateStatuses = async (rosReceiptId, bills) => {
         console.log(`Invoice update result: ${invoiceResult.affectedRows} rows affected`);
         
         if (invoiceResult.affectedRows > 0) {
-          // Record the clearing
-          const clearQuery = `
-            INSERT INTO ros_receipt_cleared_items 
-            (ros_receipt_id, item_type, item_id, bill_number, amount) 
-            VALUES (?, 'invoice', (SELECT id FROM invoices WHERE invoice_number = ? LIMIT 1), ?, ?)
-          `;
-          await db.execute(clearQuery, [rosReceiptId, bill_number, bill_number, amount]);
-          console.log(`Recorded clearing for invoice: ${bill_number}`);
+          // Get the actual invoice ID that was updated
+          const [invoiceIdResult] = await db.execute(
+            'SELECT id FROM invoices WHERE invoice_number = ? LIMIT 1',
+            [bill_number]
+          );
+          
+          if (invoiceIdResult.length > 0) {
+            // Record the clearing with the actual invoice ID
+            const clearQuery = `
+              INSERT INTO ros_receipt_cleared_items 
+              (ros_receipt_id, item_type, item_id, bill_number, amount) 
+              VALUES (?, 'invoice', ?, ?, ?)
+            `;
+            await db.execute(clearQuery, [rosReceiptId, invoiceIdResult[0].id, bill_number, amount]);
+            console.log(`Recorded clearing for invoice: ${bill_number}`);
+          }
         } else {
           console.log(`No matching invoice found for: ${bill_number} with amount ${amount}`);
         }
@@ -344,14 +352,22 @@ const processBillsAndUpdateStatuses = async (rosReceiptId, bills) => {
         console.log(`Credit note update result: ${creditNoteResult.affectedRows} rows affected`);
         
         if (creditNoteResult.affectedRows > 0) {
-          // Record the clearing
-          const clearQuery = `
-            INSERT INTO ros_receipt_cleared_items 
-            (ros_receipt_id, item_type, item_id, bill_number, amount) 
-            VALUES (?, 'credit_note', (SELECT id FROM credit_notes WHERE credit_note_number = ? LIMIT 1), ?, ?)
-          `;
-          await db.execute(clearQuery, [rosReceiptId, bill_number, bill_number, amount]);
-          console.log(`Recorded clearing for credit note: ${bill_number}`);
+          // Get the actual credit note ID that was updated
+          const [creditNoteIdResult] = await db.execute(
+            'SELECT id FROM credit_notes WHERE credit_note_number = ? LIMIT 1',
+            [bill_number]
+          );
+          
+          if (creditNoteIdResult.length > 0) {
+            // Record the clearing with the actual credit note ID
+            const clearQuery = `
+              INSERT INTO ros_receipt_cleared_items 
+              (ros_receipt_id, item_type, item_id, bill_number, amount) 
+              VALUES (?, 'credit_note', ?, ?, ?)
+            `;
+            await db.execute(clearQuery, [rosReceiptId, creditNoteIdResult[0].id, bill_number, amount]);
+            console.log(`Recorded clearing for credit note: ${bill_number}`);
+          }
         } else {
           console.log(`No matching credit note found for: ${bill_number}`);
         }

@@ -420,6 +420,9 @@ const uploadInvoice = async (req, res) => {
       // Prices are already synced in the loop above, stock batches are created with prices
       // This ensures Manage Products = Manage Stock = Sales Timeline consistency
       
+      // Check if this invoice appears in any existing ROS receipts and update status
+      await checkAndUpdateInvoiceStatus(invoiceId, parsedData.invoiceNo, connection);
+      
       res.json({ success: true, message: 'Invoice processed successfully', data: validationResult });
     } catch (error) {
       await connection.rollback();
@@ -443,6 +446,56 @@ const verifyInvoice = async (req, res) => {
   } catch (error) {
     console.error('Invoice verification error:', error);
     res.status(500).json({ success: false, error: `Failed to verify invoice: ${error.message}` });
+  }
+};
+
+// Check if invoice exists in any ROS receipt and update status to cleared (reverse logic)
+const checkAndUpdateInvoiceStatus = async (invoiceId, invoiceNumber, connection) => {
+  try {
+    console.log(`Checking reverse logic for invoice: ${invoiceNumber}`);
+    
+    // Check if this invoice number exists in any ROS receipt bills
+    const [rosReceipts] = await connection.execute(`
+      SELECT id, receipt_number, bills 
+      FROM ros_receipts 
+      WHERE JSON_SEARCH(bills, 'one', ?, NULL, '$[*].bill_number') IS NOT NULL
+    `, [invoiceNumber]);
+    
+    if (rosReceipts.length > 0) {
+      console.log(`Found ${rosReceipts.length} ROS receipt(s) containing invoice ${invoiceNumber}`);
+      
+      // Update invoice status to cleared
+      await connection.execute(`
+        UPDATE invoices 
+        SET status = 'cleared' 
+        WHERE id = ?
+      `, [invoiceId]);
+      
+      console.log(`Updated invoice ${invoiceNumber} status to 'cleared' due to existing ROS receipt`);
+      
+      // Record the clearing in ros_receipt_cleared_items for each matching ROS receipt
+      for (const rosReceipt of rosReceipts) {
+        const bills = typeof rosReceipt.bills === 'string' ? JSON.parse(rosReceipt.bills) : rosReceipt.bills;
+        
+        // Find the matching bill in this ROS receipt
+        const matchingBill = bills.find(bill => bill.bill_number === invoiceNumber && bill.doc_type === 'SR');
+        
+        if (matchingBill) {
+          await connection.execute(`
+            INSERT INTO ros_receipt_cleared_items 
+            (ros_receipt_id, item_type, item_id, bill_number, amount) 
+            VALUES (?, 'invoice', ?, ?, ?)
+          `, [rosReceipt.id, invoiceId, invoiceNumber, matchingBill.amount]);
+          
+          console.log(`Recorded clearing for invoice ${invoiceNumber} in ROS receipt ${rosReceipt.receipt_number}`);
+        }
+      }
+    } else {
+      console.log(`No ROS receipt found containing invoice ${invoiceNumber}`);
+    }
+  } catch (error) {
+    console.error('Error checking reverse logic for invoice:', error);
+    // Don't throw error - this is a nice-to-have feature
   }
 };
 
@@ -1252,6 +1305,7 @@ module.exports = {
   uploadMultipleInvoices,
   verifyInvoice, 
   checkInvoice,
+  checkAndUpdateInvoiceStatus,
   getInvoicesByMonth,
   getTotalPackingMaterialCosts,
   getInvoiceById,

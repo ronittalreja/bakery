@@ -1,586 +1,1597 @@
 [
   {
-    "fileName": "ROSRECIEPT_DF_R3309_20250026040053.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "fileName": "ROSRECIEPT_DF_R3309_20230223040229.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
-    "fileName": "ROSRECIEPT_DF_R3309_20250027100012.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "fileName": "ROSRECIEPT_DF_R3309_20230226050207.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230307040318.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230330100346.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230331100353.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230404050459.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230404100403.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230411060433.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230418040433.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230419060453.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230604040626.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230604040647.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230625040619.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230721050724.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230731050733.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230904040902.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230907040926.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230909040941.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230913060918.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20230919040903.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231004101056.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231023041059.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231101051122.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231220051210.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231227041209.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231313041341.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231430041406.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231502051519.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231505051533.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231511041548.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231514041506.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231516041538.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231609041617.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231629041654.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231728101735.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231801041848.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231918041924.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20231930041947.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232003042040.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232006042008.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232007032003.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232018022039.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232022042048.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232101042154.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232212042258.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232221042201.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232228052223.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232310042357.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232403042433.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232413042401.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232413042443.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232528042536.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232718042742.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232827042801.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232921052905.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20232928042908.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20233110043108.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20233112043149.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20233122043109.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20233127043114.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20233229043242.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20233308043357.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20233323103346.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20233323123329.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20233325053354.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20233414043424.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20233624033617.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20233811043838.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20233818043854.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20233904043908.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20233914043956.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234018104045.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234113094120.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234115044104.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234216054253.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234417044448.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234430044409.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234514044533.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234515044546.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234522104549.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234620044607.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234717034700.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234717054705.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234725044717.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234802084802.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234804044844.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234806034813.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234806044806.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234819054819.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20234905044934.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235011045056.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235026045027.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235124055101.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235213045245.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235220045232.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235306035307.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235322045355.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235409035421.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235423045428.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235509035546.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235620115645.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235705095741.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235707035709.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235707035732.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235811035809.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235813095813.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235824055859.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235826035817.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235830035821.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235909045909.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235916045937.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20235920035917.Pdf",
+    "year": "2023",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240004040053.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240007040048.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240012050011.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240019050016.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240029040047.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240108030111.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240118050112.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240125040158.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240219040249.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240223040226.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240224040253.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240316060342.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240328050332.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240405040452.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240431040421.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240526040531.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240529040531.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240702040733.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240730060750.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240802060859.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240803040830.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240817040853.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240829040815.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20240916040938.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241002041047.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241102041132.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241109041109.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241114041100.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241116051157.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241220041255.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241229041258.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241230041220.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241324051304.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241412041422.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241417031437.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241419031448.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241424041402.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241426031409.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241507051538.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241512051525.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241703031728.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241703041735.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241703051707.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241727051722.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241801041845.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241808041815.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241831041815.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241919041931.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241925031945.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20241927031909.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242002102047.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242028032022.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242112042103.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242120032111.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242205032209.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242208042237.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242223052208.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242306032344.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242308052322.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242407042415.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242417032413.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242420052454.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242430042441.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242502032528.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242519042558.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242521042527.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242530052548.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242605042643.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242630042633.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242704042716.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242705042756.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242706042759.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242710052759.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242718032757.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242719052742.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242809042800.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242810042801.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242828052800.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242903032910.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20242916042933.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243015043050.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243015053028.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243016043040.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243023043047.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243026043019.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243031053057.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243103043109.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243119043107.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243121043137.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243212043246.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243310083317.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243322033323.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243322053307.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243401043415.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243411073409.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243418033425.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243505033518.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243518043529.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243519043520.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243521033509.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243524043509.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243531033552.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243606053630.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243609033621.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243611043648.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243618043637.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243710033705.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243713053712.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243719023729.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243814043824.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243824033804.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243825043819.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243827043849.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243902083931.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243903053910.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243913043957.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243929043929.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20243930033944.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244007034044.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244025054017.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244121054159.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244123034145.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244127054110.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244128034103.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244131044117.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244229044212.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244302044323.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244320014335.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244410044451.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244503034515.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244505034524.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244522034549.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244522044557.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244523044551.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244530024502.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244623034611.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244709044726.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244711034710.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244723044739.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244805044819.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244824044823.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244826054834.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244829044840.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244913034946.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20244914054952.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245017055017.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245104045152.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245111045152.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245119035137.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245125035148.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245126045117.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245129055147.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245211035224.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245216035231.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245218035210.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245302045342.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245325035357.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245327055325.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245519045523.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245605055640.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245626035617.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245702045758.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245801055840.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"connect ETIMEDOUT 146.75.41.137:443; connect ENETUNREACH 2606:4700::6810:4e06:443 - Local (:::0); connect ENETUNREACH 2606:4700::6810:4f06:443 - Local (:::0)\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20245925055947.Pdf",
+    "year": "2024",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20250028040033.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20250028040042.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250030050015.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250119050136.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250126060122.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250202050216.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250203110259.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250204090217.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250305050320.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250416050435.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250504060500.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250526060506.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250530040538.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250614040602.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250630050648.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250631040638.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250709050728.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250721060746.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250722040743.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250725040753.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250801030826.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250815050833.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250817040811.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250829050826.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250902070954.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20250913040918.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20250921050942.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251017051035.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251019051057.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251021121041.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251024041025.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251103041110.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251125041157.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251216041212.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251221041220.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251303041346.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251303101356.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251305041334.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251321041332.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251402041438.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251408041416.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251413041441.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251417041421.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251423041402.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20251506041513.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251517041531.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251604041619.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251620061633.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251711041737.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20251717051704.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251719041724.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20251724041725.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
-    "fileName": "ROSRECIEPT_DF_R3309_20251805041838.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20251807051833.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252015052037.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "fileName": "ROSRECIEPT_DF_R3309_20252030052032.Pdf",
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20252115042109.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252129052158.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252203052202.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252210052210.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20252307052311.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20252313052334.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252401042432.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252410052424.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252418052401.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252418052456.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252518042549.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20252524042504.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252529062526.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252603052658.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252608052632.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252611042632.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252612042602.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252618052611.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252731042717.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252807042819.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20252810042836.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
-    "fileName": "ROSRECIEPT_DF_R3309_20252816042855.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252905052921.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252929042958.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20252931042919.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20253103053135.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20253115073141.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20253314053350.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20253318043300.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20253412043444.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20253416053459.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20253417043402.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20253508043507.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "fileName": "ROSRECIEPT_DF_R3309_20253025043050.Pdf",
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20253511093518.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20253512033535.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20253531043524.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20253705043752.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20253708033706.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20253818033836.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
-    "fileName": "ROSRECIEPT_DF_R3309_20253820043845.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20253824063818.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20253922043946.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20254014044018.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20254120044132.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20254225054257.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20254311044351.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "fileName": "ROSRECIEPT_DF_R3309_20254129044145.Pdf",
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20254320044358.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20254331044308.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20254425044414.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20254426094423.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20254428044456.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20254507034509.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20254601044612.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 502: \"\""
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20254604044617.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20254611044656.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20254630044623.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20254705084749.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20254710044732.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20254830044807.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20254909034940.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20254911044911.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20254923034955.Pdf",
-    "error": "HTTP 500: connect ETIMEDOUT 146.75.41.137:443; connect ENETUNREACH 2606:4700::6810:4f06:443 - Local (:::0); connect ENETUNREACH 2606:4700::6810:4e06:443 - Local (:::0)"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20254924034946.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20255011045000.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20255025035029.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
-    "fileName": "ROSRECIEPT_DF_R3309_20255028045008.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255202045252.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255223035210.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255301045336.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255318045306.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "fileName": "ROSRECIEPT_DF_R3309_20255128045121.Pdf",
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20255403045421.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
-    "fileName": "ROSRECIEPT_DF_R3309_20255411055413.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255422055409.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255511045513.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255604045623.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255606045646.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "fileName": "ROSRECIEPT_DF_R3309_20255524035542.Pdf",
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20255617035658.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255619045616.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255626035644.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255628045634.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255630045630.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255701045741.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255724045737.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255729055700.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20255805035851.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255809045835.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255812045815.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
-  },
-  {
-    "fileName": "ROSRECIEPT_DF_R3309_20255909045933.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   },
   {
     "fileName": "ROSRECIEPT_DF_R3309_20255915035937.Pdf",
-    "error": "HTTP 500: Column 'item_id' cannot be null"
+    "year": "2025",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20260121050126.Pdf",
+    "year": "2026",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20260217050221.Pdf",
+    "year": "2026",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20261211041209.Pdf",
+    "year": "2026",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20261312041314.Pdf",
+    "year": "2026",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20261605041644.Pdf",
+    "year": "2026",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20262407052404.Pdf",
+    "year": "2026",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20263018043009.Pdf",
+    "year": "2026",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20263904033934.Pdf",
+    "year": "2026",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20264610054605.Pdf",
+    "year": "2026",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20264814044842.Pdf",
+    "year": "2026",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20264820044850.Pdf",
+    "year": "2026",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20264913034915.Pdf",
+    "year": "2026",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
+  },
+  {
+    "fileName": "ROSRECIEPT_DF_R3309_20265519055547.Pdf",
+    "year": "2026",
+    "error": "HTTP 500: {\"success\":false,\"error\":\"Column 'item_id' cannot be null\"}"
   }
 ]
