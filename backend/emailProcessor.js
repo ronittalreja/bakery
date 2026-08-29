@@ -15,7 +15,9 @@ class EmailProcessor {
       host: 'imap.gmail.com',
       port: 993,
       tls: true,
-      tlsOptions: { rejectUnauthorized: false }
+      tlsOptions: { rejectUnauthorized: false },
+      connTimeout: 60000, // 60 seconds connection timeout
+      authTimeout: 60000 // 60 seconds authentication timeout
     };
     
     this.processedEmailsFile = path.join(__dirname, 'processed_emails.json');
