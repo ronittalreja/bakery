@@ -1,185 +1,242 @@
 # 🍰 Monginis Franchise Management System
 
-A comprehensive bakery management system built with Next.js frontend and Node.js backend, featuring inventory management, sales tracking, invoice processing, and analytics.
+A full-stack franchise management system built to streamline bakery operations including inventory, sales, POS, returns, expenses, invoicing, and business analytics.
 
-## 🚀 Features
+The system is designed around the day-to-day workflow of a bakery franchise, providing separate functionality for administrators and staff while automating repetitive operational tasks such as stock rotation and invoice processing.
 
-### 📊 **Admin Dashboard**
-- Sales analytics and insights
-- Stock management with FEFO (First Expiry, First Out)
-- Product and decoration management
-- Expense tracking
-- Returns processing (GRM/GVN)
-- Invoice and credit note management
+## 🚀 Overview
 
-### 🛒 **Staff Functions**
-- Point of Sale (POS) system
-- Stock management
+### �‍💼 Admin
+- Monitor sales and business performance through analytics
+- Manage products, decorations, and inventory
+- Track expenses and operational costs
+- Process returns and credit notes
+- Manage invoices and stock movement
+- Monitor staff sales performance
+
+### 👨‍🍳 Staff
+- Process sales through the POS system
+- Record daily transactions
+- Manage and update stock
+- Process product returns
+- View daily sales and inventory information
+
+## 📦 Inventory Management
+
+A key part of the system is the inventory workflow built around **FEFO (First Expiry, First Out)**.
+
+The system tracks inventory at the batch level and prioritizes products based on expiry dates, helping reduce product wastage and ensuring that items approaching expiry are used first.
+
+### Inventory capabilities
+- FEFO-based stock allocation
+- Batch-level inventory tracking
+- Expiry date tracking
+- Low-stock monitoring
+- Stock movement tracking
+- Inventory reports
+- Automatic stock updates from sales and returns
+
+## 🛒 Point of Sale & Sales Management
+
+The POS module allows staff to record day-to-day bakery transactions while maintaining synchronized inventory.
+
+### Sales capabilities
+- Product-based POS billing
+- Multiple payment methods
 - Sales recording
-- Returns processing
-- Today's sales and stock overview
+- Invoice generation
+- Daily sales tracking
+- Sales history
+- Staff-wise sales tracking
+- Automatic inventory deduction
 
-### 📄 **Document Processing**
-- PDF invoice upload and parsing
+## 📄 Invoice & Document Processing
+
+The system includes document processing functionality to reduce manual data entry from operational documents.
+
+### Supported workflows
+- PDF invoice uploads
+- Automated invoice data extraction
+- Invoice validation
 - Credit note processing
+- GRM/GVN return processing
 - ROS receipt handling
-- Automated data extraction
+- Automatic inventory updates from processed documents
+
+This allows operational documents to be converted into structured data that can be used by the inventory and sales modules.
+
+## 📊 Analytics Dashboard
+
+The admin dashboard provides an overview of the franchise's operational and financial activity.
+
+### Analytics include
+- Daily sales
+- Weekly and monthly sales
+- Product performance
+- Inventory status
+- Stock movement
+- Staff performance
+- Expense tracking
+- Sales trends
+
+## 🏗️ System Architecture
+
+The application follows a **separated frontend and backend architecture**:
+
+```text
+                    ┌─────────────────────┐
+                    │      Next.js        │
+                    │     Frontend        │
+                    └──────────┬──────────┘
+                               │
+                         REST API / HTTP
+                               │
+                    ┌──────────▼──────────┐
+                    │   Node.js +         │
+                    │   Express.js        │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │       MySQL         │
+                    │      Database       │
+                    └─────────────────────┘
+```
+
+The backend is organized using controllers, routes, models, and middleware to keep business logic modular and maintainable.
 
 ## 🛠️ Tech Stack
 
 ### Frontend
 - **Next.js 14** - React framework
+- **React.js** - UI library
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Styling
 - **Radix UI** - Component library
-- **Chart.js/Recharts** - Data visualization
+- **Recharts** - Data visualization
 
 ### Backend
 - **Node.js** - Runtime
 - **Express.js** - Web framework
 - **MySQL** - Database
-- **JWT** - Authentication
+- **JWT Authentication** - Security
 - **Multer** - File uploads
-- **PDF parsing** - Document processing
+- **PDF Parsing** - Document processing
 
-## 🚀 Quick Start
+### Architecture & Engineering
+- RESTful API architecture
+- Role-based authentication
+- Modular backend structure
+- Batch-level inventory management
+- FEFO stock allocation
+- Automated document processing
+- Transaction-based sales and inventory updates
 
-### Prerequisites
-- Node.js 18+
-- MySQL 8.0+
-- Git
+## 🔐 Authentication & Authorization
 
-### Installation
+The application implements JWT-based authentication with role-based access control.
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/monginis.git
-   cd monginis
-   ```
+Different roles receive access to functionality relevant to their responsibilities, separating administrative operations from day-to-day staff workflows.
 
-2. **Backend Setup**
-   ```bash
-   cd backend
-   npm install
-   cp .env.example .env
-   # Update .env with your database credentials
-   npm run dev
-   ```
+## 💡 Key Engineering Challenges
 
-3. **Frontend Setup**
-   ```bash
-   cd frontend
-   npm install
-   cp .env.example .env.local
-   # Update .env.local with your API URL
-   npm run dev
-   ```
+### FEFO Inventory Logic
+Implemented expiry-aware inventory allocation so that stock approaching expiry is prioritized during sales.
 
-4. **Database Setup**
-   ```bash
-   cd backend
-   node migrate.js
-   ```
-
-### Default Credentials
-- **Admin**: `admin` / `admin123`
-- **Staff**: `R3309` / `staff123`
-
-## 🌐 Deployment
-
-### Free Hosting Options
-- **Frontend**: Vercel (unlimited personal projects)
-- **Backend**: Railway (500 hours/month free)
-- **Database**: Railway MySQL (included)
-
-See `DEPLOYMENT_GUIDE.md` for detailed deployment instructions.
-
-## 📁 Project Structure
-
-```
-monginis/
-├── frontend/                 # Next.js frontend
-│   ├── app/                  # App router pages
-│   ├── components/           # React components
-│   ├── hooks/                # Custom hooks
-│   ├── lib/                  # Utilities
-│   └── types/                # TypeScript types
-├── backend/                  # Node.js backend
-│   ├── controllers/          # Route controllers
-│   ├── models/               # Database models
-│   ├── routes/               # API routes
-│   ├── middleware/           # Custom middleware
-│   ├── utils/                # Utilities
-│   └── Uploads/               # File uploads
-└── DEPLOYMENT_GUIDE.md       # Deployment instructions
-```
-
-## 🔧 Environment Variables
-
-### Backend (.env)
-```env
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=monginis_db
-JWT_SECRET=your_jwt_secret
-NODE_ENV=development
-PORT=5000
-```
-
-### Frontend (.env.local)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5000
-```
-
-## 📊 Key Features
-
-### Inventory Management
-- **FEFO System**: Automatic expiry-based stock rotation
-- **Batch Tracking**: Track products by invoice and expiry
-- **Low Stock Alerts**: Automatic notifications
-- **Stock Reports**: Comprehensive inventory analytics
-
-### Sales Management
-- **POS System**: Quick sales recording
-- **Payment Tracking**: Multiple payment methods
-- **Sales Analytics**: Daily, weekly, monthly reports
-- **Staff Performance**: Individual sales tracking
+### Inventory Synchronization
+Sales, returns, and document processing interact with the inventory system to maintain accurate stock levels.
 
 ### Document Processing
-- **PDF Parsing**: Automatic invoice data extraction
-- **Credit Notes**: Customer credit management
-- **ROS Receipts**: Return of sale processing
-- **Data Validation**: Automated error checking
+Designed a workflow for extracting structured information from PDF invoices and operational documents, reducing manual data entry.
 
-## 🤝 Contributing
+### Role-Based Access
+Implemented authentication and authorization to provide different capabilities for administrators and staff.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### Operational Analytics
+Built dashboards that transform transactional data into useful sales, inventory, expense, and performance insights.
 
-## 📄 License
+## 🔧 Technical Implementation
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Email Processing Automation
 
-## 🆘 Support
+The system uses IMAP to automatically process emails from receipt5@mongini.in and extract attachments for upload.
 
-For support and questions:
-- Create an issue on GitHub
-- Check the deployment guide for common issues
-- Review the documentation in each component
+**Implementation:**
+- **IMAP Connection**: Uses `imap` library to connect to Gmail with app password authentication
+- **Email Parsing**: `mailparser` library extracts attachments and metadata from emails
+- **Type Detection**: Email subject patterns identify document type (Invoice, CRDR, ROS Receipt)
+- **Upload API**: Attachments are uploaded to respective endpoints via REST API
+- **Deduplication**: `processed_emails.json` tracks processed emails to prevent reprocessing
+- **Scheduling**: GitHub Actions cron job runs every 3 hours (`0 */3 * * *`)
+- **Timeout Handling**: IMAP connection and authentication timeouts set to 60 seconds to prevent failures
 
-## 🎯 Roadmap
+### PDF Document Processing
 
-- [ ] Mobile app (React Native)
-- [ ] Advanced analytics dashboard
-- [ ] Multi-location support
-- [ ] API documentation
-- [ ] Automated testing
-- [ ] Performance optimization
+PDF invoices and credit notes are parsed using `pdf-parse` to extract structured data.
 
----
+**Implementation:**
+- **Text Extraction**: `pdf-parse` library extracts raw text from PDF files
+- **Regex Pattern Matching**: Custom regex patterns identify invoice numbers, dates, line items, and amounts
+- **Data Validation**: Extracted data is validated against expected formats before database insertion
+- **Item Code Resolution**: Line item codes are matched against existing products; new products are auto-created
+- **Cloudinary Storage**: Original PDFs are uploaded to Cloudinary for persistent storage
+- **Error Handling**: Failed uploads are logged to error JSON files for review
 
-**Built with ❤️ for Monginis Franchise Management**
+### Status Reconciliation System
+
+The system maintains bidirectional status updates between ROS receipts and invoices/credit notes.
+
+**Implementation:**
+- **Forward Logic**: When ROS receipt is uploaded, matching invoices/CRDR are updated to 'cleared' status
+- **Reverse Logic**: When invoice/CRDR is uploaded, system checks if it exists in any existing ROS receipt and updates status
+- **JSON Search**: MySQL `JSON_SEARCH` function queries JSON bills array for matching bill numbers
+- **Cleared Items Tracking**: `ros_receipt_cleared_items` table records all status updates for audit trail
+- **Null Safety**: Explicit ID queries prevent null foreign key errors when matching documents don't exist
+
+### FEFO Inventory Algorithm
+
+The First Expiry, First Out algorithm prioritizes stock based on expiry dates.
+
+**Implementation:**
+- **Batch Tracking**: Each inventory entry has `invoice_id` and `expiry_date`
+- **Sorting**: Stock is sorted by `expiry_date ASC` before allocation
+- **Allocation Logic**: Sales consume from earliest-expiring batches first
+- **Stock Updates**: `stock_quantity` is decremented per batch; batches reach zero before moving to next
+- **Return Handling**: Returns add stock back to original batch with same expiry date
+
+### Authentication & Authorization
+
+JWT-based authentication with role-based access control.
+
+**Implementation:**
+- **JWT Generation**: User login generates signed JWT with user ID and role
+- **Middleware**: `authMiddleware.js` verifies JWT token on protected routes
+- **Role Check**: Routes check `req.user.role` to authorize access (admin vs staff)
+- **Password Hashing**: `bcrypt` hashes passwords before storage
+- **Token Expiry**: JWT tokens expire after configurable time (default 24h)
+
+### File Upload Handling
+
+Multer handles file uploads with Cloudinary integration for persistent storage.
+
+**Implementation:**
+- **Multer Config**: Memory storage for temporary file handling
+- **Cloudinary Upload**: `cloudinary.uploader.upload` stores files with organized folder structure
+- **Folder Structure**: `invoices/`, `credit-notes/`, `ros-receipts/` folders
+- **URL Retrieval**: Cloudinary returns secure URLs stored in database
+- **Error Handling**: Upload failures return 400/500 with descriptive messages
+
+### Database Schema
+
+MySQL database with normalized tables for data integrity.
+
+**Key Tables:**
+- **users**: Authentication and role management
+- **products**: Product catalog with pricing and stock levels
+- **inventory**: Batch-level stock tracking with expiry dates
+- **sales**: Transaction records with items and payment details
+- **invoices**: Parsed invoice data with Cloudinary URLs
+- **credit_notes**: Credit note records with return details
+- **ros_receipts**: ROS receipts with JSON bills array
+- **ros_receipt_cleared_items**: Audit trail for status updates
+- **expenses**: Operational expense tracking
+
