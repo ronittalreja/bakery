@@ -235,22 +235,23 @@ class EmailProcessor {
 
           console.log(`📬 Total messages in INBOX: ${box.messages.total}`);
 
-          // Get today's date in the format IMAP expects (DD-MMM-YYYY)
-          const today = new Date();
-          const todayStr = today.toLocaleDateString('en-US', { 
+          // Get yesterday's date in the format IMAP expects (DD-MMM-YYYY)
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toLocaleDateString('en-US', { 
             day: '2-digit', 
             month: 'short', 
             year: 'numeric',
             timeZone: 'Asia/Kolkata'
           }).replace(',', '');
 
-          console.log(`📅 Searching for emails from: ${todayStr}`);
+          console.log(`📅 Searching for emails from: ${yesterdayStr}`);
 
-          // Search for emails from today that are NOT labeled as "BAKERY-PROCESSED"
+          // Search for emails from yesterday onwards that are NOT labeled as "BAKERY-PROCESSED"
           // This allows processing even if email was read on phone
           // We use a custom label to track processed emails instead of UNSEEN
           imap.search(
-            [['FROM', 'receipt5@mongini.in'], ['SINCE', todayStr], ['UNKEYWORD', 'BAKERY-PROCESSED']],
+            [['FROM', 'receipt5@mongini.in'], ['SINCE', yesterdayStr], ['UNKEYWORD', 'BAKERY-PROCESSED']],
             (err, results) => {
             if (err) {
               clearTimeout(timeoutId);
@@ -261,14 +262,14 @@ class EmailProcessor {
             }
 
             if (!results || results.length === 0) {
-              console.log('📭 No new emails from receipt5@mongini.in for today');
+              console.log('📭 No new emails from receipt5@mongini.in from yesterday onwards');
               clearTimeout(timeoutId);
               imap.end();
               resolve();
               return;
             }
 
-            console.log(`📨 Found ${results.length} new emails from receipt5@mongini.in for today`);
+            console.log(`📨 Found ${results.length} new emails from receipt5@mongini.in from yesterday onwards`);
 
             // Process emails sequentially to avoid overwhelming the system
             const fetch = imap.fetch(results, { bodies: '', struct: true });
