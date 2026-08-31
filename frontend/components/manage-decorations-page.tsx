@@ -157,7 +157,6 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
       }));
       setDecorations(mappedDecorations);
     } catch (err: any) {
-      console.error("Error fetching decorations:", err);
       setError(err.message || "Failed to fetch decorations");
       setDecorations([]);
       setTimeout(() => setError(""), 5000);
@@ -188,7 +187,6 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
       
       setStockHistory(filteredHistory);
     } catch (err: any) {
-      console.error("Error fetching stock history:", err);
       setError(err.message || "Failed to fetch stock history");
       setStockHistory([]);
       setTimeout(() => setError(""), 5000);
@@ -397,7 +395,6 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
       resetForm();
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err: any) {
-      console.error("Error saving decoration:", err);
       setError(err.message || "Failed to save decoration");
       setTimeout(() => setError(""), 5000);
     } finally {
@@ -453,7 +450,6 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
       setSuccessMessage(`Decoration "${decoration.name}" deleted successfully!`);
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err: any) {
-      console.error("Error deleting decoration:", err);
       setError(err.message || "Failed to delete decoration");
       setTimeout(() => setError(""), 5000);
     } finally {
@@ -543,7 +539,6 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
       setSuccessMessage(`Stock added successfully! New stock: ${newStock}`);
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err: any) {
-      console.error("Error adding stock:", err);
       setError(err.message || "Failed to add stock");
       setTimeout(() => setError(""), 5000);
     } finally {
@@ -615,7 +610,6 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
       setSuccessMessage(`Stock adjusted successfully! New stock: ${newStock}`);
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err: any) {
-      console.error("Error adjusting stock:", err);
       setError(err.message || "Failed to adjust stock");
       setTimeout(() => setError(""), 5000);
     } finally {

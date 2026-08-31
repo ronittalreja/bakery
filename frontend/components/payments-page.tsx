@@ -147,16 +147,12 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
   // Calculate invoice status based on ROS receipts
   useEffect(() => {
     if (invoices.length > 0 && rosReceipts.length > 0) {
-      console.log('Calculating invoice status...');
-      console.log('Invoices:', invoices.map(inv => ({ number: inv.invoice_number, currentStatus: inv.status })));
-      console.log('ROS Receipts bills:', rosReceipts.flatMap(r => r.bills || []).map(b => ({ type: b.doc_type, number: b.bill_number })));
       
       const invoicesWithStatus = invoices.map((invoice: Invoice) => {
         const appearsInRos = rosReceipts.some((receipt: RosReceipt) => 
           receipt.bills && receipt.bills.some((bill: any) => {
             const match = bill.doc_type === 'SR' && bill.bill_number === invoice.invoice_number;
             if (match) {
-              console.log(`Match found: Invoice ${invoice.invoice_number} matches bill ${bill.bill_number}`);
             }
             return match;
           })
@@ -164,7 +160,6 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
         return { ...invoice, status: (appearsInRos ? 'cleared' : 'pending') as 'pending' | 'cleared' };
       });
       
-      console.log('Updated invoices:', invoicesWithStatus.map(inv => ({ number: inv.invoice_number, status: inv.status })));
       setInvoices(invoicesWithStatus);
     }
   }, [rosReceipts]); // Only depend on rosReceipts to avoid infinite loop
@@ -231,20 +226,16 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       }
 
       const data = await response.json();
-      console.log("Credit notes API response:", data);
       
       if (data.success) {
         // Use the same data structure as staff dashboard
         const creditNotes = data.creditNotes || [];
-        console.log("Credit notes data:", creditNotes);
-        console.log("First credit note items:", creditNotes[0]?.items);
-        setCreditNotes(creditNotes);
+            setCreditNotes(creditNotes);
       } else {
         setError(data.error || "Failed to fetch credit notes");
         setCreditNotes([]);
       }
     } catch (err: any) {
-      console.error("Error fetching credit notes:", err);
       setError(err.message || "Failed to fetch credit notes");
       setCreditNotes([]);
     } finally {
@@ -282,7 +273,6 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       }
 
       const data = await response.json();
-      console.log("ROS receipts API response:", data);
       
       if (data.success) {
         setRosReceipts(data.rosReceipts || []);
@@ -291,7 +281,6 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
         setRosReceipts([]);
       }
     } catch (err: any) {
-      console.error("Error fetching ROS receipts:", err);
       setError(err.message || "Failed to fetch ROS receipts");
       setRosReceipts([]);
     } finally {
@@ -322,7 +311,6 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       const data = await response.json();
       setInvoicesFromRos(data.invoices || []);
     } catch (err: any) {
-      console.error("Error fetching invoices from ROS receipts:", err);
       setInvoicesFromRos([]);
     }
   };
@@ -350,7 +338,6 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       const data = await response.json();
       setCreditNotesFromRos(data.creditNotes || []);
     } catch (err: any) {
-      console.error("Error fetching credit notes from ROS receipts:", err);
       setCreditNotesFromRos([]);
     }
   };

@@ -131,7 +131,6 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
         setProducts(mapped);
       }
     } catch (err: any) {
-      console.error("Error fetching products:", err);
       setError(err.message || "Failed to fetch products");
       setTimeout(() => setError(""), 5000);
     }
@@ -167,7 +166,6 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
         const stockArray = Array.isArray(data) ? data : data.data || [];
 
         if (!Array.isArray(stockArray)) {
-          console.warn("Stock data is not an array, using empty array");
           setStockItems([]);
         } else {
           // Map backend rows to UI StockItem
@@ -187,8 +185,7 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
           setStockItems(mapped);
         }
       } catch (err: any) {
-        console.error("Error fetching stock:", err);
-        setError(err.message || "Failed to fetch stock data");
+          setError(err.message || "Failed to fetch stock data");
         setStockItems([]);
         setTimeout(() => setError(""), 5000);
       } finally {
@@ -362,7 +359,6 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
       resetForm();
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err: any) {
-      console.error("Error saving stock:", err);
       setError(err.message || "Failed to save stock item");
       setTimeout(() => setError(""), 5000);
     } finally {
@@ -424,7 +420,6 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
       setSuccessMessage("Stock batch deleted successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err: any) {
-      console.error("Error deleting stock batch:", err);
       setError(err.message || "Failed to delete stock batch");
       setTimeout(() => setError(""), 5000);
     } finally {

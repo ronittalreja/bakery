@@ -109,7 +109,6 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
       // Try sessionStorage first, fallback to localStorage if needed
       return sessionStorage.getItem("authToken") || localStorage.getItem("token");
     } catch (error) {
-      console.error("Error accessing storage:", error);
       return null;
     }
   };
@@ -155,7 +154,6 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
       });
 
       if (!Array.isArray(productsArray)) {
-        console.warn("Products data is not an array, using empty array");
         setProducts([]);
       } else {
         const mapped = productsArray.map((p: any) => {
@@ -179,7 +177,6 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
         setProducts(mapped);
       }
     } catch (err: any) {
-      console.error("Error fetching products:", err);
       setError(err.message || "Failed to fetch products");
       setProducts([]);
       setTimeout(() => setError(""), 5000);
@@ -287,7 +284,6 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
       resetForm();
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err: any) {
-      console.error("Error saving product:", err);
       setError(err.message || "Failed to save product");
       setTimeout(() => setError(""), 5000);
     } finally {
@@ -323,7 +319,6 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
       setSuccessMessage("Product deleted successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err: any) {
-      console.error("Error deleting product:", err);
       setError(err.message || "Failed to delete product");
       setTimeout(() => setError(""), 5000);
     } finally {

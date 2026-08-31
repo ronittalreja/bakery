@@ -11,9 +11,6 @@ export default function HomePage() {
   const { user, loading } = useAuth()
   const [showAdmin, setShowAdmin] = useState(false)
 
-  // Debug logging
-  console.log("HomePage render:", { user, loading, showAdmin })
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100">

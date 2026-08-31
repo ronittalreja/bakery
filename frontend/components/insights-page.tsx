@@ -105,7 +105,6 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
         const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
         const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
 
-        console.log('Fetching insights for month:', monthStr);
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/insights/monthly/${monthStr}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -114,7 +113,6 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
         });
         
         const data = await response.json();
-        console.log('Insights API response:', data);
         
         if (!response.ok || !data.success) {
           throw new Error(data.error || 'Failed to fetch insights');
@@ -122,7 +120,6 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
         
         setInsights(data.data);
       } catch (err: any) {
-        console.error('Error fetching insights:', err.message);
         setError(err.message || 'Failed to load insights');
       } finally {
         setLoading(false);

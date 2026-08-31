@@ -158,10 +158,8 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
         grmQuantity: Number(p.grm_quantity || 0),
       }));
       
-      console.log('📦 Frontend received products:', mappedProducts);
       setProducts(mappedProducts);
     } catch (err: any) {
-      console.error("Error fetching products:", err);
       setError(err.message || "Failed to fetch products");
       setProducts([]);
     }
@@ -202,7 +200,6 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
       
       setDecorations(mappedDecorations.filter((d: Product) => d.stock > 0));
     } catch (err: any) {
-      console.error("Error fetching decorations:", err);
       setError(err.message || "Failed to fetch decorations");
       setDecorations([]);
     }
@@ -220,7 +217,6 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
     const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
     
     if (newQuantity > product.stock) {
-      console.error(`❌ Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${newQuantity}`);
       return;
     }
     
@@ -264,11 +260,9 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
   const filteredProducts = products.filter(product => {
     const hasStock = product.stock > 0;
     const matchesSearch = searchQuery === '' || product.name.toLowerCase().includes(searchQuery.toLowerCase());
-    console.log(`🔍 Filtering product: ${product.name}, stock=${product.stock}, hasStock=${hasStock}, matchesSearch=${matchesSearch}`);
     return hasStock && matchesSearch;
   });
   
-  console.log(`📊 Filtered products count: ${filteredProducts.length} (from ${products.length} total)`);
 
   const filteredDecorations = decorations.filter(decoration =>
     decoration.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -415,7 +409,6 @@ export function AddSalesPage({ onBack }: AddSalesPageProps) {
         setRefreshSales(() => () => {});
       }, 2000);
     } catch (err: any) {
-      console.error("Error recording sale:", err.message, err.stack);
       setError(err.message || "Failed to record sale");
       setTimeout(() => setError(""), 5000);
     } finally {

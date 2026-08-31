@@ -243,8 +243,6 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
 
       const availableData = await availableResponse.json();
       const processedData = await processedResponse.json();
-      console.log('Available items by expiry:', availableData);
-      console.log('Processed GRM items by expiry:', processedData);
 
       // Process both available and processed items together
       let availableGrouped: any[] = [];
@@ -315,7 +313,6 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
       setGrmProcessedItems(processedWithRemaining);
 
     } catch (err: any) {
-      console.error("Error fetching insider analysis:", err.message);
       setInsiderError(err.message || "Failed to load insider analysis");
       setGrmAvailableItems([]);
       setGrmProcessedItems([]);

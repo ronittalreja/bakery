@@ -165,7 +165,6 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
       
       setProducts(mappedProducts);
     } catch (err: any) {
-      console.error("Error fetching products:", err);
       setError(err.message || "Failed to fetch products");
       setProducts([]);
     }
@@ -207,7 +206,6 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
       
       setDecorations(mappedDecorations.filter((d: Product) => d.stock > 0));
     } catch (err: any) {
-      console.error("Error fetching decorations:", err);
       setDecorations([]);
     }
   }, []);
@@ -341,7 +339,6 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
       );
 
       const data = response;
-      console.log("Sale response:", JSON.stringify(data, null, 2));
       if (!data.success) {
         throw new Error(data.error || "Failed to record sale");
       }
@@ -357,7 +354,6 @@ export function AddSalesPage({ onBack }: EditSalesPageProps) {
       }, 300);
       
     } catch (err: any) {
-      console.error("Error recording sale:", err.message, err.stack);
       setError(err.message || "Failed to record sale");
       setTimeout(() => setError(""), 5000);
     } finally {

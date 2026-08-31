@@ -130,7 +130,6 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
         const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
         const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
         
-        console.log('Fetching sales for month:', monthStr);
         // Use month-wise sales endpoint
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/monthly/${monthStr}`, {
           headers: {
@@ -139,13 +138,11 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
           },
         });
         const data = await response.json();
-        console.log('Sales API response:', data);
         if (!response.ok || !data.success) {
           throw new Error(data.error || 'Failed to fetch sales');
         }
         // data.data is array of sales with items[] each; flatten to item rows
         const rows: any[] = Array.isArray(data.data) ? data.data : [];
-        console.log('Sales rows:', rows.length, 'items');
         const flattened: SaleItem[] = rows.flatMap((sale: any) => {
           const saleId = sale.id || sale.sale_id;
           const saleDate = sale.sale_date || monthStr;
@@ -162,7 +159,6 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
             paymentMethod: payment,
           } as SaleItem));
         });
-        console.log('Flattened sales:', flattened.length, 'items');
         setSales(flattened);
       } catch (err: any) {
         setError(err.message);
@@ -181,7 +177,6 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
         const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
         const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
         
-        console.log('Fetching analytics for month:', monthStr, 'comparison year:', comparisonYear);
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/analytics/monthly/${monthStr}/${comparisonYear}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -189,15 +184,11 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
           },
         });
         const data = await response.json();
-        console.log('Analytics API response:', data);
         if (!response.ok || !data.success) {
           throw new Error(data.error || 'Failed to fetch analytics');
         }
-        console.log('Analytics data:', data.data);
-        console.log('Last month data:', data.data.lastMonth);
         setAnalytics(data.data);
       } catch (err: any) {
-        console.error('Error fetching analytics:', err.message);
         // Don't show error for analytics as it's not critical
       }
     };
@@ -209,7 +200,6 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
           throw new Error('No authentication token found');
         }
         const currentYear = new Date().getFullYear();
-        console.log('Fetching YTD MTD data for year:', currentYear);
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/ytd-mtd/${currentYear}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -217,13 +207,11 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
           },
         });
         const data = await response.json();
-        console.log('YTD MTD API response:', data);
         if (!response.ok || !data.success) {
           throw new Error(data.error || 'Failed to fetch YTD MTD data');
         }
         setYtdMtdData(data.data);
       } catch (err: any) {
-        console.error('Error fetching YTD MTD data:', err.message);
         // Don't show error for YTD MTD as it's not critical
       }
     };
