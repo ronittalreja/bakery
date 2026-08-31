@@ -148,13 +148,15 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
       setTransactions(mappedTransactions);
       
       // Set CRDR status - always set it, even if not available
-      setCrdrStatus(salesData.crdrStatus || {
+      const crdrData = salesData.crdrStatus || {
         available: false,
         extraItems: [],
         extraItemsTotalValue: 0,
         grossSales: 0,
         netSales: 0
-      });
+      };
+      console.log('CRDR Status received:', crdrData);
+      setCrdrStatus(crdrData);
     } catch (err: any) {
       setError(err.message || "Failed to fetch sales transactions");
       setTimeout(() => setError(""), 3000);
@@ -280,6 +282,9 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
               <div className="font-semibold">
                 {crdrStatus?.available ? "CRDR ADJUSTED" : "CRDR NOT AVAILABLE"}
               </div>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Debug: crdrStatus = {JSON.stringify(crdrStatus)}
             </div>
             
             {crdrStatus?.available && (
