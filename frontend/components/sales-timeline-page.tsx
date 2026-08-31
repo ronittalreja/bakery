@@ -270,6 +270,13 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
           </CardHeader>
         </Card>
 
+        {/* DEBUG - Always visible */}
+        <div className="bg-yellow-100 border-2 border-yellow-500 p-4 mb-4">
+          <div className="font-bold text-yellow-900">DEBUG: SalesTimelinePage is rendering</div>
+          <div className="text-sm text-yellow-800">Date: {selectedDate}</div>
+          <div className="text-sm text-yellow-800">crdrStatus: {JSON.stringify(crdrStatus)}</div>
+        </div>
+
         {/* CRDR Status Card */}
         <Card>
           <CardContent className="p-4">
