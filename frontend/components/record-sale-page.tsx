@@ -117,7 +117,6 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
       
       setDecorations(mappedDecorations.filter((d: Product) => d.stock > 0));
     } catch (err: any) {
-      console.error("Error fetching decorations:", err.message);
       setDecorations([]);
     }
   }, []);
@@ -133,8 +132,6 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
         throw new Error("No authentication token found");
       }
 
-      console.log("Fetching products with token:", token.slice(0, 10) + "...", "and date:", selectedDate);
-
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?group=product&date=${selectedDate}&t=${Date.now()}`, {
         method: "GET",
         headers: {
@@ -146,14 +143,11 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
         },
       });
 
-      console.log("Stock API response status:", response.status, "ok:", response.ok, "headers:", [...response.headers]);
-
       if (!response.ok) {
         throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
       }
 
       const rawData = await response.json();
-      console.log("Stock API raw response:", JSON.stringify(rawData, null, 2));
 
       let items: any[] = Array.isArray(rawData) ? rawData : Array.isArray(rawData.data) ? rawData.data : [];
 
@@ -161,7 +155,6 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
         throw new Error(rawData.error || "API returned unsuccessful response");
       }
       if (!items.length) {
-        console.warn("No products returned for date:", selectedDate);
         setProducts([]);
         setAddonProducts([]);
         setDecorations([]);
@@ -184,7 +177,6 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
           category: item.category || undefined,
           shelfLifeDays: item.shelf_life_days != null ? Number(item.shelf_life_days) : null,
         };
-        console.log(`Mapped product:`, JSON.stringify(mappedProduct, null, 2));
         return mappedProduct;
       };
 
@@ -199,10 +191,7 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
 
       setProducts(mappedProducts);
       setAddonProducts(mappedAddons);
-      console.log("Mapped products:", JSON.stringify(mappedProducts, null, 2));
-      console.log("Mapped addons:", JSON.stringify(mappedAddons, null, 2));
     } catch (err: any) {
-      console.error("Error fetching products:", err.message, err.stack);
       setError(err.message || "Failed to load products");
       setTimeout(() => setError(""), 5000);
       setProducts([]);
@@ -255,17 +244,13 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
       );
       
       if (!product) {
-        console.log("Product not found in stock data:", productId);
-        console.log("Available products:", data.data?.map((p: any) => ({ id: p.product_id, code: p.item_code, name: p.name })));
         return false;
       }
       
       const availableStock = Number(product.total_available || 0);
-      console.log(`Stock validation for ${productId}: Available=${availableStock}, Requested=${requestedQuantity}`);
       
       return availableStock >= requestedQuantity;
     } catch (error) {
-      console.error("Error validating stock:", error);
       return false;
     }
   };
@@ -454,18 +439,6 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
         } as any;
       });
 
-      console.log("Sale request body:", JSON.stringify({ 
-        saleDate: selectedDate, 
-        items, 
-        paymentType: paymentMethod, 
-        totalAmount: getTotalAmount(),
-        productMRPTotal,
-        decorationMRPTotal,
-        productCostTotal,
-        decorationCostTotal,
-        totalCost
-      }, null, 2));
-
       // Combine selected date with current time to record precise sale time
       const now = new Date();
       const hhmmss = now.toTimeString().slice(0, 8);
@@ -494,7 +467,6 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
       });
 
       const data = await response.json();
-      console.log("Sale response:", JSON.stringify(data, null, 2));
       if (!response.ok || !data.success) {
         throw new Error(data.error || "Failed to record sale");
       }
@@ -513,7 +485,6 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
           setRefreshSales(() => () => {}); // Trigger SalesTimelinePage refresh
         }, 300);
     } catch (err: any) {
-      console.error("Error recording sale:", err.message, err.stack);
       setError(err.message || "An error occurred while recording the sale");
       setTimeout(() => setError(""), 5000);
     } finally {

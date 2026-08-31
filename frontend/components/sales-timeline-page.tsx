@@ -90,7 +90,6 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
       }
 
       const salesData = await response.json();
-      console.log("Sales API raw response:", JSON.stringify(salesData, null, 2));
 
       if (!salesData.success) {
         throw new Error(salesData.error || "API returned unsuccessful response");

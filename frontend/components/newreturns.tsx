@@ -471,11 +471,6 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
         invoicePrice: returnItem.item.invoicePrice,
       }));
 
-      console.log(`Processing ${activeTab} returns with body:`, JSON.stringify({
-        [activeTab === "grm" ? "returnDate" : "damageDate"]: selectedDate,
-        items,
-      }, null, 2));
-
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/${activeTab}`, {
         method: "POST",
         headers: {

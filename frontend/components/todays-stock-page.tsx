@@ -90,7 +90,6 @@ export function TodaysStockPage({ onBack }: TodaysStockPageProps) {
           throw new Error(rawData.error || "API returned unsuccessful response");
         }
         if (!items.length) {
-          console.warn("No stock items returned for date:", selectedDate);
           setStockItems([]);
           setTotalQuantity(0);
           setMrpValue(0);
@@ -114,10 +113,6 @@ export function TodaysStockPage({ onBack }: TodaysStockPageProps) {
             category: item.category || undefined,
             shelfLifeDays: item.shelf_life_days != null ? Number(item.shelf_life_days) : null,
           };
-          console.log(`Item ${index} mapped to:`, JSON.stringify(mappedItem, null, 2));
-          if (!item.name || !item.invoice_price || !item.sale_price) {
-            console.warn("Incomplete stock item:", item, "Mapped to:", mappedItem);
-          }
           return mappedItem;
         });
 
@@ -136,10 +131,7 @@ export function TodaysStockPage({ onBack }: TodaysStockPageProps) {
         setTotalQuantity(Number(rawData.totalQuantity) || computedTotalQuantity);
         setMrpValue(Number(rawData.totalValue) || computedMRPValue);
         setInvoiceValue(computedInvoiceValue);
-        console.log("Final stock items:", JSON.stringify(validItems, null, 2));
-        console.log("Totals:", { totalQuantity: computedTotalQuantity, mrpValue: computedMRPValue, invoiceValue: computedInvoiceValue });
       } catch (err: any) {
-        console.error("Error fetching stock:", err.message, err.stack);
         setError(err.message || "Failed to load stock data");
         setStockItems([]);
         setTotalQuantity(0);
