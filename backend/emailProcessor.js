@@ -95,7 +95,9 @@ class EmailProcessor {
       // Add attachments if any
       if (attachments && attachments.length > 0) {
         attachments.forEach((attachment, index) => {
-          formData.append('file', attachment.content, {
+          // Use different field names based on email type
+          const fieldName = emailData.type === 'rosreceipt' ? 'rosReceipt' : 'file';
+          formData.append(fieldName, attachment.content, {
             filename: attachment.filename,
             contentType: attachment.contentType
           });
