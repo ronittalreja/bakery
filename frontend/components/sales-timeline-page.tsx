@@ -56,7 +56,6 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
         throw new Error("No authentication token found");
       }
 
-      console.log("Fetching sales data for date:", selectedDate, "with token:", token.slice(0, 10) + "...");
 
       let response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/${selectedDate}?t=${Date.now()}`, {
         method: "GET",
@@ -69,17 +68,7 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
         },
       });
 
-      console.log(
-        "Sales API response status:",
-        response.status,
-        "ok:",
-        response.ok,
-        "headers:",
-        [...response.headers]
-      );
-
       if (response.status === 304) {
-        console.warn("Received 304 Not Modified, retrying fetch...");
         const retryResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/${selectedDate}?t=${Date.now()}&nocache=${Math.random()}`, {
           method: "GET",
           headers: {
@@ -148,10 +137,8 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
       });
 
       const mappedTransactions = Object.values(salesById);
-      console.log("Mapped transactions:", JSON.stringify(mappedTransactions, null, 2));
       setTransactions(mappedTransactions);
     } catch (err: any) {
-      console.error("Error fetching sales data:", err.message, err.stack);
       setError(err.message || "Failed to fetch sales transactions");
       setTimeout(() => setError(""), 3000);
       setTransactions([]);
@@ -184,7 +171,6 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
     },
     { totalTransactions: 0, totalItems: 0 }
   );
-  console.log("Calculated summary:", JSON.stringify(summary, null, 2));
 
   const getPaymentMethodColor = (method: string) => {
     switch (method.toLowerCase()) {

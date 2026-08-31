@@ -62,7 +62,6 @@ export function TodaysStockPage({ onBack }: TodaysStockPageProps) {
           throw new Error("No authentication token found");
         }
 
-        console.log("Fetching stock with token:", token.slice(0, 10) + "...", "and date:", selectedDate);
 
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?date=${selectedDate}&t=${Date.now()}`,
@@ -78,10 +77,8 @@ export function TodaysStockPage({ onBack }: TodaysStockPageProps) {
           }
         );
 
-        console.log("Stock API response status:", response.status, "ok:", response.ok, "headers:", [...response.headers]);
 
         const rawData = await response.json();
-        console.log("Stock API raw response:", JSON.stringify(rawData, null, 2));
 
         let data: StockResponse = rawData;
         let items: any[] = Array.isArray(rawData) ? rawData : Array.isArray(rawData.data) ? rawData.data : [];

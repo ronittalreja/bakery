@@ -40,14 +40,6 @@ export function StaffDashboard({ onSwitchToAdmin }: StaffDashboardProps) {
   const [selectedCreditNoteId, setSelectedCreditNoteId] = useState<number | null>(null);
   const [selectedCreditNoteMonth, setSelectedCreditNoteMonth] = useState<string>(new Date().toISOString().slice(0, 7));
 
-  // Debug imports
-  console.log({
-    UploadInvoicePage,
-    RecordSalePage,
-    TodaysStockPage,
-    TodaysSalesPage,
-    ReturnsPage,
-  });
 
   const dashboardItems = [
     {
@@ -180,7 +172,6 @@ export function StaffDashboard({ onSwitchToAdmin }: StaffDashboardProps) {
           );
       }
     } catch (error) {
-      console.error("Error rendering page:", error);
       return (
         <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
           <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg p-4 sm:p-6">

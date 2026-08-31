@@ -106,7 +106,6 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
         throw new Error("No authentication token found");
       }
 
-      console.log("Fetching items for tab:", activeTab, "with token:", token.slice(0, 10) + "...", "and date:", selectedDate);
       const url = activeTab === "grm" 
         ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/grm?date=${selectedDate}&t=${Date.now()}`
         : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/gvn?date=${selectedDate}&t=${Date.now()}`;
@@ -121,10 +120,7 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
         },
       });
 
-      console.log(`${activeTab.toUpperCase()} API response status:`, response.status, "ok:", response.ok, "headers:", [...response.headers]);
-
       const rawData = await response.json();
-      console.log(`${activeTab.toUpperCase()} API raw response:`, JSON.stringify(rawData, null, 2));
 
       let items: any[] = activeTab === "grm" 
         ? (Array.isArray(rawData.grmItems) ? rawData.grmItems : [])
@@ -137,7 +133,6 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
         setProcessedGvn(Array.isArray(rawData.processed) ? rawData.processed : []);
       }
 
-      console.log(`${activeTab.toUpperCase()} items before mapping:`, JSON.stringify(items, null, 2));
 
       if (!response.ok) {
         throw new Error(`HTTP error ${response.status}: ${rawData.error || response.statusText}`);
@@ -146,7 +141,6 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
         throw new Error(rawData.error || "API returned unsuccessful response");
       }
       if (!items.length) {
-        console.warn(`No items returned for ${activeTab} on date:`, selectedDate);
         setStock([]);
         return;
       }
@@ -154,7 +148,6 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
       const mappedStock = items
         .filter((item: any) => Number(item.quantity || 0) > 0) // Filter out zero-quantity items
         .map((item: any) => {
-          console.log(`Mapping item:`, JSON.stringify(item, null, 2)); // Debug each item
           return {
             id: String(item.id || item.product_id || "unknown"),
             product_id: String(item.product_id || "unknown"), // Ensure product_id is mapped
@@ -170,10 +163,8 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
           };
         });
 
-      console.log(`Mapped ${activeTab} items:`, JSON.stringify(mappedStock, null, 2));
       setStock(mappedStock);
     } catch (err: any) {
-      console.error(`Error fetching ${activeTab} items:`, err.message, err.stack);
       setError(err.message || `Failed to load ${activeTab.toUpperCase()} items`);
       setTimeout(() => setError(""), 5000);
       setStock([]);
@@ -195,7 +186,6 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
       }
 
       // Get processed returns with proper filtering logic
-      console.log(`Fetching processed returns for date: ${viewDate}`);
 
       // Use the new backend endpoint that filters by expiry date
       const processedByExpiryResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/processed-by-expiry/${viewDate}?t=${Date.now()}`, {
@@ -209,7 +199,6 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
       
       if (processedByExpiryResponse.ok) {
         const processedData = await processedByExpiryResponse.json();
-        console.log('Processed returns by expiry response:', processedData);
         
         if (processedData.success) {
           // Map GRM data with correct structure and group by product + expiry date
@@ -290,14 +279,12 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
           setViewProcessedGvn([]);
         }
       } else {
-        console.warn("Failed to fetch processed returns by expiry");
         setViewProcessedGrm([]);
         setViewProcessedGvn([]);
       }
 
 
     } catch (err: any) {
-      console.error("Error fetching processed returns:", err.message);
       setViewError(err.message || "Failed to load processed returns");
       setViewProcessedGrm([]);
       setViewProcessedGvn([]);
@@ -320,8 +307,6 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
         throw new Error("No authentication token found");
       }
 
-      console.log(`Fetching pending returns for month: ${pendingMonth}`);
-      console.log(`API URL: http://localhost:5000/api/returns/pending?month=${pendingMonth}&t=${Date.now()}`);
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/pending?month=${pendingMonth}&t=${Date.now()}`, {
         headers: {
@@ -334,7 +319,6 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Pending returns response:', data);
         
         if (data.success) {
           setPendingGrm(data.data.grm || []);
@@ -344,13 +328,11 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
           setPendingGvn([]);
         }
       } else {
-        console.warn("Failed to fetch pending returns");
         setPendingGrm([]);
         setPendingGvn([]);
       }
 
     } catch (err: any) {
-      console.error("Error fetching pending returns:", err.message);
       setPendingError(err.message || "Failed to load pending returns");
       setPendingGrm([]);
       setPendingGvn([]);
@@ -510,7 +492,6 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
       });
 
       const data = await response.json();
-      console.log(`${activeTab.toUpperCase()} returns response:`, JSON.stringify(data, null, 2));
 
       if (!response.ok || !data.success) {
         throw new Error(data.error || `Failed to process ${activeTab.toUpperCase()} returns`);
@@ -524,7 +505,6 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
         fetchItems();
       }, 300);
     } catch (err: any) {
-      console.error(`Error processing ${activeTab} returns:`, err.message, err.stack);
       setError(err.message || `An error occurred while processing ${activeTab.toUpperCase()} returns`);
       setTimeout(() => setError(""), 5000);
     } finally {

@@ -39,7 +39,6 @@ export function StaffDashboard() {
         const response = await apiClient(`/api/invoices?date=${selectedDate}`)
         setHasInvoice(!!response.length)
       } catch (err) {
-        console.error("Error checking invoice:", err)
       }
     }
     if (isToday) checkInvoice()
