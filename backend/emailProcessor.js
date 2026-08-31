@@ -206,8 +206,6 @@ class EmailProcessor {
       
       // Mark as processed locally
       this.markEmailAsProcessed(messageId, emailType, 'success');
-      
-      // Note: Label is added in fetch handler after successful processing
 
     } catch (error) {
       console.error(`❌ Error processing email:`, error.message);
@@ -247,11 +245,10 @@ class EmailProcessor {
 
           console.log(`📅 Searching for emails from: ${yesterdayStr}`);
 
-          // Search for emails from yesterday onwards that are NOT labeled as "BAKERY-PROCESSED"
-          // This allows processing even if email was read on phone
-          // We use a custom label to track processed emails instead of UNSEEN
+          // Search for emails from yesterday onwards
+          // We rely on local processed_emails.json for deduplication
           imap.search(
-            [['FROM', 'receipt5@mongini.in'], ['SINCE', yesterdayStr], ['UNKEYWORD', 'BAKERY-PROCESSED']],
+            [['FROM', 'receipt5@mongini.in'], ['SINCE', yesterdayStr]],
             (err, results) => {
             if (err) {
               clearTimeout(timeoutId);
@@ -289,32 +286,9 @@ class EmailProcessor {
                     await this.processEmail(buffer, seqno);
                     processedCount++;
                     console.log(`✅ Processed ${processedCount}/${results.length} emails`);
-                    
-                    // Add BAKERY-PROCESSED label to email after successful processing
-                    imap.addFlags(seqno, ['BAKERY-PROCESSED'], (err) => {
-                      if (err) {
-                        console.error('Failed to add label:', err.message);
-                      } else {
-                        console.log(`✅ Added BAKERY-PROCESSED label to email`);
-                      }
-                    });
                   } catch (error) {
                     errorCount++;
                     console.error(`❌ Error processing email ${processedCount + errorCount}:`, error.message);
-                    
-                    // Add label if error indicates duplicate/already exists to prevent reprocessing
-                    const errorMessage = error.message || '';
-                    if (errorMessage.toLowerCase().includes('already') || 
-                        errorMessage.toLowerCase().includes('duplicate') ||
-                        errorMessage.toLowerCase().includes('exists')) {
-                      imap.addFlags(seqno, ['BAKERY-PROCESSED'], (err) => {
-                        if (err) {
-                          console.error('Failed to add label on duplicate error:', err.message);
-                        } else {
-                          console.log(`✅ Added BAKERY-PROCESSED label to email (duplicate case)`);
-                        }
-                      });
-                    }
                   }
                 });
               });
