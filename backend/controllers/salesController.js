@@ -848,6 +848,12 @@ const getSalesByDate = async (req, res) => {
     let totalQuantity = 0;
     let totalValue = 0;
 
+    // Track credit note status and extra items
+    const crdrStatus = {
+      available: creditNotes.length > 0,
+      extraItems: []
+    };
+
     // Parse credit note items into a map for easy lookup
     const creditNoteItemsMap = new Map();
     console.log(`Found ${creditNotes.length} credit notes for date ${date}`);
@@ -863,10 +869,11 @@ const getSalesByDate = async (req, res) => {
             const key = item.itemCode || item.description || item.item_name || item.name;
             console.log(`Credit note item key: ${key}, item:`, item);
             if (key) {
-              const existing = creditNoteItemsMap.get(key) || { quantity: 0 };
+              const existing = creditNoteItemsMap.get(key) || { quantity: 0, rate: item.rate || 0 };
               creditNoteItemsMap.set(key, {
                 quantity: existing.quantity + (item.quantity || 0),
-                total: (existing.total || 0) + (item.total || 0)
+                total: (existing.total || 0) + (item.total || 0),
+                rate: item.rate || existing.rate
               });
               console.log(`Credit note item: ${key}, qty: ${item.quantity}`);
             }
@@ -878,6 +885,9 @@ const getSalesByDate = async (req, res) => {
     });
 
     console.log('Credit note items map:', Array.from(creditNoteItemsMap.entries()));
+
+    // Track which credit note items were matched against invoices
+    const matchedCreditNoteItems = new Set();
 
     // Process each invoice
     for (const invoice of invoices) {
@@ -911,33 +921,43 @@ const getSalesByDate = async (req, res) => {
         
         // Try matching by name first, then by item_code
         let creditNoteItem = creditNoteItemsMap.get(key);
+        let matchedKey = key;
         if (!creditNoteItem && productInfo.item_code) {
           creditNoteItem = creditNoteItemsMap.get(productInfo.item_code);
+          matchedKey = productInfo.item_code;
           console.log(`Trying item_code match for ${key}: ${productInfo.item_code}`);
         }
         
         const creditNoteQty = creditNoteItem ? creditNoteItem.quantity : 0;
         console.log(`Credit note match for ${key}:`, creditNoteItem ? `qty ${creditNoteQty}` : 'none');
         
+        // Mark this credit note item as matched
+        if (creditNoteItem && creditNoteQty > 0) {
+          matchedCreditNoteItems.add(matchedKey);
+        }
+        
         const soldQty = Math.max(0, item.qty - creditNoteQty);
         console.log(`Sold qty for ${key}: ${item.qty} - ${creditNoteQty} = ${soldQty}`);
         
         if (soldQty > 0) {
-          // Compute MRP from invoice rate at time of sale (not current product MRP)
-          // This ensures historical sales use the correct MRP for that time period
+          // Compute MRP - first try to use product's MRP from products table, fallback to *1.33
           const roundUpToNearest5 = (value) => {
             const remainder = value % 5;
             return remainder === 0 ? value : value + (5 - remainder);
           };
           
-          const computeMrp = (invoicePrice) => {
+          const computeMrp = (invoicePrice, productMrp) => {
+            // Use product MRP if available, otherwise calculate from invoice rate
+            if (productMrp && productMrp > 0) {
+              return productMrp;
+            }
             const increased = invoicePrice * 1.33; // +33%
             return roundUpToNearest5(Math.ceil(increased));
           };
           
-          const mrp = computeMrp(item.rate);
+          const mrp = computeMrp(item.rate, productInfo.mrp);
           const soldTotal = mrp * soldQty;
-          console.log(`Using MRP computed from invoice rate: ${item.rate} -> ${mrp}`);
+          console.log(`Using MRP: ${mrp} (product MRP: ${productInfo.mrp}, invoice rate: ${item.rate})`);
           
           saleItems.push({
             id: item.item_name,
@@ -970,6 +990,42 @@ const getSalesByDate = async (req, res) => {
       }
     }
 
+    // Find extra credit note items (not matched against any invoice)
+    const roundUpToNearest5 = (value) => {
+      const remainder = value % 5;
+      return remainder === 0 ? value : value + (5 - remainder);
+    };
+
+    const computeMrp = (invoicePrice, productMrp) => {
+      // Use product MRP if available, otherwise calculate from invoice rate
+      if (productMrp && productMrp > 0) {
+        return productMrp;
+      }
+      const increased = invoicePrice * 1.33; // +33%
+      return roundUpToNearest5(Math.ceil(increased));
+    };
+
+    let extraItemsTotalValue = 0;
+    creditNoteItemsMap.forEach((item, key) => {
+      if (!matchedCreditNoteItems.has(key)) {
+        // This credit note item was not matched against any invoice
+        // Try to find product info for MRP
+        const productInfo = productMap.get(key);
+        const productMrp = productInfo ? productInfo.mrp : null;
+        const mrp = computeMrp(item.rate || 0, productMrp);
+        const mrpValue = mrp * item.quantity;
+        extraItemsTotalValue += mrpValue;
+        crdrStatus.extraItems.push({
+          name: key,
+          quantity: item.quantity,
+          mrpValue: mrpValue
+        });
+      }
+    });
+
+    // Deduct extra items value from total sales
+    const netSales = totalValue - extraItemsTotalValue;
+
     res.set({
       'Cache-Control': 'no-store, no-cache, must-revalidate, private',
       'Pragma': 'no-cache',
@@ -981,8 +1037,15 @@ const getSalesByDate = async (req, res) => {
       data: salesData,
       summary: {
         totalQuantity, 
-        totalValue,
+        totalValue: netSales,
         totalTransactions: salesData.length
+      },
+      crdrStatus: {
+        available: crdrStatus.available,
+        extraItems: crdrStatus.extraItems,
+        extraItemsTotalValue: extraItemsTotalValue,
+        grossSales: totalValue,
+        netSales: netSales
       }
     });
   } catch (error) {

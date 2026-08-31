@@ -25,7 +25,13 @@ interface DateProviderProps {
 }
 
 export function DateProvider({ children, userRole }: DateProviderProps) {
-  const getCurrentDate = () => new Date().toISOString().split("T")[0]
+  const getCurrentDate = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
   const [today, setToday] = useState(getCurrentDate())
   const [selectedDate, setSelectedDate] = useState(today)
   const [currentWorkingDate, setCurrentWorkingDate] = useState(today)
@@ -82,7 +88,10 @@ export function DateProvider({ children, userRole }: DateProviderProps) {
       // Advance to next day
       const nextDate = new Date(adminControlledStaffDate)
       nextDate.setDate(nextDate.getDate() + 1)
-      const nextDateString = nextDate.toISOString().split("T")[0]
+      const year = nextDate.getFullYear()
+      const month = String(nextDate.getMonth() + 1).padStart(2, '0')
+      const day = String(nextDate.getDate()).padStart(2, '0')
+      const nextDateString = `${year}-${month}-${day}`
       setAdminControlledStaffDate(nextDateString)
       setCurrentWorkingDate(nextDateString)
       setSelectedDate(nextDateString)

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Clock, Filter, User, Receipt, TrendingUp, AlertCircle, RefreshCw } from "lucide-react";
+import { Clock, Filter, User, Receipt, TrendingUp, AlertCircle, RefreshCw, CheckCircle, XCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
 import { useDateContext } from "@/hooks/use-date-context";
@@ -29,6 +29,14 @@ interface SaleTransaction {
   paymentMethod: string | null;
 }
 
+interface CrdrStatus {
+  available: boolean;
+  extraItems: Array<{ name: string; quantity: number; mrpValue: number }>;
+  extraItemsTotalValue: number;
+  grossSales: number;
+  netSales: number;
+}
+
 interface SalesTimelinePageProps {
   onBack: () => void;
 }
@@ -38,6 +46,7 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
   const { selectedDate, setSelectedDate } = useDateContext();
   const { setRefreshSales } = useSaleContext();
   const [transactions, setTransactions] = useState<SaleTransaction[]>([]);
+  const [crdrStatus, setCrdrStatus] = useState<CrdrStatus | null>(null);
   const [filterBy, setFilterBy] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("time-desc");
   const [error, setError] = useState("");
@@ -137,6 +146,13 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
 
       const mappedTransactions = Object.values(salesById);
       setTransactions(mappedTransactions);
+      
+      // Set CRDR status if available
+      if (salesData.crdrStatus) {
+        setCrdrStatus(salesData.crdrStatus);
+      } else {
+        setCrdrStatus(null);
+      }
     } catch (err: any) {
       setError(err.message || "Failed to fetch sales transactions");
       setTimeout(() => setError(""), 3000);
@@ -249,6 +265,73 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
             </div>
           </CardHeader>
         </Card>
+
+        {/* CRDR Status Card */}
+        {crdrStatus && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-3">
+                {crdrStatus.available ? (
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-red-600" />
+                )}
+                <div className="font-semibold">
+                  {crdrStatus.available ? "CRDR ADJUSTED" : "CRDR NOT AVAILABLE"}
+                </div>
+              </div>
+              
+              {crdrStatus.available && (
+                <div className="space-y-3">
+                  {crdrStatus.extraItems.length > 0 && (
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground mb-2">
+                        Extra items in credit notes (not in invoice):
+                      </div>
+                      <div className="space-y-2">
+                        {crdrStatus.extraItems.map((item, index) => (
+                          <div key={index} className="flex justify-between items-center text-sm p-2 bg-muted/20 rounded">
+                            <span>{item.name} × {item.quantity}</span>
+                            <span className="font-medium">
+                              ₹{item.mrpValue.toLocaleString("en-IN", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex justify-between items-center font-semibold pt-2 border-t">
+                        <span>Total extra items value:</span>
+                        <span className="text-red-600">
+                          -₹{crdrStatus.extraItemsTotalValue.toLocaleString("en-IN", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between items-center text-sm p-3 bg-blue-50 rounded border border-blue-200">
+                    <div>
+                      <div className="font-medium">Net Sales Calculation:</div>
+                      <div className="text-muted-foreground">
+                        Gross Sales ({crdrStatus.grossSales.toLocaleString("en-IN")}) - Extra Items ({crdrStatus.extraItemsTotalValue.toLocaleString("en-IN")}) = Net Sales
+                      </div>
+                    </div>
+                    <div className="font-bold text-lg text-blue-700">
+                      ₹{crdrStatus.netSales.toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {error && (
           <Alert variant="destructive">
