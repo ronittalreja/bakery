@@ -839,7 +839,14 @@ const getSalesByDate = async (req, res) => {
           totalTransactions: 0
         },
         message: `Sales not Available for ${date}`,
-        reason: 'Invoice not available'
+        reason: 'Invoice not available',
+        crdrStatus: {
+          available: creditNotes.length > 0,
+          extraItems: [],
+          extraItemsTotalValue: 0,
+          grossSales: 0,
+          netSales: 0
+        }
       });
     }
 

@@ -147,12 +147,14 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
       const mappedTransactions = Object.values(salesById);
       setTransactions(mappedTransactions);
       
-      // Set CRDR status if available
-      if (salesData.crdrStatus) {
-        setCrdrStatus(salesData.crdrStatus);
-      } else {
-        setCrdrStatus(null);
-      }
+      // Set CRDR status - always set it, even if not available
+      setCrdrStatus(salesData.crdrStatus || {
+        available: false,
+        extraItems: [],
+        extraItemsTotalValue: 0,
+        grossSales: 0,
+        netSales: 0
+      });
     } catch (err: any) {
       setError(err.message || "Failed to fetch sales transactions");
       setTimeout(() => setError(""), 3000);
