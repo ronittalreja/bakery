@@ -37,11 +37,9 @@ export function DateProvider({ children, userRole }: DateProviderProps) {
   useEffect(() => {
     const updateDate = () => {
       const newToday = getCurrentDate()
-      console.log(`Date check: current today=${today}, new today=${newToday}`)
       
       // Force update if date is stale or changed
       if (newToday !== today) {
-        console.log(`Date changed from ${today} to ${newToday}`)
         setToday(newToday)
         // Auto-update dates to new day at midnight
         if (userRole === "staff") {
@@ -53,7 +51,6 @@ export function DateProvider({ children, userRole }: DateProviderProps) {
         }
       } else if (today !== newToday) {
         // Force refresh if there's a mismatch
-        console.log(`Forcing date refresh from ${today} to ${newToday}`)
         setToday(newToday)
         if (userRole === "staff") {
           setSelectedDate(newToday)

@@ -37,9 +37,7 @@ export async function apiClient<T>(
 
   while (retries > 0) {
     try {
-      console.log(`Making request to ${url} with method ${config.method || "GET"}`);
       const response = await fetch(url, config);
-      console.log(`Response status: ${response.status}, ok: ${response.ok}, headers:`, [...response.headers]);
 
       if (response.status === 401) {
         throw new Error("Unauthorized: Invalid or missing authentication token");
@@ -51,7 +49,6 @@ export async function apiClient<T>(
           const errorData = await response.json();
           errorMessage = errorData.error || errorData.message || errorMessage;
         } catch (e) {
-          console.error("Failed to parse error response:", e);
         }
         throw new Error(errorMessage);
       }
@@ -64,7 +61,6 @@ export async function apiClient<T>(
       return {} as T;
     } catch (err: any) {
       lastError = err;
-      console.error(`API request failed: ${err.message}`);
       retries--;
 
       if (err.message.includes("Failed to fetch")) {

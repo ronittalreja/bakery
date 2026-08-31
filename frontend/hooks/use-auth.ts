@@ -18,7 +18,6 @@ export const getAuthToken = (): string | null => {
   try {
     return localStorage.getItem("token");
   } catch (error) {
-    console.error("Error accessing local storage:", error);
     return null;
   }
 };
@@ -33,7 +32,6 @@ export const isTokenValid = (token: string): boolean => {
     
     return decodedPayload.exp && decodedPayload.exp > currentTime;
   } catch (error) {
-    console.error("Error validating token:", error);
     return false;
   }
 };
@@ -43,7 +41,6 @@ export const getStoredUser = (): User | null => {
     const storedUser = localStorage.getItem("bakery_user");
     return storedUser ? JSON.parse(storedUser) : null;
   } catch (error) {
-    console.error("Error accessing stored user:", error);
     return null;
   }
 };
@@ -62,7 +59,6 @@ export const useAuth = () => {
         const storedUser = localStorage.getItem("bakery_user");
 
         if (!token || !storedUser) {
-          console.warn("No token or user data found, redirecting to login");
           setUser(null);
           setLoading(false);
           return;
@@ -70,7 +66,6 @@ export const useAuth = () => {
 
         // First, check if token is valid locally
         if (!isTokenValid(token)) {
-          console.warn("Token has expired locally, removing from storage");
           localStorage.removeItem("token");
           localStorage.removeItem("bakery_user");
           setUser(null);
@@ -106,9 +101,7 @@ export const useAuth = () => {
         };
         setUser(user);
         localStorage.setItem("bakery_user", JSON.stringify(user));
-        console.log("User validated successfully, session persisted for 1 year");
       } catch (err) {
-        console.error("Auth validation error:", err);
         localStorage.removeItem("token");
         localStorage.removeItem("bakery_user");
         setUser(null);
@@ -129,7 +122,6 @@ export const useAuth = () => {
     };
 
     const handleAuthStateChange = (e: CustomEvent) => {
-      console.log("Auth state change event received:", e.detail);
       setForceUpdate(prev => prev + 1);
     };
 
@@ -139,7 +131,6 @@ export const useAuth = () => {
       const storedUser = getStoredUser();
       
       if (token && storedUser && isTokenValid(token)) {
-        console.log("Found valid existing session, restoring user:", storedUser.username);
         setUser(storedUser);
         setLoading(false);
       }
@@ -158,7 +149,6 @@ export const useAuth = () => {
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    console.log("Login attempt started");
     setLoading(true);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -176,7 +166,6 @@ export const useAuth = () => {
         try {
           const tokenParts = data.token.split(".");
           if (tokenParts.length !== 3) {
-            console.error("Invalid token format");
             return false;
           }
           const decodedPayload: TokenPayload = JSON.parse(atob(tokenParts[1]));
@@ -189,39 +178,31 @@ export const useAuth = () => {
 
           localStorage.setItem("token", data.token);
           localStorage.setItem("bakery_user", JSON.stringify(user));
-          console.log("About to set user state:", user);
           setUser(user);
           setForceUpdate(prev => prev + 1); // Force re-render
-          console.log("User state set, login success:", { user, token: data.token });
           
           // Dispatch custom event for immediate UI update
           window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user, action: 'login' } }));
           
           return true;
         } catch (decodeError) {
-          console.error("Token decode error:", decodeError);
           return false;
         }
       } else {
-        console.error("Login failed:", data.error || "No token/role in response");
         return false;
       }
     } catch (error) {
-      console.error("Login error:", error);
       return false;
     } finally {
       setLoading(false);
-      console.log("Login attempt finished, loading set to false");
     }
   };
 
   const logout = () => {
-    console.log("Logout called");
     localStorage.removeItem("token");
     localStorage.removeItem("bakery_user");
     setUser(null);
     setForceUpdate(prev => prev + 1); // Force re-render
-    console.log("User state set to null, logout complete");
     // Force immediate re-render by updating loading state
     setLoading(false);
     

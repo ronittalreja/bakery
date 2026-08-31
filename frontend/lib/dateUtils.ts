@@ -20,7 +20,6 @@ export const formatDate = (date: Date | string | number): string => {
     
     return `${day}/${month}/${year}`;
   } catch (error) {
-    console.error('Error formatting date:', error);
     return '-';
   }
 };
@@ -45,7 +44,6 @@ export const formatDateTime = (date: Date | string | number): string => {
     
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   } catch (error) {
-    console.error('Error formatting date time:', error);
     return '-';
   }
 };
@@ -68,7 +66,6 @@ export const formatDisplayDate = (date: Date | string | number): string => {
     
     return `${day}/${month}/${year}`;
   } catch (error) {
-    console.error('Error formatting display date:', error);
     return 'Invalid Date';
   }
 };
@@ -92,7 +89,6 @@ export const formatTime = (date: Date | string | number): string => {
     
     return `${displayHours}:${minutes} ${ampm}`;
   } catch (error) {
-    console.error('Error formatting time:', error);
     return '-';
   }
 };
