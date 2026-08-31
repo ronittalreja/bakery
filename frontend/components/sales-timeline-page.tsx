@@ -269,71 +269,69 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
         </Card>
 
         {/* CRDR Status Card */}
-        {crdrStatus && (
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3 mb-3">
-                {crdrStatus.available ? (
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                ) : (
-                  <XCircle className="h-5 w-5 text-red-600" />
-                )}
-                <div className="font-semibold">
-                  {crdrStatus.available ? "CRDR ADJUSTED" : "CRDR NOT AVAILABLE"}
-                </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-3">
+              {crdrStatus?.available ? (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              ) : (
+                <XCircle className="h-5 w-5 text-red-600" />
+              )}
+              <div className="font-semibold">
+                {crdrStatus?.available ? "CRDR ADJUSTED" : "CRDR NOT AVAILABLE"}
               </div>
-              
-              {crdrStatus.available && (
-                <div className="space-y-3">
-                  {crdrStatus.extraItems.length > 0 && (
-                    <div>
-                      <div className="text-sm font-medium text-muted-foreground mb-2">
-                        Extra items in credit notes (not in invoice):
-                      </div>
-                      <div className="space-y-2">
-                        {crdrStatus.extraItems.map((item, index) => (
-                          <div key={index} className="flex justify-between items-center text-sm p-2 bg-muted/20 rounded">
-                            <span>{item.name} × {item.quantity}</span>
-                            <span className="font-medium">
-                              ₹{item.mrpValue.toLocaleString("en-IN", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex justify-between items-center font-semibold pt-2 border-t">
-                        <span>Total extra items value:</span>
-                        <span className="text-red-600">
-                          -₹{crdrStatus.extraItemsTotalValue.toLocaleString("en-IN", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </span>
-                      </div>
+            </div>
+            
+            {crdrStatus?.available && (
+              <div className="space-y-3">
+                {crdrStatus.extraItems.length > 0 && (
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground mb-2">
+                      Extra items in credit notes (not in invoice):
                     </div>
-                  )}
-                  
-                  <div className="flex justify-between items-center text-sm p-3 bg-blue-50 rounded border border-blue-200">
-                    <div>
-                      <div className="font-medium">Net Sales Calculation:</div>
-                      <div className="text-muted-foreground">
-                        Gross Sales ({crdrStatus.grossSales.toLocaleString("en-IN")}) - Extra Items ({crdrStatus.extraItemsTotalValue.toLocaleString("en-IN")}) = Net Sales
-                      </div>
+                    <div className="space-y-2">
+                      {crdrStatus.extraItems.map((item, index) => (
+                        <div key={index} className="flex justify-between items-center text-sm p-2 bg-muted/20 rounded">
+                          <span>{item.name} × {item.quantity}</span>
+                          <span className="font-medium">
+                            ₹{item.mrpValue.toLocaleString("en-IN", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                    <div className="font-bold text-lg text-blue-700">
-                      ₹{crdrStatus.netSales.toLocaleString("en-IN", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                    <div className="flex justify-between items-center font-semibold pt-2 border-t">
+                      <span>Total extra items value:</span>
+                      <span className="text-red-600">
+                        -₹{crdrStatus.extraItemsTotalValue.toLocaleString("en-IN", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
                     </div>
                   </div>
+                )}
+                
+                <div className="flex justify-between items-center text-sm p-3 bg-blue-50 rounded border border-blue-200">
+                  <div>
+                    <div className="font-medium">Net Sales Calculation:</div>
+                    <div className="text-muted-foreground">
+                      Gross Sales ({crdrStatus.grossSales.toLocaleString("en-IN")}) - Extra Items ({crdrStatus.extraItemsTotalValue.toLocaleString("en-IN")}) = Net Sales
+                    </div>
+                  </div>
+                  <div className="font-bold text-lg text-blue-700">
+                    ₹{crdrStatus.netSales.toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {error && (
           <Alert variant="destructive">
