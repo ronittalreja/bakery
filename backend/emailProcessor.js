@@ -139,6 +139,7 @@ class EmailProcessor {
   async processEmail(buffer, seqno) {
     let parsed = null;
     let messageId = null;
+    let emailType = null;
     
     try {
       parsed = await simpleParser(buffer);
@@ -155,7 +156,7 @@ class EmailProcessor {
         return;
       }
 
-      const emailType = this.detectEmailType(parsed.subject);
+      emailType = this.detectEmailType(parsed.subject);
       
       if (emailType === 'unknown') {
         console.log(`❓ Unknown email type, skipping: ${parsed.subject}`);
@@ -164,11 +165,6 @@ class EmailProcessor {
       }
 
       console.log(`📧 Processing ${emailType.toUpperCase()} email: ${parsed.subject}`);
-      
-      // Add special marker for ROS receipts to make logs easier to find
-      if (emailType === 'rosreceipt') {
-        console.log('🚨🚨🚨 ROS RECEIPT UPLOAD STARTING 🚨🚨🚨');
-      }
 
       // Prepare email data
       const emailData = {
@@ -213,21 +209,9 @@ class EmailProcessor {
       
       // Mark as processed locally
       this.markEmailAsProcessed(messageId, emailType, 'success');
-      
-      // Add special marker for ROS receipts completion
-      if (emailType === 'rosreceipt') {
-        console.log('🚨🚨🚨 ROS RECEIPT UPLOAD COMPLETED 🚨🚨🚨');
-      }
 
     } catch (error) {
       console.error(`❌ Error processing email:`, error.message);
-      
-      // Add special marker for ROS receipts errors
-      if (emailType === 'rosreceipt') {
-        console.error('🚨🚨🚨 ROS RECEIPT UPLOAD FAILED 🚨🚨🚨');
-        console.error('🚨🚨🚨 ERROR DETAILS:', error.response?.data || error.message, '🚨🚨🚨');
-      }
-      
       // Mark as processed even on failure to prevent duplicate attempts
       if (messageId) {
         this.markEmailAsProcessed(messageId, 'error', error.message);
