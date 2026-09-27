@@ -73,11 +73,25 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
 
   const dashboardItems = [
     {
+      title: "Sales",
+      description: "View sales by date",
+      icon: BarChart3,
+      page: "sales" as AdminPage,
+      color: "bg-gradient-to-br from-cyan-500 to-cyan-600 text-white shadow-cyan-200",
+    },
+    {
       title: "Sales Summary",
       description: "View detailed sales with totals",
       icon: BarChart3,
       page: "sales-summary" as AdminPage,
       color: "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-200",
+    },
+    {
+      title: "Credit Notes",
+      description: "View and manage credit notes",
+      icon: CreditCard,
+      page: "credit-notes" as AdminPage,
+      color: "bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-teal-200",
     },
     {
       title: "Returns Summary",
@@ -87,14 +101,14 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
       color: "bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-amber-200",
     },
     {
-      title: "Expenses Tracking",
+      title: "Expenses",
       description: "Track business expenses",
       icon: Receipt,
       page: "expenses" as AdminPage,
       color: "bg-gradient-to-br from-red-500 to-red-600 text-white shadow-red-200",
     },
     {
-      title: "Insights",
+      title: "Business",
       description: "Sales analytics and trends",
       icon: TrendingUp,
       page: "insights" as AdminPage,
@@ -108,7 +122,7 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
       color: "bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-teal-200",
     },
     {
-      title: "Admin",
+      title: "Developer",
       description: "Manage products, decorations, stock, and view inventory",
       icon: Settings,
       page: "admin" as AdminPage,
@@ -227,36 +241,6 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
                     </div>
                     <h3 className="text-sm font-medium text-slate-900 leading-tight">
                       Today's Stock
-                    </h3>
-                  </div>
-                </div>
-              </div>
-              <div
-                onClick={() => setCurrentPage("sales")}
-                className="group cursor-pointer"
-              >
-                <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-600 text-white shadow-cyan-200 flex items-center justify-center">
-                      <BarChart3 className="h-6 w-6 text-white" />
-                    </div>
-                    <h3 className="text-sm font-medium text-slate-900 leading-tight">
-                      Sales
-                    </h3>
-                  </div>
-                </div>
-              </div>
-              <div
-                onClick={() => setCurrentPage("credit-notes")}
-                className="group cursor-pointer"
-              >
-                <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-teal-200 flex items-center justify-center">
-                      <CreditCard className="h-6 w-6 text-white" />
-                    </div>
-                    <h3 className="text-sm font-medium text-slate-900 leading-tight">
-                      Credit Notes
                     </h3>
                   </div>
                 </div>
