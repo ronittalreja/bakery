@@ -78,7 +78,7 @@ app.use('/api/stock', authMiddleware(['staff', 'admin']), require('./routes/stoc
 app.use('/api/sales', authMiddleware(['staff', 'admin']), require('./routes/sales'));
 app.use('/api/add-sales', authMiddleware(['staff', 'admin']), require('./routes/add-sales'));
 app.use('/api/returns', authMiddleware(['staff', 'admin']), require('./routes/returns'));
-app.use('/api/products', authMiddleware(['admin']), require('./routes/products'));
+app.use('/api/products', authMiddleware(['staff', 'admin']), require('./routes/products'));
 app.use('/api/decorations', authMiddleware(['staff', 'admin']), require('./routes/decorations'));
 app.use('/api/expenses', authMiddleware(['admin']), require('./routes/expenses'));
 app.use('/api/reports', authMiddleware(['admin']), require('./routes/reports'));

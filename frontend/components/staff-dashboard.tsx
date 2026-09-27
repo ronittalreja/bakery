@@ -51,14 +51,6 @@ export function StaffDashboard({ onSwitchToAdmin }: StaffDashboardProps) {
 
   const dashboardItems = [
     {
-      title: "Upload",
-      description: "Add stock from van invoice",
-      icon: Upload,
-      page: "upload-invoice" as StaffPage,
-      color: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-200",
-      disabled: !isToday || isDayEnded,
-    },
-    {
       title: "Developer",
       description: "Manage products, decorations, stock, and view inventory",
       icon: Settings,
@@ -73,19 +65,19 @@ export function StaffDashboard({ onSwitchToAdmin }: StaffDashboardProps) {
       switch (currentPage) {
         case "upload-invoice":
           if (!UploadInvoicePage) throw new Error("UploadInvoicePage is undefined");
-          return <UploadInvoicePage onBack={() => setCurrentPage("dashboard")} />;
+          return <UploadInvoicePage onBack={() => setCurrentPage("developer")} />;
         case "record-sale":
           if (!RecordSalePage) throw new Error("RecordSalePage is undefined");
-          return <RecordSalePage onBack={() => setCurrentPage("dashboard")} />;
+          return <RecordSalePage onBack={() => setCurrentPage("developer")} />;
         case "stock":
           if (!TodaysStockPage) throw new Error("TodaysStockPage is undefined");
-          return <TodaysStockPage onBack={() => setCurrentPage("dashboard")} />;
+          return <TodaysStockPage onBack={() => setCurrentPage("developer")} />;
         case "sales-summary":
           if (!TodaysSalesPage) throw new Error("TodaysSalesPage is undefined");
           return <TodaysSalesPage onBack={() => setCurrentPage("dashboard")} />;
         case "returns":
           if (!ReturnsPage) throw new Error("ReturnsPage is undefined");
-          return <ReturnsPage onBack={() => setCurrentPage("dashboard")} />;
+          return <ReturnsPage onBack={() => setCurrentPage("developer")} />;
         case "credit-notes":
           return (
             <CreditNotesPage 
@@ -129,6 +121,51 @@ export function StaffDashboard({ onSwitchToAdmin }: StaffDashboardProps) {
                       </div>
                       <h3 className="text-sm font-medium text-slate-900 leading-tight">
                         Upload
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  onClick={() => setCurrentPage("record-sale")}
+                  className="group cursor-pointer"
+                >
+                  <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-200 flex items-center justify-center">
+                        <ShoppingCart className="h-6 w-6 text-white" />
+                      </div>
+                      <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                        Record Sale
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  onClick={() => setCurrentPage("stock")}
+                  className="group cursor-pointer"
+                >
+                  <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-violet-200 flex items-center justify-center">
+                        <Package className="h-6 w-6 text-white" />
+                      </div>
+                      <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                        Today's Stock
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  onClick={() => setCurrentPage("returns")}
+                  className="group cursor-pointer"
+                >
+                  <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-amber-200 flex items-center justify-center">
+                        <RotateCcw className="h-6 w-6 text-white" />
+                      </div>
+                      <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                        Returns
                       </h3>
                     </div>
                   </div>
