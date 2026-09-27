@@ -270,6 +270,17 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
           </CardHeader>
         </Card>
 
+        {/* CRDR Warning - Prominent Red Message */}
+        {(!crdrStatus || !crdrStatus.available) && (
+          <div className="bg-red-100 border-2 border-red-500 p-4 rounded-lg">
+            <div className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-red-600" />
+              <div className="font-bold text-red-900">CREDIT NOTE NOT FOUND for {selectedDate}</div>
+            </div>
+            <div className="text-red-700 mt-1">All items in invoice marked sold</div>
+          </div>
+        )}
+
         {/* CRDR Status Card */}
         <Card>
           <CardContent className="p-4">
