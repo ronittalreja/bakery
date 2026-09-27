@@ -34,7 +34,7 @@ import { ManageDecorationsPage } from "@/components/manage-decorations-page";
 import { AdminStockManagementPage } from "@/components/admin-stock-management-page";
 import { AddSalesPage } from "@/components/edit-sales-page";
 
-type StaffPage = "dashboard" | "upload-invoice" | "record-sale" | "stock" | "sales-summary" | "returns" | "credit-notes" | "credit-note-details" | "developer" | "order-tomorrow" | "manage-products" | "manage-decorations" | "manage-stock" | "edit-sales";
+type StaffPage = "dashboard" | "upload-invoice" | "record-sale" | "stock" | "sales-summary" | "returns" | "credit-notes" | "credit-note-details" | "developer" | "manage-products" | "manage-decorations" | "manage-stock" | "edit-sales";
 
 interface StaffDashboardProps {
   onSwitchToAdmin?: () => void;
@@ -64,14 +64,6 @@ export function StaffDashboard({ onSwitchToAdmin }: StaffDashboardProps) {
       icon: Settings,
       page: "developer" as StaffPage,
       color: "bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-violet-200",
-      disabled: false,
-    },
-    {
-      title: "Order For Tomorrow",
-      description: "Coming soon",
-      icon: Calendar,
-      page: "order-tomorrow" as StaffPage,
-      color: "bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 text-white shadow-slate-300",
       disabled: false,
     },
   ];
@@ -212,16 +204,6 @@ export function StaffDashboard({ onSwitchToAdmin }: StaffDashboardProps) {
           return <AdminStockManagementPage onBack={() => setCurrentPage("developer")} />;
         case "edit-sales":
           return <AddSalesPage onBack={() => setCurrentPage("developer")} />;
-        case "order-tomorrow":
-          return (
-            <div className="h-full bg-white flex items-center justify-center">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-slate-900 mb-4">Order For Tomorrow</h2>
-                <p className="text-slate-600">Coming soon</p>
-                <Button onClick={() => setCurrentPage("dashboard")} className="mt-4">Back to Dashboard</Button>
-              </div>
-            </div>
-          );
         default:
           return (
             <div className="h-full bg-white flex items-center justify-center">

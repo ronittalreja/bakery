@@ -58,7 +58,8 @@ type AdminPage =
   | "todays-stock"
   | "sales"
   | "credit-notes"
-  | "credit-note-details";
+  | "credit-note-details"
+  | "tomorrow-ai";
 
 interface AdminDashboardProps {
   onBackToStaff?: () => void;
@@ -120,6 +121,14 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
       icon: CreditCard,
       page: "payments" as AdminPage,
       color: "bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-teal-200",
+    },
+    {
+      title: "Tomorrow AI",
+      description: "Coming soon",
+      icon: Sparkles,
+      page: "tomorrow-ai" as AdminPage,
+      color: "bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 text-white shadow-slate-300",
+      isDark: true,
     },
   ];
 
@@ -291,6 +300,16 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
         return <InsightsPage onBack={() => setCurrentPage("dashboard")} />;
       case "payments":
         return <PaymentsPage onBack={() => setCurrentPage("dashboard")} />;
+      case "tomorrow-ai":
+        return (
+          <div className="h-full bg-white flex items-center justify-center">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-slate-900 mb-4">Tomorrow AI</h2>
+              <p className="text-slate-600">Coming soon</p>
+              <Button onClick={() => setCurrentPage("dashboard")} className="mt-4">Back to Dashboard</Button>
+            </div>
+          </div>
+        );
       default:
         return (
           <div className="h-full bg-white flex items-center justify-center">
@@ -298,14 +317,14 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
             <div className="grid grid-cols-2 gap-6 max-w-4xl mx-auto p-6">
               {dashboardItems.map((item) => {
                 const Icon = item.icon;
-                const isDeveloperCard = item.title === "Developer";
+                const isDarkCard = item.isDark;
                 return (
                   <div
                     key={item.title}
                     onClick={() => setCurrentPage(item.page)}
                     className="group cursor-pointer"
                   >
-                    <div className={`${isDeveloperCard 
+                    <div className={`${isDarkCard 
                       ? 'bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 border-slate-600 shadow-slate-300' 
                       : 'bg-gradient-to-br from-white via-slate-50 to-slate-100 border-slate-200 shadow-lg'
                     } rounded-lg border transition-all duration-200 p-6 h-full`}>
@@ -316,7 +335,7 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
                         </div>
                         
                         {/* Title */}
-                        <h3 className={`text-sm font-medium leading-tight ${isDeveloperCard ? 'text-white' : 'text-slate-900'}`}>
+                        <h3 className={`text-sm font-medium leading-tight ${isDarkCard ? 'text-white' : 'text-slate-900'}`}>
                           {item.title}
                         </h3>
                       </div>
