@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Clock, Filter, User, Receipt, TrendingUp, AlertCircle, RefreshCw, CheckCircle, XCircle } from "lucide-react";
+import { Clock, Filter, User, Receipt, TrendingUp, AlertCircle, RefreshCw, CheckCircle, XCircle, DollarSign } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
 import { useDateContext } from "@/hooks/use-date-context";
@@ -270,17 +270,6 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
           </CardHeader>
         </Card>
 
-        {/* CRDR Warning - Prominent Red Message */}
-        {(!crdrStatus || !crdrStatus.available) && (
-          <div className="bg-red-100 border-2 border-red-500 p-4 rounded-lg">
-            <div className="flex items-center gap-2">
-              <XCircle className="h-5 w-5 text-red-600" />
-              <div className="font-bold text-red-900">CREDIT NOTE NOT FOUND for {selectedDate}</div>
-            </div>
-            <div className="text-red-700 mt-1">All items in invoice marked sold</div>
-          </div>
-        )}
-
         {/* CRDR Status Card */}
         <Card>
           <CardContent className="p-4">
@@ -519,7 +508,7 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
             </Card>
 
             {/* Summary Cards - Moved Down */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
@@ -542,6 +531,40 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
                     <div>
                       <div className="text-2xl font-bold">{summary.totalItems}</div>
                       <div className="text-sm text-muted-foreground">Items Sold</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <DollarSign className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold">₹{transactions.reduce((sum, t) => sum + (Number(t.totalAmount) || 0), 0).toLocaleString()}</div>
+                      <div className="text-sm text-muted-foreground">Total Sales</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className={crdrStatus?.available ? "border-green-500 bg-green-50" : "border-red-500 bg-red-50"}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${crdrStatus?.available ? "bg-green-100" : "bg-red-100"}`}>
+                      {crdrStatus?.available ? (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-600" />
+                      )}
+                    </div>
+                    <div>
+                      <div className={`text-2xl font-bold ${crdrStatus?.available ? "text-green-700" : "text-red-700"}`}>
+                        {crdrStatus?.available ? "FOUND" : "NOT FOUND"}
+                      </div>
+                      <div className={`text-sm ${crdrStatus?.available ? "text-green-600" : "text-red-600"}`}>
+                        Credit Note
+                      </div>
                     </div>
                   </div>
                 </CardContent>
