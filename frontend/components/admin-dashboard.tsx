@@ -34,6 +34,9 @@ import { AdminStockManagementPage } from "@/components/admin-stock-management-pa
 import { ExpensesTrackingPage } from "@/components/expenses-tracking-page";
 import { PaymentsPage } from "@/components/payments-page";
 import { AddSalesPage } from "@/components/edit-sales-page";
+import { RecordSalePage } from "@/components/record-sale-page";
+import { TodaysStockPage } from "@/components/todays-stock-page";
+import { ReturnsPage } from "@/components/newreturns";
 
 type AdminPage =
   | "dashboard"
@@ -43,6 +46,7 @@ type AdminPage =
   | "manage-decorations"
   | "manage-stock"
   | "edit-sales"
+  | "record-sale"
   | "expenses"
   | "insights"
   | "returns-summary"
@@ -175,6 +179,21 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
                 </div>
               </div>
               <div
+                onClick={() => setCurrentPage("record-sale")}
+                className="group cursor-pointer"
+              >
+                <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-200 flex items-center justify-center">
+                      <BarChart3 className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                      Record Sale
+                    </h3>
+                  </div>
+                </div>
+              </div>
+              <div
                 onClick={() => setCurrentPage("grm")}
                 className="group cursor-pointer"
               >
@@ -215,26 +234,12 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
         return <AdminStockManagementPage onBack={() => setCurrentPage("admin")} />;
       case "edit-sales":
         return <AddSalesPage onBack={() => setCurrentPage("admin")} />;
+      case "record-sale":
+        return <RecordSalePage onBack={() => setCurrentPage("admin")} />;
       case "grm":
-        return (
-          <div className="h-full bg-white flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4">GRM</h2>
-              <p className="text-slate-600">GRM page coming soon</p>
-              <Button onClick={() => setCurrentPage("admin")} className="mt-4">Back to Admin</Button>
-            </div>
-          </div>
-        );
+        return <ReturnsPage onBack={() => setCurrentPage("admin")} />;
       case "todays-stock":
-        return (
-          <div className="h-full bg-white flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4">Today's Stock</h2>
-              <p className="text-slate-600">Today's Stock page coming soon</p>
-              <Button onClick={() => setCurrentPage("admin")} className="mt-4">Back to Admin</Button>
-            </div>
-          </div>
-        );
+        return <TodaysStockPage onBack={() => setCurrentPage("admin")} />;
       case "expenses":
         return <ExpensesTrackingPage onBack={() => setCurrentPage("dashboard")} />;
       case "insights":

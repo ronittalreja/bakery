@@ -51,22 +51,6 @@ export function StaffDashboard({ onSwitchToAdmin }: StaffDashboardProps) {
       disabled: !isToday || isDayEnded,
     },
     {
-      title: "Today's Stock",
-      description: "View available inventory",
-      icon: Package,
-      page: "stock" as StaffPage,
-      color: "bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-violet-200",
-      disabled: false,
-    },
-    {
-      title: "Record Sale",
-      description: "Record customer purchases and special cakes",
-      icon: ShoppingCart,
-      page: "record-sale" as StaffPage,
-      color: "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-200",
-      disabled: !isToday || isDayEnded,
-    },
-    {
       title: "Sales Timeline",
       description: "View sales by date",
       icon: BarChart3,
