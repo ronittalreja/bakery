@@ -46,7 +46,9 @@ type AdminPage =
   | "expenses"
   | "insights"
   | "returns-summary"
-  | "payments";
+  | "payments"
+  | "grm"
+  | "todays-stock";
 
 interface AdminDashboardProps {
   onBackToStaff?: () => void;
@@ -172,6 +174,36 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
                   </div>
                 </div>
               </div>
+              <div
+                onClick={() => setCurrentPage("grm")}
+                className="group cursor-pointer"
+              >
+                <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-green-600 text-white shadow-green-200 flex items-center justify-center">
+                      <Package className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                      GRM
+                    </h3>
+                  </div>
+                </div>
+              </div>
+              <div
+                onClick={() => setCurrentPage("todays-stock")}
+                className="group cursor-pointer"
+              >
+                <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-200 flex items-center justify-center">
+                      <Calendar className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                      Today's Stock
+                    </h3>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -183,6 +215,26 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
         return <AdminStockManagementPage onBack={() => setCurrentPage("admin")} />;
       case "edit-sales":
         return <AddSalesPage onBack={() => setCurrentPage("admin")} />;
+      case "grm":
+        return (
+          <div className="h-full bg-white flex items-center justify-center">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-slate-900 mb-4">GRM</h2>
+              <p className="text-slate-600">GRM page coming soon</p>
+              <Button onClick={() => setCurrentPage("admin")} className="mt-4">Back to Admin</Button>
+            </div>
+          </div>
+        );
+      case "todays-stock":
+        return (
+          <div className="h-full bg-white flex items-center justify-center">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-slate-900 mb-4">Today's Stock</h2>
+              <p className="text-slate-600">Today's Stock page coming soon</p>
+              <Button onClick={() => setCurrentPage("admin")} className="mt-4">Back to Admin</Button>
+            </div>
+          </div>
+        );
       case "expenses":
         return <ExpensesTrackingPage onBack={() => setCurrentPage("dashboard")} />;
       case "insights":
