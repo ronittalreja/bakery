@@ -808,87 +808,234 @@ const storeCreditNote = async (req, res) => {
   }
 };
 
-// Get all credit notes with month filter - from ROS receipts only (AC/EC/CN)
+// Get all credit notes with month filter - from credit_notes table (original with items/loss)
 const getAllCreditNotes = async (req, res) => {
   try {
     const { month } = req.query;
     
-    // Fetch ROS receipts and extract credit notes from bills
+    // Handle "all" case for full year data
+    if (month && (month === 'all' || month.includes('-all'))) {
+      let yearToUse;
+      if (month.includes('-all')) {
+        yearToUse = month.split('-')[0];
+      } else {
+        yearToUse = new Date().getFullYear().toString();
+      }
+      
+      if (!yearToUse || !/^\d{4}$/.test(yearToUse)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid year format' 
+        });
+      }
+      
+      // Return demo data if demo user
+      if (req.isDemo) {
+        const demoCreditNotes = getDemoData('creditNotes');
+        const filteredCreditNotes = demoCreditNotes.filter(cn => {
+          const cnDate = new Date(cn.date || cn.return_date);
+          return cnDate.getFullYear().toString() === yearToUse;
+        });
+        
+        const transformedCreditNotes = filteredCreditNotes.map(cn => ({
+          id: cn.id,
+          creditNoteNumber: cn.credit_note_number,
+          date: cn.date,
+          returnDate: cn.return_date || cn.date,
+          receiverName: cn.receiver_name,
+          receiverGstin: cn.receiver_gstin,
+          reason: cn.reason,
+          totalItems: cn.total_items,
+          grossValue: Number(cn.gross_value) || 0,
+          netValue: Number(cn.net_value) || 0,
+          fileName: cn.file_name,
+          originalName: cn.original_name,
+          status: cn.status || 'processed',
+          items: cn.items,
+          createdAt: cn.created_at
+        }));
+        
+        return res.json({ 
+          success: true, 
+          creditNotes: transformedCreditNotes 
+        });
+      }
+      
+      const query = `
+        SELECT 
+          id,
+          credit_note_number,
+          date,
+          return_date,
+          receiver_name,
+          receiver_gstin,
+          reason,
+          total_items,
+          gross_value,
+          net_value,
+          file_name,
+          original_name,
+          items,
+          created_at,
+          COALESCE(status, 'pending') as status
+        FROM credit_notes
+        WHERE YEAR(COALESCE(return_date, date)) = ?
+        ORDER BY date DESC, created_at DESC LIMIT 100
+      `;
+      
+      const [creditNotes] = await db.execute(query, [yearToUse]);
+      
+      const validCreditNotes = creditNotes.filter(row => {
+        try {
+          if (row.items && typeof row.items === 'string') {
+            JSON.parse(row.items);
+          }
+          return true;
+        } catch (e) {
+          console.warn(`Skipping credit note ${row.id} due to invalid items JSON`);
+          return false;
+        }
+      });
+      
+      return res.json({
+        success: true,
+        creditNotes: validCreditNotes.map(row => ({
+          id: row.id,
+          creditNoteNumber: row.credit_note_number,
+          date: row.date,
+          returnDate: row.return_date || row.date,
+          receiverName: row.receiver_name,
+          receiverGstin: row.receiver_gstin,
+          reason: row.reason,
+          totalItems: row.total_items,
+          grossValue: Number(row.gross_value) || 0,
+          netValue: Number(row.net_value) || 0,
+          fileName: row.file_name,
+          originalName: row.original_name,
+          status: row.status || 'pending',
+          items: (() => {
+            try {
+              if (!row.items) return [];
+              if (typeof row.items === 'string') {
+                return JSON.parse(row.items);
+              }
+              return row.items;
+            } catch (e) {
+              console.warn('Failed to parse items JSON:', e.message);
+              return [];
+            }
+          })(),
+          createdAt: row.created_at
+        }))
+      });
+    }
+    
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoCreditNotes = getDemoData('creditNotes');
+      
+      // Transform demo credit notes to match database response format (camelCase)
+      const transformedCreditNotes = demoCreditNotes.map(cn => ({
+        id: cn.id,
+        creditNoteNumber: cn.credit_note_number,
+        date: cn.date,
+        returnDate: cn.return_date || cn.date,
+        receiverName: cn.receiver_name,
+        receiverGstin: cn.receiver_gstin,
+        reason: cn.reason,
+        totalItems: cn.total_items,
+        grossValue: Number(cn.gross_value) || 0,
+        netValue: Number(cn.net_value) || 0,
+        fileName: cn.file_name,
+        originalName: cn.original_name,
+        status: cn.status || 'processed',
+        items: cn.items,
+        createdAt: cn.created_at
+      }));
+      
+      return res.json({ 
+        success: true, 
+        creditNotes: transformedCreditNotes 
+      });
+    }
+    
     let query = `
       SELECT 
         id,
-        receipt_number,
-        receipt_date,
-        received_from,
-        total_amount,
-        payment_method,
-        bills,
+        credit_note_number,
+        date,
+        return_date,
+        receiver_name,
+        receiver_gstin,
+        reason,
+        total_items,
+        gross_value,
+        net_value,
         file_name,
         original_name,
-        created_at
-      FROM ros_receipts
+        items,
+        created_at,
+        COALESCE(status, 'pending') as status
+      FROM credit_notes
     `;
     
     const params = [];
     
     if (month) {
-      query += ` WHERE DATE_FORMAT(receipt_date, '%Y-%m') = ?`;
+      query += ` WHERE DATE_FORMAT(COALESCE(return_date, date), '%Y-%m') = ?`;
       params.push(month);
     }
     
-    query += ` ORDER BY receipt_date DESC, created_at DESC`;
+    query += ` ORDER BY date DESC, created_at DESC LIMIT 100`; // Added limit for performance
     
-    const [rosReceipts] = await db.execute(query, params);
+    const [creditNotes] = await db.execute(query, params);
     
-    // Extract credit notes from ROS receipt bills (AC/EC/CN types only)
-    const creditNotes = [];
-    let idCounter = 1;
-    
-    for (const receipt of rosReceipts) {
-      let bills;
+    // Filter out any credit notes with invalid items JSON
+    const validCreditNotes = creditNotes.filter(row => {
       try {
-        bills = typeof receipt.bills === 'string' ? JSON.parse(receipt.bills) : receipt.bills;
+        if (row.items && typeof row.items === 'string') {
+          JSON.parse(row.items);
+        }
+        return true;
       } catch (e) {
-        console.warn('Failed to parse bills for receipt:', receipt.id);
-        continue;
+        console.warn(`Skipping credit note ${row.id} due to invalid items JSON`);
+        return false;
       }
-      
-      if (!Array.isArray(bills)) continue;
-      
-      // Filter bills for credit note types (AC, EC, CN)
-      const creditNoteBills = bills.filter(bill => 
-        bill.doc_type && ['AC', 'EC', 'CN'].includes(bill.doc_type.toUpperCase())
-      );
-      
-      for (const bill of creditNoteBills) {
-        creditNotes.push({
-          id: idCounter++,
-          creditNoteNumber: bill.bill_number,
-          date: receipt.receipt_date,
-          returnDate: receipt.receipt_date,
-          receiverName: receipt.received_from || 'Unknown',
-          receiverGstin: '',
-          reason: bill.doc_type === 'AC' ? 'ADJUSTMENT CREDIT' : 
-                 bill.doc_type === 'EC' ? 'EXCHANGE CREDIT' : 
-                 bill.doc_type === 'CN' ? 'CREDIT NOTE' : 'CREDIT NOTE',
-          totalItems: 0, // Not available in ROS bills
-          grossValue: bill.amount || 0,
-          netValue: bill.amount || 0,
-          fileName: receipt.file_name,
-          originalName: receipt.original_name,
-          items: [], // Not available in ROS bills
-          createdAt: receipt.created_at,
-          docType: bill.doc_type
-        });
-      }
-    }
+    });
     
     res.json({
       success: true,
-      creditNotes
+      creditNotes: validCreditNotes.map(row => ({
+        id: row.id,
+        creditNoteNumber: row.credit_note_number,
+        date: row.date,
+        returnDate: row.return_date || row.date,
+        receiverName: row.receiver_name,
+        receiverGstin: row.receiver_gstin,
+        reason: row.reason,
+        totalItems: row.total_items,
+        grossValue: Number(row.gross_value) || 0,
+        netValue: Number(row.net_value) || 0,
+        fileName: row.file_name,
+        originalName: row.original_name,
+        status: row.status || 'pending',
+        items: (() => {
+          try {
+            if (!row.items) return [];
+            if (typeof row.items === 'string') {
+              return JSON.parse(row.items);
+            }
+            return row.items;
+          } catch (e) {
+            console.warn('Failed to parse items JSON:', e.message);
+            return [];
+          }
+        })(),
+        createdAt: row.created_at
+      }))
     });
   } catch (error) {
-    console.error('Error fetching credit notes from ROS receipts:', error);
+    console.error('Error fetching credit notes:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -1154,6 +1301,256 @@ const getCreditNotesFromRosReceipts = async (req, res) => {
   }
 };
 
+// Get credit notes from credit_notes table that appear in ROS receipts (AC/EC/CN)
+const getCreditNotesInRos = async (req, res) => {
+  try {
+    const { month } = req.query;
+    
+    // First, get all credit note numbers from ROS receipts (AC/EC/CN)
+    let rosQuery = `
+      SELECT bills
+      FROM ros_receipts
+    `;
+    
+    const rosParams = [];
+    
+    if (month) {
+      rosQuery += ` WHERE DATE_FORMAT(receipt_date, '%Y-%m') = ?`;
+      rosParams.push(month);
+    }
+    
+    const [rosReceipts] = await db.execute(rosQuery, rosParams);
+    
+    // Collect all AC/EC/CN credit note numbers from ROS
+    const rosCreditNoteNumbers = new Set();
+    for (const receipt of rosReceipts) {
+      let bills;
+      try {
+        bills = typeof receipt.bills === 'string' ? JSON.parse(receipt.bills) : receipt.bills;
+      } catch (e) {
+        continue;
+      }
+      
+      if (Array.isArray(bills)) {
+        const creditNoteBills = bills.filter(bill => 
+          bill.doc_type && ['AC', 'EC', 'CN'].includes(bill.doc_type.toUpperCase())
+        );
+        creditNoteBills.forEach(bill => rosCreditNoteNumbers.add(bill.bill_number));
+      }
+    }
+    
+    // Fetch credit notes from credit_notes table
+    let query = `
+      SELECT 
+        id,
+        credit_note_number,
+        date,
+        return_date,
+        receiver_name,
+        receiver_gstin,
+        reason,
+        total_items,
+        gross_value,
+        net_value,
+        file_name,
+        original_name,
+        items,
+        created_at,
+        COALESCE(status, 'pending') as status
+      FROM credit_notes
+    `;
+    
+    const params = [];
+    
+    if (month) {
+      query += ` WHERE DATE_FORMAT(COALESCE(return_date, date), '%Y-%m') = ?`;
+      params.push(month);
+    }
+    
+    query += ` ORDER BY date DESC, created_at DESC LIMIT 100`;
+    
+    const [creditNotes] = await db.execute(query, params);
+    
+    // Filter to only include credit notes that appear in ROS receipts
+    const rosCreditNotes = creditNotes.filter(row => 
+      rosCreditNoteNumbers.has(row.credit_note_number)
+    );
+    
+    // Filter out any credit notes with invalid items JSON
+    const validCreditNotes = rosCreditNotes.filter(row => {
+      try {
+        if (row.items && typeof row.items === 'string') {
+          JSON.parse(row.items);
+        }
+        return true;
+      } catch (e) {
+        console.warn(`Skipping credit note ${row.id} due to invalid items JSON`);
+        return false;
+      }
+    });
+    
+    res.json({
+      success: true,
+      creditNotes: validCreditNotes.map(row => ({
+        id: row.id,
+        creditNoteNumber: row.credit_note_number,
+        date: row.date,
+        returnDate: row.return_date || row.date,
+        receiverName: row.receiver_name,
+        receiverGstin: row.receiver_gstin,
+        reason: row.reason,
+        totalItems: row.total_items,
+        grossValue: Number(row.gross_value) || 0,
+        netValue: Number(row.net_value) || 0,
+        fileName: row.file_name,
+        originalName: row.original_name,
+        status: 'cleared', // ROS credit notes are cleared
+        items: (() => {
+          try {
+            if (!row.items) return [];
+            if (typeof row.items === 'string') {
+              return JSON.parse(row.items);
+            }
+            return row.items;
+          } catch (e) {
+            console.warn('Failed to parse items JSON:', e.message);
+            return [];
+          }
+        })(),
+        createdAt: row.created_at
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching credit notes in ROS:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get credit notes NOT in ROS receipts (uploaded via CRDR API)
+const getCreditNotesNotInRos = async (req, res) => {
+  try {
+    const { month } = req.query;
+    
+    // First, get all credit note numbers from ROS receipts (AC/EC/CN)
+    let rosQuery = `
+      SELECT bills
+      FROM ros_receipts
+    `;
+    
+    const rosParams = [];
+    
+    if (month) {
+      rosQuery += ` WHERE DATE_FORMAT(receipt_date, '%Y-%m') = ?`;
+      rosParams.push(month);
+    }
+    
+    const [rosReceipts] = await db.execute(rosQuery, rosParams);
+    
+    // Collect all AC/EC/CN credit note numbers from ROS
+    const rosCreditNoteNumbers = new Set();
+    for (const receipt of rosReceipts) {
+      let bills;
+      try {
+        bills = typeof receipt.bills === 'string' ? JSON.parse(receipt.bills) : receipt.bills;
+      } catch (e) {
+        continue;
+      }
+      
+      if (Array.isArray(bills)) {
+        const creditNoteBills = bills.filter(bill => 
+          bill.doc_type && ['AC', 'EC', 'CN'].includes(bill.doc_type.toUpperCase())
+        );
+        creditNoteBills.forEach(bill => rosCreditNoteNumbers.add(bill.bill_number));
+      }
+    }
+    
+    // Fetch credit notes from credit_notes table
+    let query = `
+      SELECT 
+        id,
+        credit_note_number,
+        date,
+        return_date,
+        receiver_name,
+        receiver_gstin,
+        reason,
+        total_items,
+        gross_value,
+        net_value,
+        file_name,
+        original_name,
+        items,
+        created_at,
+        COALESCE(status, 'pending') as status
+      FROM credit_notes
+    `;
+    
+    const params = [];
+    
+    if (month) {
+      query += ` WHERE DATE_FORMAT(COALESCE(return_date, date), '%Y-%m') = ?`;
+      params.push(month);
+    }
+    
+    query += ` ORDER BY date DESC, created_at DESC LIMIT 100`;
+    
+    const [creditNotes] = await db.execute(query, params);
+    
+    // Filter to only include credit notes NOT in ROS receipts
+    const nonRosCreditNotes = creditNotes.filter(row => 
+      !rosCreditNoteNumbers.has(row.credit_note_number)
+    );
+    
+    // Filter out any credit notes with invalid items JSON
+    const validCreditNotes = nonRosCreditNotes.filter(row => {
+      try {
+        if (row.items && typeof row.items === 'string') {
+          JSON.parse(row.items);
+        }
+        return true;
+      } catch (e) {
+        console.warn(`Skipping credit note ${row.id} due to invalid items JSON`);
+        return false;
+      }
+    });
+    
+    res.json({
+      success: true,
+      creditNotes: validCreditNotes.map(row => ({
+        id: row.id,
+        creditNoteNumber: row.credit_note_number,
+        date: row.date,
+        returnDate: row.return_date || row.date,
+        receiverName: row.receiver_name,
+        receiverGstin: row.receiver_gstin,
+        reason: row.reason,
+        totalItems: row.total_items,
+        grossValue: Number(row.gross_value) || 0,
+        netValue: Number(row.net_value) || 0,
+        fileName: row.file_name,
+        originalName: row.original_name,
+        status: row.status || 'pending',
+        items: (() => {
+          try {
+            if (!row.items) return [];
+            if (typeof row.items === 'string') {
+              return JSON.parse(row.items);
+            }
+            return row.items;
+          } catch (e) {
+            console.warn('Failed to parse items JSON:', e.message);
+            return [];
+          }
+        })(),
+        createdAt: row.created_at
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching credit notes not in ROS:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // Get total return charges (total loss) for a month
 const getTotalReturnCharges = async (req, res) => {
   try {
@@ -1215,5 +1612,7 @@ module.exports = {
   getTotalReturnCharges,
   getCreditNoteDetails,
   updateCreditNoteStatus,
-  getCreditNotesFromRosReceipts
+  getCreditNotesFromRosReceipts,
+  getCreditNotesInRos,
+  getCreditNotesNotInRos
 };

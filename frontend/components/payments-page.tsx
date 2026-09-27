@@ -206,13 +206,13 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
         return;
       }
 
-      // Use the same API endpoint as staff dashboard
+      // Use the new endpoint for ROS-based credit notes
       const monthParam = selectedMonth === 0 ? `${selectedYear}-all` : selectedMonth.toString().padStart(2, '0');
       const yearStr = selectedYear.toString();
       const monthYear = selectedMonth === 0 ? `${yearStr}-all` : `${yearStr}-${monthParam}`;
       
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/credit-notes?month=${monthYear}`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/credit-notes/in-ros?month=${monthYear}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -228,9 +228,8 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       const data = await response.json();
       
       if (data.success) {
-        // Use the same data structure as staff dashboard
         const creditNotes = data.creditNotes || [];
-            setCreditNotes(creditNotes);
+        setCreditNotes(creditNotes);
       } else {
         setError(data.error || "Failed to fetch credit notes");
         setCreditNotes([]);
@@ -320,9 +319,12 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       const token = getAuthToken();
       if (!token) return;
 
-      const monthParam = selectedMonth === 0 ? `${selectedYear}-all` : selectedMonth;
+      const monthParam = selectedMonth === 0 ? `${selectedYear}-all` : selectedMonth.toString().padStart(2, '0');
+      const yearStr = selectedYear.toString();
+      const monthYear = selectedMonth === 0 ? `${yearStr}-all` : `${yearStr}-${monthParam}`;
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/credit-notes/from-ros-receipts?month=${monthParam}&year=${selectedYear}`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/credit-notes/not-in-ros?month=${monthYear}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -332,7 +334,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch credit notes from ROS receipts: ${response.status}`);
+        throw new Error(`Failed to fetch credit notes not in ROS: ${response.status}`);
       }
 
       const data = await response.json();
@@ -781,7 +783,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                 className="flex items-center gap-2 bg-white hover:bg-white text-slate-700 hover:text-slate-900 border border-slate-300 hover:border-slate-500 transition-all duration-200"
               >
                 <CreditCard className="h-4 w-4" />
-                Credit Notes
+                Credit Notes (ROS)
               </Button>
               <Button
                 variant={creditNotesSubTab === 'others' ? 'default' : 'ghost'}
@@ -789,7 +791,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                 className="flex items-center gap-2 bg-white hover:bg-white text-slate-700 hover:text-slate-900 border border-slate-300 hover:border-slate-500 transition-all duration-200"
               >
                 <CreditCard className="h-4 w-4" />
-                Others
+                Others (CRDR Upload)
               </Button>
             </div>
 
@@ -797,7 +799,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
             <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg">
               <div className="p-4 sm:p-6 border-b border-slate-200">
                 <h2 className="text-lg font-bold text-slate-900">
-                  {creditNotesSubTab === 'credit-notes' ? 'Credit Notes List' : 'Credit Notes from ROS Receipts'}
+                  {creditNotesSubTab === 'credit-notes' ? 'Credit Notes from ROS Receipts (AC/EC/CN)' : 'Credit Notes from CRDR Upload (Not in ROS)'}
                 </h2>
                 <p className="text-slate-600 mt-1 text-sm">
                   {isLoading ? "Loading credit notes..." : `${creditNotesSubTab === 'credit-notes' ? creditNotes.length : creditNotesFromRos.length} credit note(s) found`}

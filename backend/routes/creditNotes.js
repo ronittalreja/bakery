@@ -26,6 +26,12 @@ router.get('/total-loss', creditNoteController.getTotalReturnCharges);
 // Get credit notes from ROS receipts that don't exist in credit_notes table
 router.get('/from-ros-receipts', creditNoteController.getCreditNotesFromRosReceipts);
 
+// Get credit notes from credit_notes table that appear in ROS receipts (AC/EC/CN)
+router.get('/in-ros', creditNoteController.getCreditNotesInRos);
+
+// Get credit notes NOT in ROS receipts (uploaded via CRDR API)
+router.get('/not-in-ros', creditNoteController.getCreditNotesNotInRos);
+
 // Get credit note details by ID
 router.get('/:id', creditNoteController.getCreditNoteDetails);
 
