@@ -50,30 +50,6 @@ export function StaffDashboard({ onSwitchToAdmin }: StaffDashboardProps) {
       color: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-200",
       disabled: !isToday || isDayEnded,
     },
-    {
-      title: "Sales Timeline",
-      description: "View sales by date",
-      icon: BarChart3,
-      page: "sales-summary" as StaffPage,
-      color: "bg-gradient-to-br from-cyan-500 to-cyan-600 text-white shadow-cyan-200",
-      disabled: false,
-    },
-    {
-      title: "Returns",
-      description: "Process GRM and GVN returns",
-      icon: RotateCcw,
-      page: "returns" as StaffPage,
-      color: "bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-amber-200",
-      disabled: !isToday || isDayEnded,
-    },
-    {
-      title: "Credit Notes",
-      description: "View and manage credit notes",
-      icon: CreditCard,
-      page: "credit-notes" as StaffPage,
-      color: "bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-teal-200",
-      disabled: false,
-    },
   ];
 
   const renderPage = () => {

@@ -37,6 +37,9 @@ import { AddSalesPage } from "@/components/edit-sales-page";
 import { RecordSalePage } from "@/components/record-sale-page";
 import { TodaysStockPage } from "@/components/todays-stock-page";
 import { ReturnsPage } from "@/components/newreturns";
+import { TodaysSalesPage } from "@/components/todays-sales-page";
+import CreditNotesPage from "@/components/credit-notes-page";
+import CreditNoteDetailsPage from "@/components/credit-note-details-page";
 
 type AdminPage =
   | "dashboard"
@@ -52,7 +55,10 @@ type AdminPage =
   | "returns-summary"
   | "payments"
   | "grm"
-  | "todays-stock";
+  | "todays-stock"
+  | "sales"
+  | "credit-notes"
+  | "credit-note-details";
 
 interface AdminDashboardProps {
   onBackToStaff?: () => void;
@@ -62,6 +68,8 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
   const { user, logout } = useAuth();
   const { adminMainDate, setAdminMainDate, isToday } = useDateContext();
   const [currentPage, setCurrentPage] = useState<AdminPage>("dashboard");
+  const [selectedCreditNoteId, setSelectedCreditNoteId] = useState<number | null>(null);
+  const [selectedCreditNoteMonth, setSelectedCreditNoteMonth] = useState<string>(new Date().toISOString().slice(0, 7));
 
   const dashboardItems = [
     {
@@ -203,7 +211,7 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
                       <Package className="h-6 w-6 text-white" />
                     </div>
                     <h3 className="text-sm font-medium text-slate-900 leading-tight">
-                      GRM
+                      Returns
                     </h3>
                   </div>
                 </div>
@@ -219,6 +227,36 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
                     </div>
                     <h3 className="text-sm font-medium text-slate-900 leading-tight">
                       Today's Stock
+                    </h3>
+                  </div>
+                </div>
+              </div>
+              <div
+                onClick={() => setCurrentPage("sales")}
+                className="group cursor-pointer"
+              >
+                <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-600 text-white shadow-cyan-200 flex items-center justify-center">
+                      <BarChart3 className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                      Sales
+                    </h3>
+                  </div>
+                </div>
+              </div>
+              <div
+                onClick={() => setCurrentPage("credit-notes")}
+                className="group cursor-pointer"
+              >
+                <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-teal-200 flex items-center justify-center">
+                      <CreditCard className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                      Credit Notes
                     </h3>
                   </div>
                 </div>
@@ -240,6 +278,36 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
         return <ReturnsPage onBack={() => setCurrentPage("admin")} />;
       case "todays-stock":
         return <TodaysStockPage onBack={() => setCurrentPage("admin")} />;
+      case "sales":
+        return <TodaysSalesPage onBack={() => setCurrentPage("admin")} />;
+      case "credit-notes":
+        return (
+          <CreditNotesPage 
+            onBack={() => setCurrentPage("admin")} 
+            onViewCreditNote={(id, month) => {
+              setSelectedCreditNoteId(id);
+              setSelectedCreditNoteMonth(month);
+              setCurrentPage("credit-note-details");
+            }}
+            initialMonth={selectedCreditNoteMonth}
+          />
+        );
+      case "credit-note-details":
+        if (!selectedCreditNoteId) {
+          setCurrentPage("credit-notes");
+          return null;
+        }
+        return (
+          <CreditNoteDetailsPage 
+            creditNoteId={selectedCreditNoteId}
+            selectedMonth={selectedCreditNoteMonth}
+            onBack={(month) => {
+              setSelectedCreditNoteId(null);
+              setSelectedCreditNoteMonth(month);
+              setCurrentPage("credit-notes");
+            }}
+          />
+        );
       case "expenses":
         return <ExpensesTrackingPage onBack={() => setCurrentPage("dashboard")} />;
       case "insights":
