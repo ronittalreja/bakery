@@ -284,7 +284,7 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
               </div>
             </div>
             
-            {!crdrStatus?.available && (
+            {(!crdrStatus || !crdrStatus.available) && (
               <Alert variant="destructive" className="mb-3">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
