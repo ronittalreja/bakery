@@ -16,6 +16,10 @@ import {
   CreditCard,
   Shield,
   User,
+  Settings,
+  Sparkles,
+  Edit3,
+  Calendar,
 } from "lucide-react";
 import { UploadInvoicePage } from "@/components/upload-invoice-page";
 import { RecordSalePage } from "@/components/record-sale-page";
@@ -25,8 +29,12 @@ import { ReturnsPage } from "@/components/newreturns";
 import CreditNotesPage from "@/components/credit-notes-page";
 import CreditNoteDetailsPage from "@/components/credit-note-details-page";
 import { DateSelector } from "@/components/date-selector";
+import { ManageProductsPage } from "@/components/manage-products-page";
+import { ManageDecorationsPage } from "@/components/manage-decorations-page";
+import { AdminStockManagementPage } from "@/components/admin-stock-management-page";
+import { AddSalesPage } from "@/components/edit-sales-page";
 
-type StaffPage = "dashboard" | "upload-invoice" | "record-sale" | "stock" | "sales-summary" | "returns" | "credit-notes" | "credit-note-details";
+type StaffPage = "dashboard" | "upload-invoice" | "record-sale" | "stock" | "sales-summary" | "returns" | "credit-notes" | "credit-note-details" | "developer" | "order-tomorrow" | "manage-products" | "manage-decorations" | "manage-stock" | "edit-sales";
 
 interface StaffDashboardProps {
   onSwitchToAdmin?: () => void;
@@ -49,6 +57,22 @@ export function StaffDashboard({ onSwitchToAdmin }: StaffDashboardProps) {
       page: "upload-invoice" as StaffPage,
       color: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-200",
       disabled: !isToday || isDayEnded,
+    },
+    {
+      title: "Developer",
+      description: "Manage products, decorations, stock, and view inventory",
+      icon: Settings,
+      page: "developer" as StaffPage,
+      color: "bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-violet-200",
+      disabled: false,
+    },
+    {
+      title: "Order For Tomorrow",
+      description: "Coming soon",
+      icon: Calendar,
+      page: "order-tomorrow" as StaffPage,
+      color: "bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 text-white shadow-slate-300",
+      disabled: false,
     },
   ];
 
@@ -97,6 +121,106 @@ export function StaffDashboard({ onSwitchToAdmin }: StaffDashboardProps) {
                 setCurrentPage("credit-notes");
               }}
             />
+          );
+        case "developer":
+          return (
+            <div className="h-full bg-white flex items-center justify-center">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto p-6">
+                <div
+                  onClick={() => setCurrentPage("upload-invoice")}
+                  className="group cursor-pointer"
+                >
+                  <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-200 flex items-center justify-center">
+                        <Upload className="h-6 w-6 text-white" />
+                      </div>
+                      <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                        Upload
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  onClick={() => setCurrentPage("manage-products")}
+                  className="group cursor-pointer"
+                >
+                  <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-violet-200 flex items-center justify-center">
+                        <Settings className="h-6 w-6 text-white" />
+                      </div>
+                      <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                        Manage Products
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  onClick={() => setCurrentPage("manage-decorations")}
+                  className="group cursor-pointer"
+                >
+                  <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-rose-200 flex items-center justify-center">
+                        <Sparkles className="h-6 w-6 text-white" />
+                      </div>
+                      <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                        Manage Decorations
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  onClick={() => setCurrentPage("manage-stock")}
+                  className="group cursor-pointer"
+                >
+                  <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-indigo-200 flex items-center justify-center">
+                        <Package className="h-6 w-6 text-white" />
+                      </div>
+                      <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                        Stock Management
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  onClick={() => setCurrentPage("edit-sales")}
+                  className="group cursor-pointer"
+                >
+                  <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-orange-200 flex items-center justify-center">
+                        <Edit3 className="h-6 w-6 text-white" />
+                      </div>
+                      <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                        Add Sales
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        case "manage-products":
+          return <ManageProductsPage onBack={() => setCurrentPage("developer")} />;
+        case "manage-decorations":
+          return <ManageDecorationsPage onBack={() => setCurrentPage("developer")} />;
+        case "manage-stock":
+          return <AdminStockManagementPage onBack={() => setCurrentPage("developer")} />;
+        case "edit-sales":
+          return <AddSalesPage onBack={() => setCurrentPage("developer")} />;
+        case "order-tomorrow":
+          return (
+            <div className="h-full bg-white flex items-center justify-center">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-slate-900 mb-4">Order For Tomorrow</h2>
+                <p className="text-slate-600">Coming soon</p>
+                <Button onClick={() => setCurrentPage("dashboard")} className="mt-4">Back to Dashboard</Button>
+              </div>
+            </div>
           );
         default:
           return (

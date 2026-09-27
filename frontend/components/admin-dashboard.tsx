@@ -121,14 +121,6 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
       page: "payments" as AdminPage,
       color: "bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-teal-200",
     },
-    {
-      title: "Developer",
-      description: "Manage products, decorations, stock, and view inventory",
-      icon: Settings,
-      page: "admin" as AdminPage,
-      color: "bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-violet-200",
-      isDark: true,
-    },
   ];
 
   const renderPage = () => {
