@@ -917,6 +917,211 @@ app.post('/api/fix-stock-adjustments-table', async (req, res) => {
   }
 });
 
+// Populate Tomorrow AI product master
+app.post('/api/populate-tomorrow-ai-products', async (req, res) => {
+  try {
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    console.log('🔧 Populating Tomorrow AI product master...');
+    
+    // Fetch all existing products
+    const [products] = await connection.execute(`
+      SELECT 
+        id as product_id,
+        name,
+        category,
+        sale_price as price,
+        item_code
+      FROM products
+      WHERE is_active = 1
+    `);
+    
+    console.log(`Found ${products.length} active products`);
+    
+    let inserted = 0;
+    
+    for (const product of products) {
+      // Determine item_type
+      const nameLower = product.name.toLowerCase();
+      const categoryLower = product.category ? product.category.toLowerCase() : '';
+      
+      let itemType = 'DISPLAY';
+      if (nameLower.includes('box') || nameLower.includes('packing') || nameLower.includes('wrap') || categoryLower.includes('packing')) {
+        itemType = 'PACKING_MATERIAL';
+      } else if (nameLower.includes('custom') || nameLower.includes('special') || nameLower.includes('order')) {
+        itemType = 'SPECIAL_ORDER';
+      }
+      
+      // Generate ml_group_id
+      const mlGroupId = product.name.toUpperCase().replace(/[^A-Z0-9]/g, '_').substring(0, 50);
+      
+      // Insert or update
+      await connection.execute(`
+        INSERT INTO tomorrow_ai_product_master 
+        (product_id, name, category, price, item_type, ml_group_id, active)
+        VALUES (?, ?, ?, ?, ?, ?, TRUE)
+        ON DUPLICATE KEY UPDATE
+        name = VALUES(name),
+        category = VALUES(category),
+        price = VALUES(price),
+        item_type = VALUES(item_type),
+        ml_group_id = VALUES(ml_group_id),
+        updated_at = CURRENT_TIMESTAMP
+      `, [
+        product.product_id,
+        product.name,
+        product.category,
+        product.price,
+        itemType,
+        mlGroupId
+      ]);
+      
+      // Add alias if item_code exists
+      if (product.item_code) {
+        await connection.execute(`
+          INSERT INTO tomorrow_ai_product_aliases 
+          (product_id, historical_item_code, historical_name)
+          VALUES (?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+          historical_name = VALUES(historical_name)
+        `, [
+          product.product_id,
+          product.item_code,
+          product.name
+        ]);
+      }
+      
+      inserted++;
+    }
+    
+    await connection.end();
+    
+    console.log(`✓ Product master populated: ${inserted} products`);
+    
+    res.json({ success: true, message: `Product master populated: ${inserted} products` });
+  } catch (error) {
+    console.error('Populate product master error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Populate Tomorrow AI events
+app.post('/api/populate-tomorrow-ai-events', async (req, res) => {
+  try {
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    console.log('🔧 Populating Tomorrow AI events...');
+    
+    const events = [
+      // 2024 Events
+      { event_name: 'New Year', event_type: 'HOLIDAY', event_date: '2024-01-01', year: 2024, description: 'New Year Day' },
+      { event_name: 'Republic Day', event_type: 'HOLIDAY', event_date: '2024-01-26', year: 2024, description: 'Republic Day of India' },
+      { event_name: 'Valentine Day', event_type: 'SPECIAL_DAY', event_date: '2024-02-14', year: 2024, description: 'Valentine Day' },
+      { event_name: 'Holi', event_type: 'FESTIVAL', event_date: '2024-03-25', year: 2024, description: 'Holi Festival of Colors' },
+      { event_name: 'Good Friday', event_type: 'HOLIDAY', event_date: '2024-03-29', year: 2024, description: 'Good Friday' },
+      { event_name: 'Eid ul-Fitr', event_type: 'FESTIVAL', event_date: '2024-04-11', year: 2024, description: 'Eid ul-Fitr' },
+      { event_name: 'Mother Day', event_type: 'SPECIAL_DAY', event_date: '2024-05-12', year: 2024, description: 'Mother Day' },
+      { event_name: 'Father Day', event_type: 'SPECIAL_DAY', event_date: '2024-06-16', year: 2024, description: 'Father Day' },
+      { event_name: 'Eid al-Adha', event_type: 'FESTIVAL', event_date: '2024-06-17', year: 2024, description: 'Eid al-Adha' },
+      { event_name: 'Independence Day', event_type: 'HOLIDAY', event_date: '2024-08-15', year: 2024, description: 'Independence Day of India' },
+      { event_name: 'Raksha Bandhan', event_type: 'FESTIVAL', event_date: '2024-08-19', year: 2024, description: 'Raksha Bandhan' },
+      { event_name: 'Janmashtami', event_type: 'FESTIVAL', event_date: '2024-08-26', year: 2024, description: 'Janmashtami' },
+      { event_name: 'Ganesh Chaturthi', event_type: 'FESTIVAL', event_date: '2024-09-07', year: 2024, description: 'Ganesh Chaturthi' },
+      { event_name: 'Dussehra', event_type: 'FESTIVAL', event_date: '2024-10-12', year: 2024, description: 'Dussehra' },
+      { event_name: 'Diwali', event_type: 'FESTIVAL', event_date: '2024-10-31', year: 2024, description: 'Diwali Festival of Lights' },
+      { event_name: 'Christmas', event_type: 'HOLIDAY', event_date: '2024-12-25', year: 2024, description: 'Christmas Day' },
+      // 2025 Events
+      { event_name: 'New Year', event_type: 'HOLIDAY', event_date: '2025-01-01', year: 2025, description: 'New Year Day' },
+      { event_name: 'Republic Day', event_type: 'HOLIDAY', event_date: '2025-01-26', year: 2025, description: 'Republic Day of India' },
+      { event_name: 'Valentine Day', event_type: 'SPECIAL_DAY', event_date: '2025-02-14', year: 2025, description: 'Valentine Day' },
+      { event_name: 'Holi', event_type: 'FESTIVAL', event_date: '2025-03-14', year: 2025, description: 'Holi Festival of Colors' },
+      { event_name: 'Good Friday', event_type: 'HOLIDAY', event_date: '2025-04-18', year: 2025, description: 'Good Friday' },
+      { event_name: 'Eid ul-Fitr', event_type: 'FESTIVAL', event_date: '2025-03-30', year: 2025, description: 'Eid ul-Fitr' },
+      { event_name: 'Mother Day', event_type: 'SPECIAL_DAY', event_date: '2025-05-11', year: 2025, description: 'Mother Day' },
+      { event_name: 'Father Day', event_type: 'SPECIAL_DAY', event_date: '2025-06-15', year: 2025, description: 'Father Day' },
+      { event_name: 'Eid al-Adha', event_type: 'FESTIVAL', event_date: '2025-06-06', year: 2025, description: 'Eid al-Adha' },
+      { event_name: 'Independence Day', event_type: 'HOLIDAY', event_date: '2025-08-15', year: 2025, description: 'Independence Day of India' },
+      { event_name: 'Raksha Bandhan', event_type: 'FESTIVAL', event_date: '2025-08-09', year: 2025, description: 'Raksha Bandhan' },
+      { event_name: 'Janmashtami', event_type: 'FESTIVAL', event_date: '2025-08-16', year: 2025, description: 'Janmashtami' },
+      { event_name: 'Ganesh Chaturthi', event_type: 'FESTIVAL', event_date: '2025-08-27', year: 2025, description: 'Ganesh Chaturthi' },
+      { event_name: 'Dussehra', event_type: 'FESTIVAL', event_date: '2025-10-02', year: 2025, description: 'Dussehra' },
+      { event_name: 'Diwali', event_type: 'FESTIVAL', event_date: '2025-10-20', year: 2025, description: 'Diwali Festival of Lights' },
+      { event_name: 'Christmas', event_type: 'HOLIDAY', event_date: '2025-12-25', year: 2025, description: 'Christmas Day' },
+      // 2026 Events
+      { event_name: 'New Year', event_type: 'HOLIDAY', event_date: '2026-01-01', year: 2026, description: 'New Year Day' },
+      { event_name: 'Republic Day', event_type: 'HOLIDAY', event_date: '2026-01-26', year: 2026, description: 'Republic Day of India' },
+      { event_name: 'Valentine Day', event_type: 'SPECIAL_DAY', event_date: '2026-02-14', year: 2026, description: 'Valentine Day' },
+      { event_name: 'Holi', event_type: 'FESTIVAL', event_date: '2026-03-04', year: 2026, description: 'Holi Festival of Colors' },
+      { event_name: 'Good Friday', event_type: 'HOLIDAY', event_date: '2026-04-03', year: 2026, description: 'Good Friday' },
+      { event_name: 'Eid ul-Fitr', event_type: 'FESTIVAL', event_date: '2026-03-20', year: 2026, description: 'Eid ul-Fitr' },
+      { event_name: 'Mother Day', event_type: 'SPECIAL_DAY', event_date: '2026-05-10', year: 2026, description: 'Mother Day' },
+      { event_name: 'Father Day', event_type: 'SPECIAL_DAY', event_date: '2026-06-21', year: 2026, description: 'Father Day' },
+      { event_name: 'Eid al-Adha', event_type: 'FESTIVAL', event_date: '2026-05-27', year: 2026, description: 'Eid al-Adha' },
+      { event_name: 'Independence Day', event_type: 'HOLIDAY', event_date: '2026-08-15', year: 2026, description: 'Independence Day of India' },
+      { event_name: 'Raksha Bandhan', event_type: 'FESTIVAL', event_date: '2026-08-29', year: 2026, description: 'Raksha Bandhan' },
+      { event_name: 'Janmashtami', event_type: 'FESTIVAL', event_date: '2026-08-05', year: 2026, description: 'Janmashtami' },
+      { event_name: 'Ganesh Chaturthi', event_type: 'FESTIVAL', event_date: '2026-09-16', year: 2026, description: 'Ganesh Chaturthi' },
+      { event_name: 'Dussehra', event_type: 'FESTIVAL', event_date: '2026-10-21', year: 2026, description: 'Dussehra' },
+      { event_name: 'Diwali', event_type: 'FESTIVAL', event_date: '2026-11-08', year: 2026, description: 'Diwali Festival of Lights' },
+      { event_name: 'Christmas', event_type: 'HOLIDAY', event_date: '2026-12-25', year: 2026, description: 'Christmas Day' },
+    ];
+    
+    let inserted = 0;
+    
+    for (const event of events) {
+      await connection.execute(`
+        INSERT INTO tomorrow_ai_events 
+        (event_name, event_type, event_date, year, description)
+        VALUES (?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+        event_type = VALUES(event_type),
+        description = VALUES(description),
+        updated_at = CURRENT_TIMESTAMP
+      `, [
+        event.event_name,
+        event.event_type,
+        event.event_date,
+        event.year,
+        event.description
+      ]);
+      inserted++;
+    }
+    
+    await connection.end();
+    
+    console.log(`✓ Events populated: ${inserted} events`);
+    
+    res.json({ success: true, message: `Events populated: ${inserted} events` });
+  } catch (error) {
+    console.error('Populate events error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Setup Tomorrow AI tables
 app.post('/api/setup-tomorrow-ai', async (req, res) => {
   try {
