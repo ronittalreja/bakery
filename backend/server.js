@@ -84,6 +84,16 @@ app.use('/api/expenses', authMiddleware(['admin']), require('./routes/expenses')
 app.use('/api/reports', authMiddleware(['admin']), require('./routes/reports'));
 app.use('/api/ros-receipts', authMiddleware(['staff', 'admin']), require('./routes/rosReceipts'));
 app.use('/api/insights', authMiddleware(['admin']), require('./routes/insights'));
+app.use('/api/tomorrow-ai', authMiddleware(['admin']), require('./routes/tomorrowAI'));
+app.use('/api/tomorrow-ai/products', authMiddleware(['admin']), require('./routes/tomorrowAIProducts'));
+app.use('/api/tomorrow-ai/features', authMiddleware(['admin']), require('./routes/tomorrowAIFeatures'));
+app.use('/api/tomorrow-ai/model', authMiddleware(['admin']), require('./routes/tomorrowAIModel'));
+
+// Daily sync job - runs automatically
+// Uncomment to enable automatic daily sync
+// const { dailySyncJob } = require('./jobs/dailySyncJob');
+// setInterval(dailySyncJob, 24 * 60 * 60 * 1000); // Run every 24 hours
+// dailySyncJob(); // Run once on startup
 
 // Migration endpoint
 app.post('/api/migrate', async (req, res) => {

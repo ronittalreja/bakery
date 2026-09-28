@@ -40,6 +40,7 @@ import { ReturnsPage } from "@/components/newreturns";
 import { TodaysSalesPage } from "@/components/todays-sales-page";
 import CreditNotesPage from "@/components/credit-notes-page";
 import CreditNoteDetailsPage from "@/components/credit-note-details-page";
+import TomorrowAIPage from "@/components/tomorrow-ai-page";
 
 type AdminPage =
   | "dashboard"
@@ -124,7 +125,7 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
     },
     {
       title: "Tomorrow AI",
-      description: "Coming soon",
+      description: "Demand forecasting system",
       icon: Sparkles,
       page: "tomorrow-ai" as AdminPage,
       color: "bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 text-white shadow-slate-300",
@@ -275,24 +276,24 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
               setSelectedCreditNoteMonth(month);
               setCurrentPage("credit-note-details");
             }}
-            initialMonth={selectedCreditNoteMonth}
           />
         );
       case "credit-note-details":
-        if (!selectedCreditNoteId) {
-          setCurrentPage("credit-notes");
-          return null;
-        }
-        return (
+        return selectedCreditNoteId ? (
           <CreditNoteDetailsPage 
-            creditNoteId={selectedCreditNoteId}
+            creditNoteId={selectedCreditNoteId} 
             selectedMonth={selectedCreditNoteMonth}
-            onBack={(month) => {
-              setSelectedCreditNoteId(null);
-              setSelectedCreditNoteMonth(month);
-              setCurrentPage("credit-notes");
-            }}
+            onBack={() => setCurrentPage("credit-notes")} 
           />
+        ) : (
+          <div className="h-full bg-white flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-muted-foreground">No credit note selected</p>
+              <Button onClick={() => setCurrentPage("credit-notes")} className="mt-4">
+                Go Back
+              </Button>
+            </div>
+          </div>
         );
       case "expenses":
         return <ExpensesTrackingPage onBack={() => setCurrentPage("dashboard")} />;
@@ -301,15 +302,7 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
       case "payments":
         return <PaymentsPage onBack={() => setCurrentPage("dashboard")} />;
       case "tomorrow-ai":
-        return (
-          <div className="h-full bg-white flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4">Tomorrow AI</h2>
-              <p className="text-slate-600">Coming soon</p>
-              <Button onClick={() => setCurrentPage("dashboard")} className="mt-4">Back to Dashboard</Button>
-            </div>
-          </div>
-        );
+        return <TomorrowAIPage />;
       default:
         return (
           <div className="h-full bg-white flex items-center justify-center">

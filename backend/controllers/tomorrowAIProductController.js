@@ -1,0 +1,259 @@
+// Tomorrow AI Product Management Controller
+// Handles ML group ID mapping and product classification management
+
+const db = require('../config/database');
+
+/**
+ * Get all products with ML group info
+ */
+async function getProducts(req, res) {
+  try {
+    const { itemType } = req.query;
+
+    let query = `
+      SELECT 
+        pm.id,
+        pm.product_id,
+        pm.name,
+        pm.category,
+        pm.price,
+        pm.item_type,
+        pm.ml_group_id,
+        pm.active,
+        COUNT(DISTINCT pa.id) as alias_count
+      FROM tomorrow_ai_product_master pm
+      LEFT JOIN tomorrow_ai_product_aliases pa ON pm.product_id = pa.product_id
+      WHERE 1=1
+    `;
+
+    const params = [];
+
+    if (itemType) {
+      query += ` AND pm.item_type = ?`;
+      params.push(itemType);
+    }
+
+    query += ` GROUP BY pm.id ORDER BY pm.name ASC`;
+
+    const [products] = await db.execute(query, params);
+
+    res.json({
+      success: true,
+      data: products
+    });
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+/**
+ * Update product ML group ID
+ */
+async function updateProductMLGroup(req, res) {
+  try {
+    const { productId, mlGroupId } = req.body;
+
+    if (!productId || !mlGroupId) {
+      return res.status(400).json({
+        success: false,
+        error: 'productId and mlGroupId are required'
+      });
+    }
+
+    await db.execute(`
+      UPDATE tomorrow_ai_product_master
+      SET ml_group_id = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE product_id = ?
+    `, [mlGroupId, productId]);
+
+    res.json({
+      success: true,
+      message: 'ML group ID updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating ML group ID:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+/**
+ * Update product item type
+ */
+async function updateProductItemType(req, res) {
+  try {
+    const { productId, itemType } = req.body;
+
+    if (!productId || !itemType) {
+      return res.status(400).json({
+        success: false,
+        error: 'productId and itemType are required'
+      });
+    }
+
+    const validTypes = ['DISPLAY', 'SPECIAL_ORDER', 'PACKING_MATERIAL', 'OTHER'];
+    if (!validTypes.includes(itemType)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid itemType. Must be one of: ${validTypes.join(', ')}`
+      });
+    }
+
+    await db.execute(`
+      UPDATE tomorrow_ai_product_master
+      SET item_type = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE product_id = ?
+    `, [itemType, productId]);
+
+    res.json({
+      success: true,
+      message: 'Item type updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating item type:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+/**
+ * Get product aliases
+ */
+async function getProductAliases(req, res) {
+  try {
+    const { productId } = req.params;
+
+    const [aliases] = await db.execute(`
+      SELECT 
+        pa.id,
+        pa.product_id,
+        pa.historical_item_code,
+        pa.historical_name,
+        pa.effective_from,
+        pa.effective_to,
+        pm.name as current_product_name
+      FROM tomorrow_ai_product_aliases pa
+      JOIN tomorrow_ai_product_master pm ON pa.product_id = pm.product_id
+      WHERE pa.product_id = ?
+      ORDER BY pa.effective_from DESC
+    `, [productId]);
+
+    res.json({
+      success: true,
+      data: aliases
+    });
+  } catch (error) {
+    console.error('Error fetching product aliases:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+/**
+ * Add product alias
+ */
+async function addProductAlias(req, res) {
+  try {
+    const { productId, historicalItemCode, historicalName, effectiveFrom, effectiveTo } = req.body;
+
+    if (!productId || !historicalItemCode) {
+      return res.status(400).json({
+        success: false,
+        error: 'productId and historicalItemCode are required'
+      });
+    }
+
+    await db.execute(`
+      INSERT INTO tomorrow_ai_product_aliases 
+      (product_id, historical_item_code, historical_name, effective_from, effective_to)
+      VALUES (?, ?, ?, ?, ?)
+    `, [productId, historicalItemCode, historicalName, effectiveFrom, effectiveTo]);
+
+    res.json({
+      success: true,
+      message: 'Product alias added successfully'
+    });
+  } catch (error) {
+    console.error('Error adding product alias:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+/**
+ * Delete product alias
+ */
+async function deleteProductAlias(req, res) {
+  try {
+    const { aliasId } = req.params;
+
+    await db.execute(`
+      DELETE FROM tomorrow_ai_product_aliases
+      WHERE id = ?
+    `, [aliasId]);
+
+    res.json({
+      success: true,
+      message: 'Product alias deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting product alias:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+/**
+ * Get ML group summary
+ * Shows which products share the same ML group
+ */
+async function getMLGroupSummary(req, res) {
+  try {
+    const [summary] = await db.execute(`
+      SELECT 
+        ml_group_id,
+        COUNT(*) as product_count,
+        GROUP_CONCAT(name ORDER BY name SEPARATOR ', ') as products
+      FROM tomorrow_ai_product_master
+      WHERE active = TRUE
+      GROUP BY ml_group_id
+      HAVING product_count > 1
+      ORDER BY product_count DESC, ml_group_id ASC
+    `);
+
+    res.json({
+      success: true,
+      data: summary
+    });
+  } catch (error) {
+    console.error('Error fetching ML group summary:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+module.exports = {
+  getProducts,
+  updateProductMLGroup,
+  updateProductItemType,
+  getProductAliases,
+  addProductAlias,
+  deleteProductAlias,
+  getMLGroupSummary
+};
