@@ -917,6 +917,145 @@ app.post('/api/fix-stock-adjustments-table', async (req, res) => {
   }
 });
 
+// Setup Tomorrow AI tables
+app.post('/api/setup-tomorrow-ai', async (req, res) => {
+  try {
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    console.log('🔧 Setting up Tomorrow AI tables...');
+    
+    // Create product_master table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS tomorrow_ai_product_master (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        product_id VARCHAR(50) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        category VARCHAR(100),
+        size VARCHAR(50),
+        variant VARCHAR(100),
+        price DECIMAL(10, 2),
+        item_type ENUM('DISPLAY', 'SPECIAL_ORDER', 'PACKING_MATERIAL', 'OTHER') DEFAULT 'OTHER',
+        ml_group_id VARCHAR(50) NOT NULL,
+        active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_ml_group (ml_group_id),
+        INDEX idx_item_type (item_type),
+        INDEX idx_active (active)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ Created tomorrow_ai_product_master table');
+    
+    // Create product_aliases table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS tomorrow_ai_product_aliases (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        product_id VARCHAR(50) NOT NULL,
+        historical_item_code VARCHAR(50) NOT NULL,
+        historical_name VARCHAR(255),
+        effective_from DATE,
+        effective_to DATE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (product_id) REFERENCES tomorrow_ai_product_master(product_id) ON DELETE CASCADE,
+        INDEX idx_historical_code (historical_item_code),
+        INDEX idx_product (product_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ Created tomorrow_ai_product_aliases table');
+    
+    // Create events table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS tomorrow_ai_events (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        event_name VARCHAR(100) NOT NULL,
+        event_type ENUM('FESTIVAL', 'HOLIDAY', 'SPECIAL_DAY', 'OTHER') DEFAULT 'OTHER',
+        event_date DATE NOT NULL,
+        year INT NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_event_year (event_name, year),
+        INDEX idx_event_date (event_date),
+        INDEX idx_year (year)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ Created tomorrow_ai_events table');
+    
+    // Create daily_sales table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS tomorrow_ai_daily_sales (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sale_date DATE NOT NULL,
+        ml_group_id VARCHAR(50) NOT NULL,
+        actual_sales INT DEFAULT 0,
+        is_shop_open BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_date_group (sale_date, ml_group_id),
+        INDEX idx_sale_date (sale_date),
+        INDEX idx_ml_group (ml_group_id),
+        FOREIGN KEY (ml_group_id) REFERENCES tomorrow_ai_product_master(ml_group_id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ Created tomorrow_ai_daily_sales table');
+    
+    // Create predictions table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS tomorrow_ai_predictions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        prediction_date DATE NOT NULL,
+        product_id VARCHAR(50) NOT NULL,
+        ml_group_id VARCHAR(50) NOT NULL,
+        predicted_demand INT NOT NULL,
+        recommended_order INT NOT NULL,
+        model_version VARCHAR(50) DEFAULT 'v1.0',
+        prediction_generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        actual_sales INT DEFAULT NULL,
+        FOREIGN KEY (product_id) REFERENCES tomorrow_ai_product_master(product_id) ON DELETE CASCADE,
+        INDEX idx_prediction_date (prediction_date),
+        INDEX idx_ml_group (ml_group_id),
+        INDEX idx_generated_at (prediction_generated_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ Created tomorrow_ai_predictions table');
+    
+    // Create sync_log table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS tomorrow_ai_sync_log (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sync_date DATE NOT NULL,
+        sync_type ENUM('FULL', 'INCREMENTAL') DEFAULT 'INCREMENTAL',
+        records_processed INT DEFAULT 0,
+        status ENUM('SUCCESS', 'FAILED', 'PARTIAL') DEFAULT 'SUCCESS',
+        error_message TEXT,
+        started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        completed_at TIMESTAMP NULL,
+        INDEX idx_sync_date (sync_date)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ Created tomorrow_ai_sync_log table');
+    
+    await connection.end();
+    
+    res.json({ success: true, message: 'Tomorrow AI tables created successfully' });
+  } catch (error) {
+    console.error('Setup Tomorrow AI tables error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Add price columns to stock_batches table
 app.post('/api/add-price-columns-stock', async (req, res) => {
   try {
