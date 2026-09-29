@@ -134,32 +134,53 @@ async function getEventForecast(req, res) {
       ORDER BY name ASC
     `);
 
-    const forecasts = [];
+    console.log(`Fetching forecast for ${products.length} products, event: ${event.event_name}, years: [${targetYear}, ...historicalYears]`);
 
-    for (const product of products) {
-      // Get historical sales for this event across years
-      const [historicalSales] = await db.execute(`
+    // Optimized: Get all historical sales in a single query
+    const mlGroupIds = products.map(p => p.ml_group_id).filter(id => id != null);
+    const allYears = [targetYear, ...historicalYears];
+
+    let historicalSales = [];
+    if (mlGroupIds.length > 0) {
+      const placeholders = mlGroupIds.map(() => '?').join(',');
+      const yearPlaceholders = allYears.map(() => '?').join(',');
+
+      [historicalSales] = await db.execute(`
         SELECT
+          ds.ml_group_id,
           ds.sale_date,
           ds.actual_sales,
           e.year as event_year
         FROM tomorrow_ai_daily_sales ds
-        JOIN tomorrow_ai_events e ON
-          DATE_ADD(e.event_date, INTERVAL (YEAR(ds.sale_date) - e.year) YEAR) = ds.sale_date
-        WHERE ds.ml_group_id = ?
+        JOIN tomorrow_ai_events e ON e.event_name = ?
+        WHERE ds.ml_group_id IN (${placeholders})
           AND e.event_name = ?
-          AND e.year IN (?, ?, ?, ?)
+          AND e.year IN (${yearPlaceholders})
           AND ds.sale_date BETWEEN DATE_SUB(?, INTERVAL 7 DAY) AND DATE_ADD(?, INTERVAL 1 DAY)
         ORDER BY ds.sale_date ASC
-      `, [product.ml_group_id, event.event_name, targetYear, ...historicalYears, event.event_date, event.event_date]);
+      `, [event.event_name, ...mlGroupIds, event.event_name, ...allYears, event.event_date, event.event_date]);
+    }
 
-      // Group by year
+    console.log(`Found ${historicalSales.length} historical sales records`);
+
+    // Group by ml_group_id and year
+    const salesByGroupAndYear = {};
+    historicalSales.forEach(sale => {
+      const key = `${sale.ml_group_id}_${sale.event_year}`;
+      if (!salesByGroupAndYear[key]) {
+        salesByGroupAndYear[key] = 0;
+      }
+      salesByGroupAndYear[key] += sale.actual_sales;
+    });
+
+    const forecasts = [];
+
+    for (const product of products) {
+      // Get sales for this product by year
       const salesByYear = {};
-      historicalSales.forEach(sale => {
-        if (!salesByYear[sale.event_year]) {
-          salesByYear[sale.event_year] = 0;
-        }
-        salesByYear[sale.event_year] += sale.actual_sales;
+      historicalYears.forEach(y => {
+        const key = `${product.ml_group_id}_${y}`;
+        salesByYear[y] = salesByGroupAndYear[key] || 0;
       });
 
       // Calculate prediction (simple average of historical years)

@@ -211,21 +211,31 @@ async function fullHistoricalSync(req, res) {
 
     console.log(`Found ${dates.length} unique dates to sync`);
 
-    // Get already synced dates from daily_sales table
+    // Get already synced dates from daily_sales table - use DATE() to ensure proper comparison
     const [syncedDates] = await connection.execute(
-      `SELECT DISTINCT sale_date
+      `SELECT DISTINCT DATE(sale_date) as sale_date
        FROM tomorrow_ai_daily_sales`
     );
 
-    const syncedDateSet = new Set(
-      syncedDates.map(d => d.sale_date.toISOString().split('T')[0])
-    );
+    const syncedDateSet = new Set();
+    syncedDates.forEach(d => {
+      const dateStr = d.sale_date instanceof Date
+        ? d.sale_date.toISOString().split('T')[0]
+        : String(d.sale_date).split(' ')[0]; // Handle MySQL date format
+      syncedDateSet.add(dateStr);
+    });
 
     console.log(`Found ${syncedDateSet.size} dates already synced`);
+    console.log('Synced dates sample:', Array.from(syncedDateSet).slice(0, 5));
 
     // Filter out already synced dates
     const datesToSync = dates.filter(
-      d => !syncedDateSet.has(d.sale_date.toISOString().split('T')[0])
+      d => {
+        const dateStr = d.sale_date instanceof Date
+          ? d.sale_date.toISOString().split('T')[0]
+          : String(d.sale_date).split(' ')[0];
+        return !syncedDateSet.has(dateStr);
+      }
     );
 
     console.log(`Need to sync ${datesToSync.length} dates`);
@@ -251,7 +261,11 @@ async function fullHistoricalSync(req, res) {
     let processedCount = 0;
 
     for (const dateObj of datesToSync) {
-      const syncDate = dateObj.sale_date.toISOString().split('T')[0];
+      const syncDate = dateObj.sale_date instanceof Date
+        ? dateObj.sale_date.toISOString().split('T')[0]
+        : String(dateObj.sale_date).split(' ')[0];
+
+      console.log(`Syncing date ${processedCount + 1}/${datesToSync.length}: ${syncDate}`);
 
       // Sync each date
       const syncResponse = await syncSingleDate(connection, syncDate);
