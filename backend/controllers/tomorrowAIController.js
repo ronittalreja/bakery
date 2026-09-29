@@ -380,7 +380,7 @@ async function getDailySalesData(req, res) {
     const { startDate, endDate, mlGroupId } = req.query;
 
     let query = `
-      SELECT 
+      SELECT
         ds.sale_date,
         ds.ml_group_id,
         pm.name as product_name,
@@ -429,8 +429,56 @@ async function getDailySalesData(req, res) {
   }
 }
 
+/**
+ * Get sync progress
+ * Returns the latest sync log entry to show current progress
+ */
+async function getSyncProgress(req, res) {
+  try {
+    const [logs] = await db.execute(`
+      SELECT
+        sync_date,
+        sync_type,
+        records_processed,
+        status,
+        error_message,
+        started_at,
+        completed_at
+      FROM tomorrow_ai_sync_log
+      ORDER BY started_at DESC
+      LIMIT 1
+    `);
+
+    if (logs.length === 0) {
+      return res.json({
+        success: true,
+        data: null
+      });
+    }
+
+    const latestLog = logs[0];
+    const isRunning = latestLog.status === 'SUCCESS' && !latestLog.completed_at;
+
+    res.json({
+      success: true,
+      data: {
+        ...latestLog,
+        is_running: isRunning
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching sync progress:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   syncSalesToTomorrowAI,
   fullHistoricalSync,
-  getDailySalesData
+  getDailySalesData,
+  getSyncProgress
 };

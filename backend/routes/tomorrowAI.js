@@ -3,10 +3,11 @@
 
 const express = require('express');
 const router = express.Router();
-const { 
-  syncSalesToTomorrowAI, 
-  fullHistoricalSync, 
-  getDailySalesData 
+const {
+  syncSalesToTomorrowAI,
+  fullHistoricalSync,
+  getDailySalesData,
+  getSyncProgress
 } = require('../controllers/tomorrowAIController');
 
 // Sync sales data for a specific date
@@ -16,6 +17,10 @@ router.post('/sync', syncSalesToTomorrowAI);
 // Full historical sync - syncs all historical data
 // POST /api/tomorrow-ai/sync/historical
 router.post('/sync/historical', fullHistoricalSync);
+
+// Get sync progress
+// GET /api/tomorrow-ai/sync/progress
+router.get('/sync/progress', getSyncProgress);
 
 // Get daily sales data for inspection
 // GET /api/tomorrow-ai/daily-sales

@@ -47,11 +47,22 @@ export default function TomorrowAIPage() {
   const [yearWindow, setYearWindow] = useState<{ prediction_year: number; historical_years: number[] } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [syncStatus, setSyncStatus] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [syncProgress, setSyncProgress] = useState<any>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     fetchNextEvent();
     fetchUpcomingEvents();
-  }, []);
+
+    // Poll sync progress every 2 seconds if syncing
+    const interval = setInterval(() => {
+      if (isSyncing) {
+        fetchSyncProgress();
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isSyncing]);
 
   const fetchNextEvent = async () => {
     try {
@@ -119,23 +130,40 @@ export default function TomorrowAIPage() {
     }
   };
 
+  const fetchSyncProgress = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/sync/progress`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setSyncProgress(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching sync progress:', error);
+    }
+  };
+
   const triggerHistoricalSync = async () => {
     setIsLoading(true);
+    setIsSyncing(true);
     setSyncStatus(null);
+    setSyncProgress(null);
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/sync/historical`, {
         method: 'POST',
-        headers: { 
+        headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
       const data = await response.json();
       if (data.success) {
-        setSyncStatus({ 
-          message: `Sync completed: ${data.data.datesProcessed} dates processed, ${data.data.totalRecords} records inserted, ${data.data.aliasMatches} matched via aliases, ${data.data.skippedProducts} skipped (not in product master)`, 
-          type: "success" 
+        setSyncStatus({
+          message: `Sync completed: ${data.data.datesProcessed} dates processed, ${data.data.totalRecords} records inserted, ${data.data.aliasMatches} matched via aliases, ${data.data.skippedProducts} skipped (not in product master)`,
+          type: "success"
         });
       } else {
         setSyncStatus({ message: data.error || "Sync failed", type: "error" });
@@ -144,6 +172,7 @@ export default function TomorrowAIPage() {
       setSyncStatus({ message: error.message || "Sync failed", type: "error" });
     } finally {
       setIsLoading(false);
+      setIsSyncing(false);
     }
   };
 
@@ -278,7 +307,18 @@ export default function TomorrowAIPage() {
                   Sync invoice/CRDR data to Tomorrow AI tables
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {isSyncing && syncProgress && (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
+                      <span className="font-medium text-blue-900">Sync in progress...</span>
+                    </div>
+                    <div className="text-sm text-blue-700">
+                      {syncProgress.records_processed} records processed
+                    </div>
+                  </div>
+                )}
                 <Button
                   onClick={triggerHistoricalSync}
                   disabled={isLoading}
