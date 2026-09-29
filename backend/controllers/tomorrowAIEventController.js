@@ -56,19 +56,12 @@ async function getUpcomingEvents(req, res) {
     const limit = req.query.limit ? parseInt(req.query.limit) : 10;
     const safeLimit = isNaN(limit) ? 10 : limit;
 
-    const [events] = await db.execute(`
-      SELECT
-        id,
-        event_name,
-        event_type,
-        event_date,
-        year,
-        description
-      FROM tomorrow_ai_events
-      WHERE event_date >= ?
-      ORDER BY event_date ASC
-      LIMIT ?
-    `, [today, safeLimit]);
+    if (!today) {
+      return res.status(400).json({ success: false, error: 'Invalid date' });
+    }
+
+    const query = 'SELECT id, event_name, event_type, event_date, year, description FROM tomorrow_ai_events WHERE event_date >= ? ORDER BY event_date ASC LIMIT ?';
+    const [events] = await db.execute(query, [today, safeLimit]);
 
     const eventsWithDays = events.map(event => {
       const eventDate = new Date(event.event_date);
