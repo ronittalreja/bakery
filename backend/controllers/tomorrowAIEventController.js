@@ -62,8 +62,10 @@ async function getUpcomingEvents(req, res) {
 
     console.log('getUpcomingEvents - today:', today, 'limit:', safeLimit);
 
-    const query = 'SELECT id, event_name, event_type, event_date, year, description FROM tomorrow_ai_events WHERE event_date >= ? ORDER BY event_date ASC LIMIT ?';
-    const [events] = await db.execute(query, [String(today), Number(safeLimit)]);
+    // Use hardcoded LIMIT to avoid parameter binding issues
+    const safeLimitInt = Math.min(Math.max(safeLimit, 1), 100); // Clamp between 1 and 100
+    const query = `SELECT id, event_name, event_type, event_date, year, description FROM tomorrow_ai_events WHERE event_date >= ? ORDER BY event_date ASC LIMIT ${safeLimitInt}`;
+    const [events] = await db.execute(query, [String(today)]);
 
     const eventsWithDays = events.map(event => {
       const eventDate = new Date(event.event_date);
