@@ -191,24 +191,35 @@ async function fullHistoricalSync(req, res) {
     console.log(`Found ${dates.length} unique dates to sync`);
 
     let totalRecords = 0;
+    let skippedProducts = 0;
+    let processedCount = 0;
+
     for (const dateObj of dates) {
       const syncDate = dateObj.sale_date.toISOString().split('T')[0];
       
       // Sync each date
       const syncResponse = await syncSingleDate(connection, syncDate);
       totalRecords += syncResponse.recordsInserted;
+      skippedProducts += syncResponse.skippedProducts || 0;
+      processedCount++;
+
+      // Log progress every 50 dates
+      if (processedCount % 50 === 0) {
+        console.log(`Progress: ${processedCount}/${dates.length} dates processed, ${totalRecords} records`);
+      }
     }
 
     await connection.commit();
 
-    console.log(`✓ Full historical sync completed: ${totalRecords} total records`);
+    console.log(`✓ Full historical sync completed: ${totalRecords} total records, ${skippedProducts} skipped`);
 
     res.json({
       success: true,
       message: 'Full historical sync completed',
       data: {
         datesProcessed: dates.length,
-        totalRecords
+        totalRecords,
+        skippedProducts
       }
     });
 
@@ -313,7 +324,7 @@ async function syncSingleDate(connection, syncDate) {
   }
 
   console.log(`Sync for ${syncDate}: ${recordsInserted} inserted, ${skippedProducts} skipped (not in product_master)`);
-  return { recordsInserted };
+  return { recordsInserted, skippedProducts };
 }
 
 /**

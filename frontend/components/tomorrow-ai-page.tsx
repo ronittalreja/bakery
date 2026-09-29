@@ -136,7 +136,10 @@ export default function TomorrowAIPage() {
       });
       const data = await response.json();
       if (data.success) {
-        setSyncStatus({ message: `Historical sync completed: ${data.data.totalRecords} records`, type: "success" });
+        setSyncStatus({ 
+          message: `Sync completed: ${data.data.datesProcessed} dates processed, ${data.data.totalRecords} records inserted, ${data.data.skippedProducts} skipped (not in product master)`, 
+          type: "success" 
+        });
       } else {
         setSyncStatus({ message: data.error || "Sync failed", type: "error" });
       }
