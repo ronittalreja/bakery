@@ -89,31 +89,36 @@ async function getUpcomingEvents(req, res) {
 
 /**
  * Get event forecast with historical comparison
+ * Uses dynamic year window: current year (prediction) and previous 3 years
  */
 async function getEventForecast(req, res) {
   try {
     const { eventId, eventName, year } = req.query;
-    
+
     if (!eventId && !eventName) {
       return res.status(400).json({ success: false, error: 'eventId or eventName required' });
     }
-    
+
     // Get event details
     const [events] = await db.execute(`
       SELECT * FROM tomorrow_ai_events
       WHERE id = ? OR event_name = ?
     `, [eventId, eventName]);
-    
+
     if (events.length === 0) {
       return res.status(404).json({ success: false, error: 'Event not found' });
     }
-    
+
     const event = events[0];
-    const targetYear = year || event.year;
-    
+    const currentYear = new Date().getFullYear();
+    const targetYear = year || event.year || currentYear;
+
+    // Calculate dynamic year window (current-1, current-2, current-3)
+    const historicalYears = [targetYear - 1, targetYear - 2, targetYear - 3];
+
     // Get DISPLAY products
     const [products] = await db.execute(`
-      SELECT 
+      SELECT
         product_id,
         name,
         ml_group_id
@@ -121,25 +126,26 @@ async function getEventForecast(req, res) {
       WHERE item_type = 'DISPLAY' AND active = TRUE
       ORDER BY name ASC
     `);
-    
+
     const forecasts = [];
-    
+
     for (const product of products) {
       // Get historical sales for this event across years
       const [historicalSales] = await db.execute(`
-        SELECT 
+        SELECT
           ds.sale_date,
           ds.actual_sales,
           e.year as event_year
         FROM tomorrow_ai_daily_sales ds
-        JOIN tomorrow_ai_events e ON 
+        JOIN tomorrow_ai_events e ON
           DATE_ADD(e.event_date, INTERVAL (YEAR(ds.sale_date) - e.year) YEAR) = ds.sale_date
         WHERE ds.ml_group_id = ?
           AND e.event_name = ?
+          AND e.year IN (?, ?, ?, ?)
           AND ds.sale_date BETWEEN DATE_SUB(?, INTERVAL 7 DAY) AND DATE_ADD(?, INTERVAL 1 DAY)
         ORDER BY ds.sale_date ASC
-      `, [product.ml_group_id, event.event_name, event.event_date, event.event_date]);
-      
+      `, [product.ml_group_id, event.event_name, targetYear, ...historicalYears, event.event_date, event.event_date]);
+
       // Group by year
       const salesByYear = {};
       historicalSales.forEach(sale => {
@@ -148,39 +154,45 @@ async function getEventForecast(req, res) {
         }
         salesByYear[sale.event_year] += sale.actual_sales;
       });
-      
-      // Calculate prediction (simple average of historical)
-      const historicalValues = Object.values(salesByYear).filter(v => v > 0);
-      const prediction = historicalValues.length > 0 
+
+      // Calculate prediction (simple average of historical years)
+      const historicalValues = historicalYears.map(y => salesByYear[y]).filter(v => v !== undefined && v > 0);
+      const prediction = historicalValues.length > 0
         ? Math.round(historicalValues.reduce((a, b) => a + b, 0) / historicalValues.length)
         : 0;
-      
+
       // Recommended order (10% buffer)
       const recommendedOrder = Math.ceil(prediction * 1.1);
-      
+
+      // Build dynamic historical object
+      const historical = {};
+      historical[targetYear] = salesByYear[targetYear] || null;
+      historicalYears.forEach(y => {
+        historical[y] = salesByYear[y] || null;
+      });
+
       forecasts.push({
         product_id: product.product_id,
         product_name: product.name,
         ml_group_id: product.ml_group_id,
         prediction: prediction,
         recommended_order: recommendedOrder,
-        historical: {
-          2024: salesByYear[2024] || null,
-          2025: salesByYear[2025] || null,
-          2026: salesByYear[2026] || null,
-          2027: salesByYear[2027] || null,
-        }
+        historical: historical
       });
     }
-    
+
     res.json({
       success: true,
       data: {
         event: event,
-        forecasts: forecasts
+        forecasts: forecasts,
+        year_window: {
+          prediction_year: targetYear,
+          historical_years: historicalYears
+        }
       }
     });
-    
+
   } catch (error) {
     console.error('Error getting event forecast:', error);
     res.status(500).json({ success: false, error: error.message });

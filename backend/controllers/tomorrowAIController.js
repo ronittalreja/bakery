@@ -88,24 +88,41 @@ async function syncSalesToTomorrowAI(req, res) {
 
     console.log(`Calculated net sales for ${netSalesMap.size} unique items`);
 
-    // 5. Map item names to ml_group_id using product_master table
-    // Only insert records for products that exist in product_master
+    // 5. Map item names to ml_group_id using product_master and aliases
+    // Check aliases first for renamed items, then product_master
     let recordsInserted = 0;
     let skippedProducts = 0;
+    let aliasMatches = 0;
+
     for (const [itemName, netQty] of netSalesMap) {
-      // Check if product exists in product_master
-      const [existingProducts] = await connection.execute(
-        `SELECT ml_group_id FROM tomorrow_ai_product_master WHERE name = ?`,
+      let mlGroupId = null;
+
+      // First check if item name has an alias
+      const [aliases] = await connection.execute(
+        `SELECT ml_group_id FROM tomorrow_ai_product_aliases WHERE alias_name = ?`,
         [itemName]
       );
 
-      // Skip if product doesn't exist in master (foreign key constraint)
-      if (existingProducts.length === 0) {
+      if (aliases.length > 0) {
+        mlGroupId = aliases[0].ml_group_id;
+        aliasMatches++;
+      } else {
+        // Check if product exists in product_master
+        const [existingProducts] = await connection.execute(
+          `SELECT ml_group_id FROM tomorrow_ai_product_master WHERE name = ?`,
+          [itemName]
+        );
+
+        if (existingProducts.length > 0) {
+          mlGroupId = existingProducts[0].ml_group_id;
+        }
+      }
+
+      // Skip if product doesn't exist in master or has no alias
+      if (!mlGroupId) {
         skippedProducts++;
         continue;
       }
-
-      const mlGroupId = existingProducts[0].ml_group_id;
 
       // Insert or update daily_sales
       await connection.execute(
@@ -120,7 +137,7 @@ async function syncSalesToTomorrowAI(req, res) {
       recordsInserted++;
     }
 
-    console.log(`Skipped ${skippedProducts} products not in product_master`);
+    console.log(`Sync: ${recordsInserted} inserted, ${aliasMatches} matched via aliases, ${skippedProducts} skipped (not in product_master)`);
 
     // 6. Log the sync
     await connection.execute(
@@ -192,6 +209,7 @@ async function fullHistoricalSync(req, res) {
 
     let totalRecords = 0;
     let skippedProducts = 0;
+    let aliasMatches = 0;
     let processedCount = 0;
 
     for (const dateObj of dates) {
@@ -201,17 +219,18 @@ async function fullHistoricalSync(req, res) {
       const syncResponse = await syncSingleDate(connection, syncDate);
       totalRecords += syncResponse.recordsInserted;
       skippedProducts += syncResponse.skippedProducts || 0;
+      aliasMatches += syncResponse.aliasMatches || 0;
       processedCount++;
 
       // Log progress every 50 dates
       if (processedCount % 50 === 0) {
-        console.log(`Progress: ${processedCount}/${dates.length} dates processed, ${totalRecords} records`);
+        console.log(`Progress: ${processedCount}/${dates.length} dates processed, ${totalRecords} records, ${aliasMatches} alias matches`);
       }
     }
 
     await connection.commit();
 
-    console.log(`✓ Full historical sync completed: ${totalRecords} total records, ${skippedProducts} skipped`);
+    console.log(`✓ Full historical sync completed: ${totalRecords} total records, ${aliasMatches} matched via aliases, ${skippedProducts} skipped`);
 
     res.json({
       success: true,
@@ -219,7 +238,8 @@ async function fullHistoricalSync(req, res) {
       data: {
         datesProcessed: dates.length,
         totalRecords,
-        skippedProducts
+        skippedProducts,
+        aliasMatches
       }
     });
 
@@ -294,22 +314,40 @@ async function syncSingleDate(connection, syncDate) {
     }
   }
 
-  // Insert to daily_sales
+  // Insert to daily_sales with alias lookup
   let recordsInserted = 0;
   let skippedProducts = 0;
+  let aliasMatches = 0;
+
   for (const [itemName, netQty] of netSalesMap) {
-    const [existingProducts] = await connection.execute(
-      `SELECT ml_group_id FROM tomorrow_ai_product_master WHERE name = ?`,
+    let mlGroupId = null;
+
+    // First check if item name has an alias
+    const [aliases] = await connection.execute(
+      `SELECT ml_group_id FROM tomorrow_ai_product_aliases WHERE alias_name = ?`,
       [itemName]
     );
 
-    // Skip if product doesn't exist in master (foreign key constraint)
-    if (existingProducts.length === 0) {
+    if (aliases.length > 0) {
+      mlGroupId = aliases[0].ml_group_id;
+      aliasMatches++;
+    } else {
+      // Check if product exists in product_master
+      const [existingProducts] = await connection.execute(
+        `SELECT ml_group_id FROM tomorrow_ai_product_master WHERE name = ?`,
+        [itemName]
+      );
+
+      if (existingProducts.length > 0) {
+        mlGroupId = existingProducts[0].ml_group_id;
+      }
+    }
+
+    // Skip if product doesn't exist in master or has no alias
+    if (!mlGroupId) {
       skippedProducts++;
       continue;
     }
-
-    const mlGroupId = existingProducts[0].ml_group_id;
 
     await connection.execute(
       `INSERT INTO tomorrow_ai_daily_sales 
@@ -323,8 +361,8 @@ async function syncSingleDate(connection, syncDate) {
     recordsInserted++;
   }
 
-  console.log(`Sync for ${syncDate}: ${recordsInserted} inserted, ${skippedProducts} skipped (not in product_master)`);
-  return { recordsInserted, skippedProducts };
+  console.log(`Sync for ${syncDate}: ${recordsInserted} inserted, ${aliasMatches} matched via aliases, ${skippedProducts} skipped`);
+  return { recordsInserted, skippedProducts, aliasMatches };
 }
 
 /**

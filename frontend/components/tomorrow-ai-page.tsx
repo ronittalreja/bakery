@@ -28,12 +28,7 @@ interface Forecast {
   ml_group_id: string;
   prediction: number;
   recommended_order: number;
-  historical: {
-    2024: number | null;
-    2025: number | null;
-    2026: number | null;
-    2027: number | null;
-  };
+  historical: Record<number, number | null>;
 }
 
 interface EventPattern {
@@ -49,6 +44,7 @@ export default function TomorrowAIPage() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [forecasts, setForecasts] = useState<Forecast[]>([]);
   const [eventPattern, setEventPattern] = useState<EventPattern | null>(null);
+  const [yearWindow, setYearWindow] = useState<{ prediction_year: number; historical_years: number[] } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [syncStatus, setSyncStatus] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -98,6 +94,7 @@ export default function TomorrowAIPage() {
       if (data.success) {
         setForecasts(data.data.forecasts);
         setSelectedEvent(data.data.event);
+        setYearWindow(data.data.year_window);
         setView("forecast");
       }
     } catch (error) {
@@ -137,7 +134,7 @@ export default function TomorrowAIPage() {
       const data = await response.json();
       if (data.success) {
         setSyncStatus({ 
-          message: `Sync completed: ${data.data.datesProcessed} dates processed, ${data.data.totalRecords} records inserted, ${data.data.skippedProducts} skipped (not in product master)`, 
+          message: `Sync completed: ${data.data.datesProcessed} dates processed, ${data.data.totalRecords} records inserted, ${data.data.aliasMatches} matched via aliases, ${data.data.skippedProducts} skipped (not in product master)`, 
           type: "success" 
         });
       } else {
@@ -329,10 +326,10 @@ export default function TomorrowAIPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Item</TableHead>
-                      <TableHead className="text-right">2027 Prediction</TableHead>
-                      <TableHead className="text-right">2026</TableHead>
-                      <TableHead className="text-right">2025</TableHead>
-                      <TableHead className="text-right">2024</TableHead>
+                      <TableHead className="text-right">{yearWindow?.prediction_year} Prediction</TableHead>
+                      {yearWindow?.historical_years.map(year => (
+                        <TableHead key={year} className="text-right">{year}</TableHead>
+                      ))}
                       <TableHead className="text-right">Recommended Order</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -343,15 +340,11 @@ export default function TomorrowAIPage() {
                         <TableCell className="text-right font-bold text-purple-600">
                           {forecast.prediction}
                         </TableCell>
-                        <TableCell className="text-right">
-                          {forecast.historical[2026] !== null ? forecast.historical[2026] : '—'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {forecast.historical[2025] !== null ? forecast.historical[2025] : '—'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {forecast.historical[2024] !== null ? forecast.historical[2024] : '—'}
-                        </TableCell>
+                        {yearWindow?.historical_years.map(year => (
+                          <TableCell key={year} className="text-right">
+                            {forecast.historical[year] !== null ? forecast.historical[year] : '—'}
+                          </TableCell>
+                        ))}
                         <TableCell className="text-right font-bold text-green-600">
                           {forecast.recommended_order}
                         </TableCell>
