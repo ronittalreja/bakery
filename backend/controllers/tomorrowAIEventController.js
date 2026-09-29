@@ -54,6 +54,7 @@ async function getUpcomingEvents(req, res) {
   try {
     const today = new Date().toISOString().split('T')[0];
     const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+    const safeLimit = isNaN(limit) ? 10 : limit;
 
     const [events] = await db.execute(`
       SELECT
@@ -67,7 +68,7 @@ async function getUpcomingEvents(req, res) {
       WHERE event_date >= ?
       ORDER BY event_date ASC
       LIMIT ?
-    `, [today, limit]);
+    `, [today, safeLimit]);
 
     const eventsWithDays = events.map(event => {
       const eventDate = new Date(event.event_date);
@@ -99,11 +100,20 @@ async function getEventForecast(req, res) {
       return res.status(400).json({ success: false, error: 'eventId or eventName required' });
     }
 
-    // Get event details
-    const [events] = await db.execute(`
-      SELECT * FROM tomorrow_ai_events
-      WHERE id = ? OR event_name = ?
-    `, [eventId, eventName]);
+    // Get event details - handle undefined parameters
+    let query, params;
+    if (eventId && eventName) {
+      query = `SELECT * FROM tomorrow_ai_events WHERE id = ? OR event_name = ?`;
+      params = [eventId, eventName];
+    } else if (eventId) {
+      query = `SELECT * FROM tomorrow_ai_events WHERE id = ?`;
+      params = [eventId];
+    } else {
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ?`;
+      params = [eventName];
+    }
+
+    const [events] = await db.execute(query, params);
 
     if (events.length === 0) {
       return res.status(404).json({ success: false, error: 'Event not found' });
@@ -205,20 +215,29 @@ async function getEventForecast(req, res) {
 async function getEventPattern(req, res) {
   try {
     const { eventId, eventName, mlGroupId } = req.query;
-    
+
     if (!eventId && !eventName) {
       return res.status(400).json({ success: false, error: 'eventId or eventName required' });
     }
-    
+
     if (!mlGroupId) {
       return res.status(400).json({ success: false, error: 'mlGroupId required' });
     }
-    
-    // Get event
-    const [events] = await db.execute(`
-      SELECT * FROM tomorrow_ai_events
-      WHERE id = ? OR event_name = ?
-    `, [eventId, eventName]);
+
+    // Get event - handle undefined parameters
+    let query, params;
+    if (eventId && eventName) {
+      query = `SELECT * FROM tomorrow_ai_events WHERE id = ? OR event_name = ?`;
+      params = [eventId, eventName];
+    } else if (eventId) {
+      query = `SELECT * FROM tomorrow_ai_events WHERE id = ?`;
+      params = [eventId];
+    } else {
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ?`;
+      params = [eventName];
+    }
+
+    const [events] = await db.execute(query, params);
     
     if (events.length === 0) {
       return res.status(404).json({ success: false, error: 'Event not found' });

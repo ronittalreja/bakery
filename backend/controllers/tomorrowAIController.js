@@ -191,6 +191,7 @@ async function syncSalesToTomorrowAI(req, res) {
 /**
  * Full historical sync - syncs all historical invoice/CRDR data
  * This should be run once to populate initial data
+ * Resumes from where it left off if interrupted
  */
 async function fullHistoricalSync(req, res) {
   let connection;
@@ -202,22 +203,56 @@ async function fullHistoricalSync(req, res) {
 
     // Get all invoice dates
     const [dates] = await connection.execute(
-      `SELECT DISTINCT DATE(invoice_date) as sale_date 
-       FROM invoices 
+      `SELECT DISTINCT DATE(invoice_date) as sale_date
+       FROM invoices
        WHERE invoice_date IS NOT NULL
        ORDER BY sale_date DESC`
     );
 
     console.log(`Found ${dates.length} unique dates to sync`);
 
+    // Get already synced dates from daily_sales table
+    const [syncedDates] = await connection.execute(
+      `SELECT DISTINCT sale_date
+       FROM tomorrow_ai_daily_sales`
+    );
+
+    const syncedDateSet = new Set(
+      syncedDates.map(d => d.sale_date.toISOString().split('T')[0])
+    );
+
+    console.log(`Found ${syncedDateSet.size} dates already synced`);
+
+    // Filter out already synced dates
+    const datesToSync = dates.filter(
+      d => !syncedDateSet.has(d.sale_date.toISOString().split('T')[0])
+    );
+
+    console.log(`Need to sync ${datesToSync.length} dates`);
+
+    if (datesToSync.length === 0) {
+      await connection.commit();
+      return res.json({
+        success: true,
+        message: 'All dates already synced',
+        data: {
+          datesProcessed: 0,
+          totalRecords: 0,
+          skippedProducts: 0,
+          aliasMatches: 0,
+          alreadySynced: syncedDateSet.size
+        }
+      });
+    }
+
     let totalRecords = 0;
     let skippedProducts = 0;
     let aliasMatches = 0;
     let processedCount = 0;
 
-    for (const dateObj of dates) {
+    for (const dateObj of datesToSync) {
       const syncDate = dateObj.sale_date.toISOString().split('T')[0];
-      
+
       // Sync each date
       const syncResponse = await syncSingleDate(connection, syncDate);
       totalRecords += syncResponse.recordsInserted;
@@ -227,7 +262,7 @@ async function fullHistoricalSync(req, res) {
 
       // Log progress every 50 dates
       if (processedCount % 50 === 0) {
-        console.log(`Progress: ${processedCount}/${dates.length} dates processed, ${totalRecords} records, ${aliasMatches} alias matches`);
+        console.log(`Progress: ${processedCount}/${datesToSync.length} dates processed, ${totalRecords} records, ${aliasMatches} alias matches`);
       }
     }
 
@@ -239,10 +274,11 @@ async function fullHistoricalSync(req, res) {
       success: true,
       message: 'Full historical sync completed',
       data: {
-        datesProcessed: dates.length,
+        datesProcessed: datesToSync.length,
         totalRecords,
         skippedProducts,
-        aliasMatches
+        aliasMatches,
+        alreadySynced: syncedDateSet.size
       }
     });
 
