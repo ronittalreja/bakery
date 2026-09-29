@@ -88,6 +88,7 @@ app.use('/api/tomorrow-ai', authMiddleware(['admin']), require('./routes/tomorro
 app.use('/api/tomorrow-ai/products', authMiddleware(['admin']), require('./routes/tomorrowAIProducts'));
 app.use('/api/tomorrow-ai/features', authMiddleware(['admin']), require('./routes/tomorrowAIFeatures'));
 app.use('/api/tomorrow-ai/model', authMiddleware(['admin']), require('./routes/tomorrowAIModel'));
+app.use('/api/tomorrow-ai/events', authMiddleware(['admin']), require('./routes/tomorrowAIEvents'));
 
 // Daily sync job - runs automatically
 // Uncomment to enable automatic daily sync
@@ -1017,7 +1018,7 @@ app.post('/api/populate-tomorrow-ai-products', async (req, res) => {
   }
 });
 
-// Populate Tomorrow AI events
+// Populate Tomorrow AI events with date rules
 app.post('/api/populate-tomorrow-ai-events', async (req, res) => {
   try {
     const mysql = require('mysql2/promise');
@@ -1034,81 +1035,154 @@ app.post('/api/populate-tomorrow-ai-events', async (req, res) => {
       }
     });
     
-    console.log('🔧 Populating Tomorrow AI events...');
+    console.log('🔧 Populating Tomorrow AI events with date rules...');
     
-    const events = [
-      // 2024 Events
-      { event_name: 'New Year', event_type: 'HOLIDAY', event_date: '2024-01-01', year: 2024, description: 'New Year Day' },
-      { event_name: 'Republic Day', event_type: 'HOLIDAY', event_date: '2024-01-26', year: 2024, description: 'Republic Day of India' },
-      { event_name: 'Valentine Day', event_type: 'SPECIAL_DAY', event_date: '2024-02-14', year: 2024, description: 'Valentine Day' },
-      { event_name: 'Holi', event_type: 'FESTIVAL', event_date: '2024-03-25', year: 2024, description: 'Holi Festival of Colors' },
-      { event_name: 'Good Friday', event_type: 'HOLIDAY', event_date: '2024-03-29', year: 2024, description: 'Good Friday' },
-      { event_name: 'Eid ul-Fitr', event_type: 'FESTIVAL', event_date: '2024-04-11', year: 2024, description: 'Eid ul-Fitr' },
-      { event_name: 'Mother Day', event_type: 'SPECIAL_DAY', event_date: '2024-05-12', year: 2024, description: 'Mother Day' },
-      { event_name: 'Father Day', event_type: 'SPECIAL_DAY', event_date: '2024-06-16', year: 2024, description: 'Father Day' },
-      { event_name: 'Eid al-Adha', event_type: 'FESTIVAL', event_date: '2024-06-17', year: 2024, description: 'Eid al-Adha' },
-      { event_name: 'Independence Day', event_type: 'HOLIDAY', event_date: '2024-08-15', year: 2024, description: 'Independence Day of India' },
-      { event_name: 'Raksha Bandhan', event_type: 'FESTIVAL', event_date: '2024-08-19', year: 2024, description: 'Raksha Bandhan' },
-      { event_name: 'Janmashtami', event_type: 'FESTIVAL', event_date: '2024-08-26', year: 2024, description: 'Janmashtami' },
-      { event_name: 'Ganesh Chaturthi', event_type: 'FESTIVAL', event_date: '2024-09-07', year: 2024, description: 'Ganesh Chaturthi' },
-      { event_name: 'Dussehra', event_type: 'FESTIVAL', event_date: '2024-10-12', year: 2024, description: 'Dussehra' },
-      { event_name: 'Diwali', event_type: 'FESTIVAL', event_date: '2024-10-31', year: 2024, description: 'Diwali Festival of Lights' },
-      { event_name: 'Christmas', event_type: 'HOLIDAY', event_date: '2024-12-25', year: 2024, description: 'Christmas Day' },
-      // 2025 Events
-      { event_name: 'New Year', event_type: 'HOLIDAY', event_date: '2025-01-01', year: 2025, description: 'New Year Day' },
-      { event_name: 'Republic Day', event_type: 'HOLIDAY', event_date: '2025-01-26', year: 2025, description: 'Republic Day of India' },
-      { event_name: 'Valentine Day', event_type: 'SPECIAL_DAY', event_date: '2025-02-14', year: 2025, description: 'Valentine Day' },
-      { event_name: 'Holi', event_type: 'FESTIVAL', event_date: '2025-03-14', year: 2025, description: 'Holi Festival of Colors' },
-      { event_name: 'Good Friday', event_type: 'HOLIDAY', event_date: '2025-04-18', year: 2025, description: 'Good Friday' },
-      { event_name: 'Eid ul-Fitr', event_type: 'FESTIVAL', event_date: '2025-03-30', year: 2025, description: 'Eid ul-Fitr' },
-      { event_name: 'Mother Day', event_type: 'SPECIAL_DAY', event_date: '2025-05-11', year: 2025, description: 'Mother Day' },
-      { event_name: 'Father Day', event_type: 'SPECIAL_DAY', event_date: '2025-06-15', year: 2025, description: 'Father Day' },
-      { event_name: 'Eid al-Adha', event_type: 'FESTIVAL', event_date: '2025-06-06', year: 2025, description: 'Eid al-Adha' },
-      { event_name: 'Independence Day', event_type: 'HOLIDAY', event_date: '2025-08-15', year: 2025, description: 'Independence Day of India' },
-      { event_name: 'Raksha Bandhan', event_type: 'FESTIVAL', event_date: '2025-08-09', year: 2025, description: 'Raksha Bandhan' },
-      { event_name: 'Janmashtami', event_type: 'FESTIVAL', event_date: '2025-08-16', year: 2025, description: 'Janmashtami' },
-      { event_name: 'Ganesh Chaturthi', event_type: 'FESTIVAL', event_date: '2025-08-27', year: 2025, description: 'Ganesh Chaturthi' },
-      { event_name: 'Dussehra', event_type: 'FESTIVAL', event_date: '2025-10-02', year: 2025, description: 'Dussehra' },
-      { event_name: 'Diwali', event_type: 'FESTIVAL', event_date: '2025-10-20', year: 2025, description: 'Diwali Festival of Lights' },
-      { event_name: 'Christmas', event_type: 'HOLIDAY', event_date: '2025-12-25', year: 2025, description: 'Christmas Day' },
-      // 2026 Events
-      { event_name: 'New Year', event_type: 'HOLIDAY', event_date: '2026-01-01', year: 2026, description: 'New Year Day' },
-      { event_name: 'Republic Day', event_type: 'HOLIDAY', event_date: '2026-01-26', year: 2026, description: 'Republic Day of India' },
-      { event_name: 'Valentine Day', event_type: 'SPECIAL_DAY', event_date: '2026-02-14', year: 2026, description: 'Valentine Day' },
-      { event_name: 'Holi', event_type: 'FESTIVAL', event_date: '2026-03-04', year: 2026, description: 'Holi Festival of Colors' },
-      { event_name: 'Good Friday', event_type: 'HOLIDAY', event_date: '2026-04-03', year: 2026, description: 'Good Friday' },
-      { event_name: 'Eid ul-Fitr', event_type: 'FESTIVAL', event_date: '2026-03-20', year: 2026, description: 'Eid ul-Fitr' },
-      { event_name: 'Mother Day', event_type: 'SPECIAL_DAY', event_date: '2026-05-10', year: 2026, description: 'Mother Day' },
-      { event_name: 'Father Day', event_type: 'SPECIAL_DAY', event_date: '2026-06-21', year: 2026, description: 'Father Day' },
-      { event_name: 'Eid al-Adha', event_type: 'FESTIVAL', event_date: '2026-05-27', year: 2026, description: 'Eid al-Adha' },
-      { event_name: 'Independence Day', event_type: 'HOLIDAY', event_date: '2026-08-15', year: 2026, description: 'Independence Day of India' },
-      { event_name: 'Raksha Bandhan', event_type: 'FESTIVAL', event_date: '2026-08-29', year: 2026, description: 'Raksha Bandhan' },
-      { event_name: 'Janmashtami', event_type: 'FESTIVAL', event_date: '2026-08-05', year: 2026, description: 'Janmashtami' },
-      { event_name: 'Ganesh Chaturthi', event_type: 'FESTIVAL', event_date: '2026-09-16', year: 2026, description: 'Ganesh Chaturthi' },
-      { event_name: 'Dussehra', event_type: 'FESTIVAL', event_date: '2026-10-21', year: 2026, description: 'Dussehra' },
-      { event_name: 'Diwali', event_type: 'FESTIVAL', event_date: '2026-11-08', year: 2026, description: 'Diwali Festival of Lights' },
-      { event_name: 'Christmas', event_type: 'HOLIDAY', event_date: '2026-12-25', year: 2026, description: 'Christmas Day' },
+    // Helper function to get nth weekday of month
+    function getNthWeekdayOfMonth(year, month, weekday, n) {
+      const date = new Date(year, month - 1, 1);
+      let count = 0;
+      while (date.getMonth() === month - 1) {
+        if (date.getDay() === weekday) {
+          count++;
+          if (count === n) return date;
+        }
+        date.setDate(date.getDate() + 1);
+      }
+      return null;
+    }
+    
+    // Helper function to get last weekday of month
+    function getLastWeekdayOfMonth(year, month, weekday) {
+      const date = new Date(year, month, 0);
+      while (date.getDay() !== weekday) {
+        date.setDate(date.getDate() - 1);
+      }
+      return date;
+    }
+    
+    // Event definitions with date rules
+    const eventRules = [
+      // Fixed date events
+      { event_name: 'New Year', event_type: 'HOLIDAY', date_rule: 'fixed', month: 1, day: 1, description: 'New Year Day' },
+      { event_name: 'Republic Day', event_type: 'HOLIDAY', date_rule: 'fixed', month: 1, day: 26, description: 'Republic Day of India' },
+      { event_name: 'Valentine Day', event_type: 'SPECIAL_DAY', date_rule: 'fixed', month: 2, day: 14, description: 'Valentine Day' },
+      { event_name: 'Independence Day', event_type: 'HOLIDAY', date_rule: 'fixed', month: 8, day: 15, description: 'Independence Day of India' },
+      { event_name: 'Christmas', event_type: 'HOLIDAY', date_rule: 'fixed', month: 12, day: 25, description: 'Christmas Day' },
+      { event_name: 'Family Day', event_type: 'SPECIAL_DAY', date_rule: 'fixed', month: 6, day: 1, description: 'Family Day' },
+      
+      // Nth weekday events
+      { event_name: 'Mother Day', event_type: 'SPECIAL_DAY', date_rule: 'nth_weekday', month: 5, weekday: 0, n: 2, description: 'Mother Day (2nd Sunday of May)' },
+      { event_name: 'Father Day', event_type: 'SPECIAL_DAY', date_rule: 'nth_weekday', month: 6, weekday: 0, n: 3, description: 'Father Day (3rd Sunday of June)' },
+      { event_name: 'Friendship Day', event_type: 'SPECIAL_DAY', date_rule: 'nth_weekday', month: 8, weekday: 0, n: 1, description: 'Friendship Day (1st Sunday of August)' },
+      { event_name: 'Children Day', event_type: 'SPECIAL_DAY', date_rule: 'nth_weekday', month: 11, weekday: 2, n: 2, description: 'Children Day (2nd Tuesday of November)' },
+      
+      // Moving festivals (manual dates for now - should use API)
+      { event_name: 'Holi', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Holi Festival of Colors' },
+      { event_name: 'Good Friday', event_type: 'HOLIDAY', date_rule: 'manual', description: 'Good Friday' },
+      { event_name: 'Eid ul-Fitr', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Eid ul-Fitr' },
+      { event_name: 'Eid al-Adha', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Eid al-Adha' },
+      { event_name: 'Raksha Bandhan', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Raksha Bandhan' },
+      { event_name: 'Janmashtami', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Janmashtami' },
+      { event_name: 'Ganesh Chaturthi', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Ganesh Chaturthi' },
+      { event_name: 'Dussehra', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Dussehra' },
+      { event_name: 'Diwali', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Diwali Festival of Lights' },
     ];
     
+    // Manual dates for moving festivals (2024-2027)
+    const manualDates = {
+      'Holi': {
+        2024: '2024-03-25',
+        2025: '2025-03-14',
+        2026: '2026-03-04',
+        2027: '2027-02-24',
+      },
+      'Good Friday': {
+        2024: '2024-03-29',
+        2025: '2025-04-18',
+        2026: '2026-04-03',
+        2027: '2027-03-26',
+      },
+      'Eid ul-Fitr': {
+        2024: '2024-04-11',
+        2025: '2025-03-30',
+        2026: '2026-03-20',
+        2027: '2027-03-09',
+      },
+      'Eid al-Adha': {
+        2024: '2024-06-17',
+        2025: '2025-06-06',
+        2026: '2026-05-27',
+        2027: '2027-05-17',
+      },
+      'Raksha Bandhan': {
+        2024: '2024-08-19',
+        2025: '2025-08-09',
+        2026: '2026-08-29',
+        2027: '2027-08-18',
+      },
+      'Janmashtami': {
+        2024: '2024-08-26',
+        2025: '2025-08-16',
+        2026: '2026-08-05',
+        2027: '2027-08-25',
+      },
+      'Ganesh Chaturthi': {
+        2024: '2024-09-07',
+        2025: '2025-08-27',
+        2026: '2026-09-16',
+        2027: '2027-09-05',
+      },
+      'Dussehra': {
+        2024: '2024-10-12',
+        2025: '2025-10-02',
+        2026: '2026-10-21',
+        2027: '2027-10-10',
+      },
+      'Diwali': {
+        2024: '2024-10-31',
+        2025: '2025-10-20',
+        2026: '2026-11-08',
+        2027: '2027-10-29',
+      },
+    };
+    
+    const years = [2024, 2025, 2026, 2027, 2028];
     let inserted = 0;
     
-    for (const event of events) {
-      await connection.execute(`
-        INSERT INTO tomorrow_ai_events 
-        (event_name, event_type, event_date, year, description)
-        VALUES (?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-        event_type = VALUES(event_type),
-        description = VALUES(description),
-        updated_at = CURRENT_TIMESTAMP
-      `, [
-        event.event_name,
-        event.event_type,
-        event.event_date,
-        event.year,
-        event.description
-      ]);
-      inserted++;
+    for (const rule of eventRules) {
+      for (const year of years) {
+        let eventDate;
+        
+        if (rule.date_rule === 'fixed') {
+          eventDate = `${year}-${String(rule.month).padStart(2, '0')}-${String(rule.day).padStart(2, '0')}`;
+        } else if (rule.date_rule === 'nth_weekday') {
+          const date = getNthWeekdayOfMonth(year, rule.month, rule.weekday, rule.n);
+          if (date) {
+            eventDate = date.toISOString().split('T')[0];
+          }
+        } else if (rule.date_rule === 'manual') {
+          eventDate = manualDates[rule.event_name]?.[year];
+        }
+        
+        if (eventDate) {
+          await connection.execute(`
+            INSERT INTO tomorrow_ai_events 
+            (event_name, event_type, event_date, year, description)
+            VALUES (?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            event_type = VALUES(event_type),
+            description = VALUES(description),
+            updated_at = CURRENT_TIMESTAMP
+          `, [
+            rule.event_name,
+            rule.event_type,
+            eventDate,
+            year,
+            rule.description
+          ]);
+          inserted++;
+        }
+      }
     }
     
     await connection.end();
