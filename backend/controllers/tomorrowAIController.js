@@ -89,9 +89,9 @@ async function syncSalesToTomorrowAI(req, res) {
     console.log(`Calculated net sales for ${netSalesMap.size} unique items`);
 
     // 5. Map item names to ml_group_id using product_master table
-    // For now, we'll use item_name as ml_group_id temporarily
-    // This will be updated once we have proper ML group mapping
+    // Only insert records for products that exist in product_master
     let recordsInserted = 0;
+    let skippedProducts = 0;
     for (const [itemName, netQty] of netSalesMap) {
       // Check if product exists in product_master
       const [existingProducts] = await connection.execute(
@@ -99,11 +99,13 @@ async function syncSalesToTomorrowAI(req, res) {
         [itemName]
       );
 
-      let mlGroupId = itemName; // Default to item_name if not found
-      
-      if (existingProducts.length > 0) {
-        mlGroupId = existingProducts[0].ml_group_id;
+      // Skip if product doesn't exist in master (foreign key constraint)
+      if (existingProducts.length === 0) {
+        skippedProducts++;
+        continue;
       }
+
+      const mlGroupId = existingProducts[0].ml_group_id;
 
       // Insert or update daily_sales
       await connection.execute(
@@ -117,6 +119,8 @@ async function syncSalesToTomorrowAI(req, res) {
       );
       recordsInserted++;
     }
+
+    console.log(`Skipped ${skippedProducts} products not in product_master`);
 
     // 6. Log the sync
     await connection.execute(
@@ -281,16 +285,20 @@ async function syncSingleDate(connection, syncDate) {
 
   // Insert to daily_sales
   let recordsInserted = 0;
+  let skippedProducts = 0;
   for (const [itemName, netQty] of netSalesMap) {
     const [existingProducts] = await connection.execute(
       `SELECT ml_group_id FROM tomorrow_ai_product_master WHERE name = ?`,
       [itemName]
     );
 
-    let mlGroupId = itemName;
-    if (existingProducts.length > 0) {
-      mlGroupId = existingProducts[0].ml_group_id;
+    // Skip if product doesn't exist in master (foreign key constraint)
+    if (existingProducts.length === 0) {
+      skippedProducts++;
+      continue;
     }
+
+    const mlGroupId = existingProducts[0].ml_group_id;
 
     await connection.execute(
       `INSERT INTO tomorrow_ai_daily_sales 
@@ -304,6 +312,7 @@ async function syncSingleDate(connection, syncDate) {
     recordsInserted++;
   }
 
+  console.log(`Sync for ${syncDate}: ${recordsInserted} inserted, ${skippedProducts} skipped (not in product_master)`);
   return { recordsInserted };
 }
 
