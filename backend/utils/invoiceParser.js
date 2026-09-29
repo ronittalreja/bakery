@@ -86,106 +86,47 @@ class InvoiceParser {
    */
   splitIntoMultipleInvoices(lines) {
     const invoices = [];
-    
+
     console.log('=== INVOICE DETECTION DEBUG ===');
     console.log('Looking for invoice patterns...');
-    
-    // First, extract all unique invoice numbers from the document
-    const uniqueInvoiceNumbers = new Set();
-    const invoiceNumberPositions = [];
-    
+
+    // Find all TAX INVOICE headers - these mark the start of each invoice
+    const taxInvoicePositions = [];
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      
-      // Look for "Invoice No. : MUM2526/61782" pattern
-      const match = line.match(/Invoice No\.?\s*:\s*([A-Z0-9\/]+)/i);
-      if (match) {
-        const invoiceNumber = match[1].trim();
-        uniqueInvoiceNumbers.add(invoiceNumber);
-        invoiceNumberPositions.push({ lineIndex: i, invoiceNumber: invoiceNumber });
-        console.log(`Found invoice number "${invoiceNumber}" at line ${i + 1}`);
+      if (lines[i].includes('TAX INVOICE')) {
+        taxInvoicePositions.push(i);
+        console.log(`Found TAX INVOICE header at line ${i + 1}`);
       }
     }
-    
-    console.log(`Found ${uniqueInvoiceNumbers.size} unique invoice numbers:`, Array.from(uniqueInvoiceNumbers));
-    console.log(`Found ${invoiceNumberPositions.length} invoice number occurrences`);
-    
-    // If we have multiple unique invoice numbers, split by them
-    if (uniqueInvoiceNumbers.size > 1) {
-      console.log('Multiple unique invoices detected, splitting by invoice numbers...');
-      
-      // Sort positions by line index
-      invoiceNumberPositions.sort((a, b) => a.lineIndex - b.lineIndex);
-      
-      // For multiple invoices, we need to find where each invoice actually starts
-      // Look for the pattern where a new invoice starts (TAX INVOICE followed by different invoice number)
-      const invoiceStarts = [];
-      
-      // First invoice always starts from the beginning
-      invoiceStarts.push({
-        invoiceNumber: invoiceNumberPositions[0].invoiceNumber,
-        startLine: 0
-      });
-      
-      // For subsequent invoices, find where they actually start
-      for (let i = 1; i < invoiceNumberPositions.length; i++) {
-        const position = invoiceNumberPositions[i];
-        const invoiceNumber = position.invoiceNumber;
-        
-        // Skip if we've already found the start for this invoice number
-        if (invoiceStarts.some(start => start.invoiceNumber === invoiceNumber)) {
-          continue;
-        }
-        
-        // For the second invoice, start from line 76 where items 1-34 begin
-        let invoiceStart = position.lineIndex;
-        
-        if (invoiceNumber === 'MUM2526/61487') {
-          // Second invoice - start from line 70 (items 1-43)
-          invoiceStart = 69; // 0-based index, so line 70 = index 69
-          console.log(`Second invoice ${invoiceNumber} starts at line 70 (items 1-43)`);
-        } else {
-          // First invoice - use normal logic
-          invoiceStart = position.lineIndex;
-          console.log(`First invoice ${invoiceNumber} starts at line ${invoiceStart + 1}`);
-        }
-        
-        invoiceStarts.push({
-          invoiceNumber: invoiceNumber,
-          startLine: invoiceStart
-        });
-        
-        console.log(`Invoice "${invoiceNumber}" starts at line ${invoiceStart + 1}`);
-      }
-      
-      // Sort by start line
-      invoiceStarts.sort((a, b) => a.startLine - b.startLine);
-      
-      // Create splits based on actual invoice starts
-      for (let i = 0; i < invoiceStarts.length; i++) {
-        const currentInvoice = invoiceStarts[i];
-        const nextInvoice = invoiceStarts[i + 1];
-        
-        const startLine = currentInvoice.startLine;
-        const endLine = nextInvoice ? nextInvoice.startLine : lines.length;
-        
+
+    console.log(`Found ${taxInvoicePositions.length} TAX INVOICE headers`);
+
+    // If we have multiple TAX INVOICE headers, split by them
+    if (taxInvoicePositions.length > 1) {
+      console.log('Multiple TAX INVOICE headers detected, splitting by them...');
+
+      // Create splits based on TAX INVOICE positions
+      for (let i = 0; i < taxInvoicePositions.length; i++) {
+        const startLine = taxInvoicePositions[i];
+        const endLine = taxInvoicePositions[i + 1] || lines.length;
+
         const invoiceLines = lines.slice(startLine, endLine);
         if (invoiceLines.length > 0) {
           invoices.push(invoiceLines);
-          console.log(`Invoice "${currentInvoice.invoiceNumber}": lines ${startLine + 1} to ${endLine} (${invoiceLines.length} lines)`);
+          console.log(`Invoice ${i + 1}: lines ${startLine + 1} to ${endLine} (${invoiceLines.length} lines)`);
         }
       }
-      
-    } else if (uniqueInvoiceNumbers.size === 1) {
-      // Single unique invoice number - treat entire document as one invoice
-      console.log('Single unique invoice detected, treating entire document as one invoice');
+
+    } else if (taxInvoicePositions.length === 1) {
+      // Single TAX INVOICE header - treat entire document as one invoice
+      console.log('Single TAX INVOICE header detected, treating entire document as one invoice');
       invoices.push(lines);
     } else {
-      // No invoice numbers found - treat entire document as one invoice
-      console.log('No invoice numbers found, treating entire document as one invoice');
+      // No TAX INVOICE headers found - treat entire document as one invoice
+      console.log('No TAX INVOICE headers found, treating entire document as one invoice');
       invoices.push(lines);
     }
-    
+
     console.log(`Total invoices found: ${invoices.length}`);
     if (invoices.length > 0) {
       invoices.forEach((inv, index) => {
@@ -196,7 +137,7 @@ class InvoiceParser {
       });
     }
     console.log('=== END INVOICE DETECTION ===');
-    
+
     return invoices;
   }
 
@@ -326,12 +267,13 @@ class InvoiceParser {
   extractItems(lines) {
     const items = [];
     let inItemsSection = false;
-    
+    let itemsSectionStart = -1;
+
     console.log('=== ITEMS EXTRACTION DEBUG ===');
-    
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      
+
         // Check if we're entering the items section
         // Look for items table header patterns
         if ((line.includes('Sl.Item') && line.includes('Description')) ||
@@ -340,6 +282,7 @@ class InvoiceParser {
             /^\d+[A-Z0-9]{4,5}/.test(line)) { // Direct item line pattern (4 or 5 char codes)
         console.log(`Found items header at line ${i + 1}: ${line}`);
         inItemsSection = true;
+        itemsSectionStart = i;
         // If this is already an item line, process it
         if (/^\d+[A-Z0-9]{4,5}/.test(line)) {
           console.log(`\n=== Processing item at line ${i + 1}: ${line}`);
@@ -355,11 +298,12 @@ class InvoiceParser {
         }
         continue;
       }
-      
+
       // Also check for items that start with just a number (like "1OS085...")
       if (/^\d+[A-Z0-9]{4,5}/.test(line) && !inItemsSection) {
         console.log(`Found direct item line at line ${i + 1}: ${line}`);
         inItemsSection = true;
+        itemsSectionStart = i;
         console.log(`\n=== Processing item at line ${i + 1}: ${line}`);
         try {
           const parsedItem = this.parseSingleLineItem(line);
@@ -372,22 +316,32 @@ class InvoiceParser {
         }
         continue;
       }
-      
-      // Check if we're leaving the items section
-      if (inItemsSection && (line.includes('Tax Summary') || line.includes('Gross Value') || line.includes('RUPEES'))) {
-        console.log(`Leaving items section at line ${i + 1}: ${line}`);
-        break;
+
+      // Check if we're leaving the items section - but only if we've already found items
+      // Don't stop at page breaks - only stop at actual invoice end markers
+      if (inItemsSection && items.length > 0) {
+        // Skip page markers - they don't end the items section
+        if (line.includes('Page No:') || line.includes('Page No:')) {
+          console.log(`Skipping page marker at line ${i + 1}: ${line}`);
+          continue;
+        }
+
+        // Only stop if we see a clear end marker AND we're not in the middle of items
+        if ((line.includes('Tax Summary') || line.includes('Gross Value') || line.includes('RUPEES')) && !/^\d+/.test(line)) {
+          console.log(`Leaving items section at line ${i + 1}: ${line}`);
+          break;
+        }
       }
-      
+
       if (inItemsSection) {
         // Check if this line starts with a digit (serial number) - this is the start of an item
         if (!/^\d+/.test(line)) {
           console.log(`Line doesn't start with digit, skipping: ${line}`);
           continue;
         }
-        
+
         console.log(`\n=== Processing item at line ${i + 1}: ${line}`);
-        
+
         try {
           // Parse single-line item format
           const parsedItem = this.parseSingleLineItem(line);
@@ -401,10 +355,10 @@ class InvoiceParser {
         }
       }
     }
-    
+
     console.log(`\nTotal items extracted: ${items.length}`);
     console.log('=== END ITEMS EXTRACTION ===');
-    
+
     return items;
   }
 
