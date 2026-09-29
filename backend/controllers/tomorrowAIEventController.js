@@ -60,8 +60,10 @@ async function getUpcomingEvents(req, res) {
       return res.status(400).json({ success: false, error: 'Invalid date' });
     }
 
+    console.log('getUpcomingEvents - today:', today, 'limit:', safeLimit);
+
     const query = 'SELECT id, event_name, event_type, event_date, year, description FROM tomorrow_ai_events WHERE event_date >= ? ORDER BY event_date ASC LIMIT ?';
-    const [events] = await db.execute(query, [today, safeLimit]);
+    const [events] = await db.execute(query, [String(today), Number(safeLimit)]);
 
     const eventsWithDays = events.map(event => {
       const eventDate = new Date(event.event_date);
