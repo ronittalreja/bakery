@@ -54,9 +54,9 @@ async function getUpcomingEvents(req, res) {
   try {
     const today = new Date().toISOString().split('T')[0];
     const limit = req.query.limit ? parseInt(req.query.limit) : 10;
-    
+
     const [events] = await db.execute(`
-      SELECT 
+      SELECT
         id,
         event_name,
         event_type,
@@ -68,7 +68,7 @@ async function getUpcomingEvents(req, res) {
       ORDER BY event_date ASC
       LIMIT ?
     `, [today, limit]);
-    
+
     const eventsWithDays = events.map(event => {
       const eventDate = new Date(event.event_date);
       const todayDate = new Date(today);
@@ -78,9 +78,9 @@ async function getUpcomingEvents(req, res) {
         days_to_go: daysToGo
       };
     });
-    
+
     res.json({ success: true, data: eventsWithDays });
-    
+
   } catch (error) {
     console.error('Error getting upcoming events:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -111,7 +111,7 @@ async function getEventForecast(req, res) {
 
     const event = events[0];
     const currentYear = new Date().getFullYear();
-    const targetYear = year || event.year || currentYear;
+    const targetYear = year || event.year || currentYear || currentYear;
 
     // Calculate dynamic year window (current-1, current-2, current-3)
     const historicalYears = [targetYear - 1, targetYear - 2, targetYear - 3];

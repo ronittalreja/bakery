@@ -97,10 +97,13 @@ async function syncSalesToTomorrowAI(req, res) {
     for (const [itemName, netQty] of netSalesMap) {
       let mlGroupId = null;
 
-      // First check if item name has an alias
+      // First check if item name has an alias (join with product_master to get ml_group_id)
       const [aliases] = await connection.execute(
-        `SELECT ml_group_id FROM tomorrow_ai_product_aliases WHERE alias_name = ?`,
-        [itemName]
+        `SELECT pm.ml_group_id 
+         FROM tomorrow_ai_product_aliases pa
+         JOIN tomorrow_ai_product_master pm ON pa.product_id = pm.product_id
+         WHERE pa.historical_item_code = ? OR pa.historical_name = ?`,
+        [itemName, itemName]
       );
 
       if (aliases.length > 0) {
@@ -322,10 +325,13 @@ async function syncSingleDate(connection, syncDate) {
   for (const [itemName, netQty] of netSalesMap) {
     let mlGroupId = null;
 
-    // First check if item name has an alias
+    // First check if item name has an alias (join with product_master to get ml_group_id)
     const [aliases] = await connection.execute(
-      `SELECT ml_group_id FROM tomorrow_ai_product_aliases WHERE alias_name = ?`,
-      [itemName]
+      `SELECT pm.ml_group_id 
+       FROM tomorrow_ai_product_aliases pa
+       JOIN tomorrow_ai_product_master pm ON pa.product_id = pm.product_id
+       WHERE pa.historical_item_code = ? OR pa.historical_name = ?`,
+      [itemName, itemName]
     );
 
     if (aliases.length > 0) {
