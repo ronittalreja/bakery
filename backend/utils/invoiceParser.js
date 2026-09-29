@@ -85,57 +85,101 @@ class InvoiceParser {
    * @returns {Array} Array of invoice line arrays
    */
   splitIntoMultipleInvoices(lines) {
-    const invoices = [];
-
     console.log('=== INVOICE DETECTION DEBUG ===');
     console.log('Looking for invoice patterns...');
 
-    // Find all TAX INVOICE headers - these mark the start of each invoice
-    const taxInvoicePositions = [];
+    // First pass: Find all invoice numbers and their positions
+    const invoiceNumberPositions = [];
     for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes('TAX INVOICE')) {
-        taxInvoicePositions.push(i);
-        console.log(`Found TAX INVOICE header at line ${i + 1}`);
+      const match = lines[i].match(/Invoice No\.?\s*:\s*([A-Z0-9\/]+)/i);
+      if (match) {
+        const invoiceNumber = match[1].trim();
+        invoiceNumberPositions.push({ lineIndex: i, invoiceNumber: invoiceNumber });
+        console.log(`Found invoice number "${invoiceNumber}" at line ${i + 1}`);
       }
     }
 
-    console.log(`Found ${taxInvoicePositions.length} TAX INVOICE headers`);
+    console.log(`Found ${invoiceNumberPositions.length} invoice number occurrences`);
 
-    // If we have multiple TAX INVOICE headers, split by them
-    if (taxInvoicePositions.length > 1) {
-      console.log('Multiple TAX INVOICE headers detected, splitting by them...');
+    // Group by unique invoice numbers (same invoice on multiple pages = one invoice)
+    const uniqueInvoices = new Map();
+    for (const pos of invoiceNumberPositions) {
+      if (!uniqueInvoices.has(pos.invoiceNumber)) {
+        uniqueInvoices.set(pos.invoiceNumber, []);
+      }
+      uniqueInvoices.get(pos.invoiceNumber).push(pos.lineIndex);
+    }
 
-      // Create splits based on TAX INVOICE positions
-      for (let i = 0; i < taxInvoicePositions.length; i++) {
-        const startLine = taxInvoicePositions[i];
-        const endLine = taxInvoicePositions[i + 1] || lines.length;
+    console.log(`Found ${uniqueInvoices.size} unique invoice numbers:`, Array.from(uniqueInvoices.keys()));
 
-        const invoiceLines = lines.slice(startLine, endLine);
-        if (invoiceLines.length > 0) {
-          invoices.push(invoiceLines);
-          console.log(`Invoice ${i + 1}: lines ${startLine + 1} to ${endLine} (${invoiceLines.length} lines)`);
+    // If no invoice numbers found, treat entire document as one invoice
+    if (uniqueInvoices.size === 0) {
+      console.log('No invoice numbers found, treating entire document as one invoice');
+      return [lines];
+    }
+
+    // Second pass: Find all items and their positions
+    const itemPositions = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^\d+[A-Z0-9]{4,5}/.test(line)) {
+        itemPositions.push(i);
+      }
+    }
+
+    console.log(`Found ${itemPositions.length} item lines`);
+
+    // Third pass: Assign each item to the closest preceding invoice number
+    const invoiceGroups = new Map();
+    uniqueInvoices.forEach((positions, invoiceNumber) => {
+      invoiceGroups.set(invoiceNumber, []);
+    });
+
+    for (const itemIndex of itemPositions) {
+      // Find the closest invoice number that comes before this item
+      let closestInvoice = null;
+      let closestDistance = Infinity;
+
+      for (const [invoiceNumber, positions] of uniqueInvoices) {
+        // Use the LAST occurrence of this invoice number before this item
+        const validPositions = positions.filter(pos => pos <= itemIndex);
+        if (validPositions.length > 0) {
+          const lastPos = Math.max(...validPositions);
+          const distance = itemIndex - lastPos;
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestInvoice = invoiceNumber;
+          }
         }
       }
 
-    } else if (taxInvoicePositions.length === 1) {
-      // Single TAX INVOICE header - treat entire document as one invoice
-      console.log('Single TAX INVOICE header detected, treating entire document as one invoice');
-      invoices.push(lines);
-    } else {
-      // No TAX INVOICE headers found - treat entire document as one invoice
-      console.log('No TAX INVOICE headers found, treating entire document as one invoice');
-      invoices.push(lines);
+      if (closestInvoice) {
+        invoiceGroups.get(closestInvoice).push(itemIndex);
+      }
     }
 
-    console.log(`Total invoices found: ${invoices.length}`);
-    if (invoices.length > 0) {
-      invoices.forEach((inv, index) => {
-        console.log(`Invoice ${index + 1}: ${inv.length} lines`);
-        // Show first few lines to identify the invoice
-        const firstLines = inv.slice(0, 3).join(' | ');
-        console.log(`  First lines: ${firstLines}`);
-      });
+    // Fourth pass: Create invoice line arrays based on grouped items
+    const invoices = [];
+    for (const [invoiceNumber, itemIndices] of invoiceGroups) {
+      if (itemIndices.length === 0) {
+        console.log(`Invoice ${invoiceNumber} has no items, skipping`);
+        continue;
+      }
+
+      // Find the start and end lines for this invoice
+      const startLine = Math.min(...itemIndices);
+      const endLine = Math.max(...itemIndices) + 1;
+
+      // Include context from the first invoice number occurrence to capture header
+      const firstInvoicePos = Math.min(...uniqueInvoices.get(invoiceNumber));
+      const contextStart = Math.max(0, firstInvoicePos);
+
+      const invoiceLines = lines.slice(contextStart, endLine);
+      invoices.push(invoiceLines);
+      console.log(`Invoice ${invoiceNumber}: items ${itemIndices.length}, lines ${contextStart + 1} to ${endLine}  (${invoiceLines.length} lines)`);
     }
+
+    console.log(`Total invoices with items: ${invoices.length}`);
     console.log('=== END INVOICE DETECTION ===');
 
     return invoices;
@@ -273,6 +317,20 @@ class InvoiceParser {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+
+      // Skip Tax Summary table lines - these are NOT items
+      if (line.includes('Tax Summary') || line.includes('HSN/SAC') || line.includes('HSN Description') ||
+          line.includes('Net Taxable Value') || line.includes('Rate Amount') ||
+          line.includes('CGST') || line.includes('SGST') || line.includes('HSN TOTAL')) {
+        console.log(`Skipping Tax Summary line at ${i + 1}: ${line}`);
+        continue;
+      }
+
+      // Skip summary lines that look like items but aren't (e.g., "10514992.661349.33...")
+      if (/^\d{8}/.test(line) && line.includes('.')) {
+        console.log(`Skipping summary line at ${i + 1}: ${line}`);
+        continue;
+      }
 
         // Check if we're entering the items section
         // Look for items table header patterns
