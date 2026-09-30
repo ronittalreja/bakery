@@ -399,7 +399,7 @@ async function fullHistoricalSync(req, res) {
         }
 
         if (mlGroupId) {
-          bulkInserts.push([dateStr, mlGroupId, netQty]);
+          bulkInserts.push([dateStr, mlGroupId, netQty, 1]); // 1 for is_shop_open
         } else {
           skippedProducts++;
         }
@@ -414,7 +414,7 @@ async function fullHistoricalSync(req, res) {
 
     for (let i = 0; i < bulkInserts.length; i += batchSize) {
       const batch = bulkInserts.slice(i, i + batchSize);
-      const values = batch.map(() => '(?, ?, ?)').join(',');
+      const values = batch.map(() => '(?, ?, ?, ?)').join(',');
       const flatParams = batch.flat();
 
       await connection.execute(
