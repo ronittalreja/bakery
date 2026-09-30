@@ -123,14 +123,16 @@ async function getEventForecast(req, res) {
     // Calculate dynamic year window (current-1, current-2, current-3)
     const historicalYears = [targetYear - 1, targetYear - 2, targetYear - 3];
 
-    // Get DISPLAY products that are mapped/approved
+    // Get DISPLAY products that are mapped/approved, grouped by ml_group_id
     const [products] = await db.execute(`
       SELECT
-        product_id,
-        name,
-        ml_group_id
+        MIN(product_id) as product_id,
+        MAX(name) as name,
+        ml_group_id,
+        COUNT(*) as product_count
       FROM tomorrow_ai_product_master
       WHERE item_type = 'DISPLAY' AND active = TRUE AND mapping_status = 'approved'
+      GROUP BY ml_group_id
       ORDER BY name ASC
     `);
 
