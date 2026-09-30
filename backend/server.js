@@ -85,7 +85,7 @@ app.use('/api/reports', authMiddleware(['admin']), require('./routes/reports'));
 app.use('/api/ros-receipts', authMiddleware(['staff', 'admin']), require('./routes/rosReceipts'));
 app.use('/api/insights', authMiddleware(['admin']), require('./routes/insights'));
 app.use('/api/tomorrow-ai', authMiddleware(['admin']), require('./routes/tomorrowAI'));
-app.use('/api/tomorrow-ai/products', authMiddleware(['staff', 'admin']), require('./routes/tomorrowAIProducts'));
+app.use('/api/tomorrow-ai/products', require('./routes/tomorrowAIProducts'));
 app.use('/api/tomorrow-ai/features', authMiddleware(['admin']), require('./routes/tomorrowAIFeatures'));
 app.use('/api/tomorrow-ai/model', authMiddleware(['admin']), require('./routes/tomorrowAIModel'));
 app.use('/api/tomorrow-ai/events', authMiddleware(['admin']), require('./routes/tomorrowAIEvents'));
