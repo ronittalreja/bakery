@@ -182,6 +182,58 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
     }
   };
 
+  const handleAddUnmappedItem = async (itemName: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/products/unmapped`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ itemName, mappingStatus: 'approved' })
+      });
+      const data = await response.json();
+      if (data.success) {
+        // Remove from unmapped items list
+        setUnmappedItems(unmappedItems.filter(item => item.item_name !== itemName));
+        // Refresh products to show the new item
+        fetchData();
+      } else {
+        alert(data.error || 'Failed to add product');
+      }
+    } catch (error) {
+      console.error('Error adding unmapped item:', error);
+      alert('Failed to add product');
+    }
+  };
+
+  const handleMarkUnmappedAsNotForUse = async (itemName: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/products/unmapped`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ itemName, mappingStatus: 'notforuse' })
+      });
+      const data = await response.json();
+      if (data.success) {
+        // Remove from unmapped items list
+        setUnmappedItems(unmappedItems.filter(item => item.item_name !== itemName));
+        // Refresh products to show the new item
+        fetchData();
+      } else {
+        alert(data.error || 'Failed to mark as not for use');
+      }
+    } catch (error) {
+      console.error('Error marking unmapped item as not for use:', error);
+      alert('Failed to mark as not for use');
+    }
+  };
+
   const handleAddAliasAndApprove = async () => {
     if (!selectedProduct || !selectedTargetProduct || selectedSourceProducts.size === 0) return;
 
@@ -426,7 +478,7 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
               <CardHeader>
                 <CardTitle>Unmapped Invoice Items</CardTitle>
                 <CardDescription>
-                  Items from invoices that are not in product master
+                  Items from invoices that are not in product master. Add to product master or mark as not for use.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -438,6 +490,7 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
                       <TableHead>Invoice Count</TableHead>
                       <TableHead>First Seen</TableHead>
                       <TableHead>Last Seen</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -448,6 +501,26 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
                         <TableCell>{item.invoice_count}</TableCell>
                         <TableCell>{new Date(item.first_seen).toLocaleDateString()}</TableCell>
                         <TableCell>{new Date(item.last_seen).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleAddUnmappedItem(item.item_name)}
+                              title="Add to product master"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleMarkUnmappedAsNotForUse(item.item_name)}
+                              title="Mark as not for use"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

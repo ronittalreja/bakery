@@ -14,7 +14,8 @@ const {
   getValidationReport,
   approveProduct,
   markNotForUse,
-  addAliasAndApprove
+  addAliasAndApprove,
+  addUnmappedItem
 } = require('../controllers/tomorrowAIProductController');
 
 // Get all products with ML group info
@@ -60,5 +61,9 @@ router.post('/notforuse', markNotForUse);
 // Add alias and approve both products
 // POST /api/tomorrow-ai/products/alias-approve
 router.post('/alias-approve', addAliasAndApprove);
+
+// Add unmapped item to product master
+// POST /api/tomorrow-ai/products/unmapped
+router.post('/unmapped', addUnmappedItem);
 
 module.exports = router;

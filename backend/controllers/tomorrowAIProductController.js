@@ -533,6 +533,57 @@ async function addAliasAndApprove(req, res) {
   }
 }
 
+/**
+ * Add unmapped item to product master
+ */
+async function addUnmappedItem(req, res) {
+  try {
+    const { itemName, category, itemType, mappingStatus } = req.body;
+
+    if (!itemName) {
+      return res.status(400).json({
+        success: false,
+        error: 'itemName is required'
+      });
+    }
+
+    // Generate a product ID from the item name
+    const productId = itemName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 50);
+
+    // Check if product already exists
+    const [existing] = await db.execute(
+      `SELECT product_id FROM tomorrow_ai_product_master WHERE product_id = ? OR name = ?`,
+      [productId, itemName]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Product already exists'
+      });
+    }
+
+    // Insert new product
+    await db.execute(`
+      INSERT INTO tomorrow_ai_product_master
+      (product_id, name, category, item_type, mapping_status, active)
+      VALUES (?, ?, ?, ?, ?, TRUE)
+    `, [productId, itemName, category || 'uncategorized', itemType || 'DISPLAY', mappingStatus || 'approved']);
+
+    res.json({
+      success: true,
+      message: 'Product added successfully',
+      data: { productId }
+    });
+  } catch (error) {
+    console.error('Error adding unmapped item:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   getProducts,
   updateProductMLGroup,
@@ -544,5 +595,6 @@ module.exports = {
   getValidationReport,
   approveProduct,
   markNotForUse,
-  addAliasAndApprove
+  addAliasAndApprove,
+  addUnmappedItem
 };
