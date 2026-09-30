@@ -464,51 +464,62 @@ async function addAliasAndApprove(req, res) {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    const { targetProductId, sourceProductId, historicalItemCode, historicalName } = req.body;
+    const { targetProductId, sourceProductIds } = req.body;
 
-    if (!targetProductId || !sourceProductId) {
+    if (!targetProductId || !sourceProductIds || !Array.isArray(sourceProductIds)) {
       await connection.rollback();
       return res.status(400).json({
         success: false,
-        error: 'targetProductId and sourceProductId are required'
+        error: 'targetProductId and sourceProductIds array are required'
+      });
+    }
+
+    if (sourceProductIds.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: 'At least one source product ID is required'
       });
     }
 
     // Get source product details
+    const placeholders = sourceProductIds.map(() => '?').join(',');
     const [sourceProducts] = await connection.execute(
-      `SELECT name, product_id FROM tomorrow_ai_product_master WHERE product_id = ?`,
-      [sourceProductId]
+      `SELECT name, product_id FROM tomorrow_ai_product_master WHERE product_id IN (${placeholders})`,
+      sourceProductIds
     );
 
     if (sourceProducts.length === 0) {
       await connection.rollback();
       return res.status(404).json({
         success: false,
-        error: 'Source product not found'
+        error: 'Source products not found'
       });
     }
 
-    const sourceProduct = sourceProducts[0];
+    // Add alias mappings for each source product
+    for (const sourceProduct of sourceProducts) {
+      await connection.execute(`
+        INSERT INTO tomorrow_ai_product_aliases
+        (product_id, historical_item_code, historical_name, effective_from)
+        VALUES (?, ?, ?, CURRENT_DATE)
+      `, [targetProductId, sourceProduct.product_id, sourceProduct.name]);
+    }
 
-    // Add alias mapping source to target
-    await connection.execute(`
-      INSERT INTO tomorrow_ai_product_aliases
-      (product_id, historical_item_code, historical_name, effective_from)
-      VALUES (?, ?, ?, CURRENT_DATE)
-    `, [targetProductId, sourceProduct.product_id, sourceProduct.name]);
-
-    // Approve both products
+    // Approve all products (target + all sources)
+    const allProductIds = [targetProductId, ...sourceProductIds];
+    const allPlaceholders = allProductIds.map(() => '?').join(',');
     await connection.execute(`
       UPDATE tomorrow_ai_product_master
       SET mapping_status = 'approved', updated_at = CURRENT_TIMESTAMP
-      WHERE product_id IN (?, ?)
-    `, [targetProductId, sourceProductId]);
+      WHERE product_id IN (${allPlaceholders})
+    `, allProductIds);
 
     await connection.commit();
 
     res.json({
       success: true,
-      message: 'Alias added and both products approved'
+      message: `Alias added for ${sourceProducts.length} products and all approved`
     });
   } catch (error) {
     if (connection) await connection.rollback();

@@ -29,11 +29,20 @@ interface UnmappedItem {
   last_seen: string;
 }
 
+interface Alias {
+  id: number;
+  product_id: string;
+  historical_item_code: string;
+  historical_name: string;
+  effective_from: string | null;
+  effective_to: string | null;
+}
+
 interface MLGroupsPageProps {
   onBack: () => void;
 }
 
-type TabType = "all" | "mapped" | "unmapped";
+type TabType = "all" | "mapped" | "unmapped" | "notforuse";
 
 export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
   const [tab, setTab] = useState<TabType>("all");
@@ -45,6 +54,10 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [selectedTargetProduct, setSelectedTargetProduct] = useState<Product | null>(null);
+  const [selectedSourceProducts, setSelectedSourceProducts] = useState<Set<string>>(new Set());
+  const [showAliasModal, setShowAliasModal] = useState(false);
+  const [aliasProduct, setAliasProduct] = useState<Product | null>(null);
+  const [aliasList, setAliasList] = useState<Alias[]>([]);
   const scrollPositionRef = useRef(0);
 
   useEffect(() => {
@@ -57,7 +70,7 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
       const token = localStorage.getItem('token');
 
       // Fetch products
-      const statusFilter = tab === "mapped" ? "approved" : tab === "unmapped" ? "pending" : undefined;
+      const statusFilter = tab === "mapped" ? "approved" : tab === "unmapped" ? "pending" : tab === "notforuse" ? "notforuse" : undefined;
       const statusParam = statusFilter ? `&status=${statusFilter}` : '';
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/products?${statusParam}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -152,8 +165,25 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
     }
   };
 
+  const handleFetchAliases = async (product: Product) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/products/${product.product_id}/aliases`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAliasList(data.data);
+        setAliasProduct(product);
+        setShowAliasModal(true);
+      }
+    } catch (error) {
+      console.error('Error fetching aliases:', error);
+    }
+  };
+
   const handleAddAliasAndApprove = async () => {
-    if (!selectedProduct || !selectedTargetProduct) return;
+    if (!selectedProduct || !selectedTargetProduct || selectedSourceProducts.size === 0) return;
 
     try {
       const token = localStorage.getItem('token');
@@ -165,19 +195,19 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
         },
         body: JSON.stringify({
           targetProductId: selectedTargetProduct.product_id,
-          sourceProductId: selectedProduct.product_id
+          sourceProductIds: Array.from(selectedSourceProducts)
         })
       });
       const data = await response.json();
       if (data.success) {
-        // Update both products in local state
+        // Update all affected products in local state
+        const affectedIds = new Set([selectedTargetProduct.product_id, ...selectedSourceProducts]);
         setProducts(products.map(p =>
-          p.product_id === selectedProduct.product_id || p.product_id === selectedTargetProduct.product_id
-            ? { ...p, mapping_status: 'approved' }
-            : p
+          affectedIds.has(p.product_id) ? { ...p, mapping_status: 'approved' } : p
         ));
         setShowSearchModal(false);
         setSelectedTargetProduct(null);
+        setSelectedSourceProducts(new Set());
         setSearchResults([]);
       }
     } catch (error) {
@@ -248,6 +278,14 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
               <X className="h-4 w-4" />
               Unmapped ({stats.pending})
             </Button>
+            <Button
+              variant={tab === "notforuse" ? "default" : "outline"}
+              onClick={() => setTab("notforuse")}
+              className="flex items-center gap-2"
+            >
+              <X className="h-4 w-4" />
+              Not For Use ({stats.notforuse})
+            </Button>
           </div>
 
           {/* Stats */}
@@ -300,6 +338,7 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
                 {tab === "all" && "All Products"}
                 {tab === "mapped" && "Mapped Products"}
                 {tab === "unmapped" && "Unmapped Products"}
+                {tab === "notforuse" && "Not For Use Products"}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -336,7 +375,11 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={product.alias_count > 0 ? "default" : "secondary"}>
+                        <Badge
+                          variant={product.alias_count > 0 ? "default" : "secondary"}
+                          className={product.alias_count > 0 ? "cursor-pointer hover:bg-blue-600" : ""}
+                          onClick={() => product.alias_count > 0 && handleFetchAliases(product)}
+                        >
                           {product.alias_count}
                         </Badge>
                       </TableCell>
@@ -415,14 +458,67 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
         </div>
       </div>
 
+      {/* Alias Details Modal */}
+      {showAliasModal && aliasProduct && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-2xl max-h-[80vh] overflow-auto">
+            <CardHeader>
+              <CardTitle>Aliases for {aliasProduct.name}</CardTitle>
+              <CardDescription>
+                Historical item codes and names mapped to this product
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {aliasList.length === 0 ? (
+                <p className="text-slate-500 text-center py-4">No aliases found</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Historical Code</TableHead>
+                      <TableHead>Historical Name</TableHead>
+                      <TableHead>Effective From</TableHead>
+                      <TableHead>Effective To</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {aliasList.map((alias) => (
+                      <TableRow key={alias.id}>
+                        <TableCell className="font-mono text-xs">{alias.historical_item_code}</TableCell>
+                        <TableCell>{alias.historical_name}</TableCell>
+                        <TableCell>{alias.effective_from || '-'}</TableCell>
+                        <TableCell>{alias.effective_to || '-'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+              <div className="flex gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAliasModal(false);
+                    setAliasProduct(null);
+                    setAliasList([]);
+                  }}
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Search Modal */}
       {showSearchModal && selectedProduct && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-2xl max-h-[80vh] overflow-auto">
             <CardHeader>
-              <CardTitle>Search and Link Product</CardTitle>
+              <CardTitle>Search and Link Products</CardTitle>
               <CardDescription>
-                Link "{selectedProduct.name}" to an existing product
+                Select products to link "{selectedProduct.name}" to (multi-select enabled)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -441,30 +537,65 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
                   {searchResults.map((product) => (
                     <div
                       key={product.id}
-                      onClick={() => setSelectedTargetProduct(product)}
-                      className={`p-3 border rounded cursor-pointer hover:bg-slate-50 ${
-                        selectedTargetProduct?.product_id === product.product_id ? 'bg-blue-50 border-blue-500' : ''
+                      onClick={() => {
+                        setSelectedTargetProduct(product);
+                        const newSet = new Set(selectedSourceProducts);
+                        if (newSet.has(product.product_id)) {
+                          newSet.delete(product.product_id);
+                        } else {
+                          newSet.add(product.product_id);
+                        }
+                        setSelectedSourceProducts(newSet);
+                      }}
+                      className={`p-3 border rounded cursor-pointer hover:bg-slate-50 flex items-center gap-3 ${
+                        selectedSourceProducts.has(product.product_id) ? 'bg-blue-50 border-blue-500' : ''
                       }`}
                     >
-                      <div className="font-medium">{product.name}</div>
-                      <div className="text-sm text-slate-600">{product.product_id}</div>
+                      <input
+                        type="checkbox"
+                        checked={selectedSourceProducts.has(product.product_id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          const newSet = new Set(selectedSourceProducts);
+                          if (e.target.checked) {
+                            newSet.add(product.product_id);
+                          } else {
+                            newSet.delete(product.product_id);
+                          }
+                          setSelectedSourceProducts(newSet);
+                          if (e.target.checked) {
+                            setSelectedTargetProduct(product);
+                          }
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium">{product.name}</div>
+                        <div className="text-sm text-slate-600">{product.product_id}</div>
+                      </div>
                     </div>
                   ))}
+                </div>
+              )}
+              {selectedSourceProducts.size > 0 && (
+                <div className="mt-2 text-sm text-slate-600">
+                  {selectedSourceProducts.size} product(s) selected
                 </div>
               )}
               <div className="flex gap-2 mt-4">
                 <Button
                   onClick={handleAddAliasAndApprove}
-                  disabled={!selectedTargetProduct}
+                  disabled={!selectedTargetProduct || selectedSourceProducts.size === 0}
                   className="flex-1"
                 >
-                  Link and Approve
+                  Link and Approve ({selectedSourceProducts.size})
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => {
                     setShowSearchModal(false);
                     setSelectedTargetProduct(null);
+                    setSelectedSourceProducts(new Set());
                     setSearchResults([]);
                   }}
                   className="flex-1"
