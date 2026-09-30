@@ -3,14 +3,15 @@
 
 const express = require('express');
 const router = express.Router();
-const { 
+const {
   getProducts,
   updateProductMLGroup,
   updateProductItemType,
   getProductAliases,
   addProductAlias,
   deleteProductAlias,
-  getMLGroupSummary
+  getMLGroupSummary,
+  getValidationReport
 } = require('../controllers/tomorrowAIProductController');
 
 // Get all products with ML group info
@@ -40,5 +41,9 @@ router.delete('/aliases/:aliasId', deleteProductAlias);
 // Get ML group summary (products sharing same ML group)
 // GET /api/tomorrow-ai/products/ml-group-summary
 router.get('/ml-group-summary', getMLGroupSummary);
+
+// Get validation report (unmapped items, conflicts, ML stats)
+// GET /api/tomorrow-ai/products/validation-report
+router.get('/validation-report', getValidationReport);
 
 module.exports = router;

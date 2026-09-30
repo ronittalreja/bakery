@@ -224,7 +224,7 @@ async function deleteProductAlias(req, res) {
 async function getMLGroupSummary(req, res) {
   try {
     const [summary] = await db.execute(`
-      SELECT 
+      SELECT
         ml_group_id,
         COUNT(*) as product_count,
         GROUP_CONCAT(name ORDER BY name SEPARATOR ', ') as products
@@ -248,6 +248,102 @@ async function getMLGroupSummary(req, res) {
   }
 }
 
+/**
+ * Get validation report
+ * Shows unmapped historical items and their sales volume
+ */
+async function getValidationReport(req, res) {
+  try {
+    // Get all unique item names from invoices
+    const [invoiceItems] = await db.execute(`
+      SELECT DISTINCT ii.item_name
+      FROM invoice_items ii
+      JOIN invoices i ON ii.invoice_id = i.id
+      WHERE i.invoice_date IS NOT NULL
+      ORDER BY ii.item_name ASC
+    `);
+
+    // Get all mapped items (product master + aliases)
+    const [mappedItems] = await db.execute(`
+      SELECT name FROM tomorrow_ai_product_master
+      UNION
+      SELECT historical_item_code FROM tomorrow_ai_product_aliases
+      UNION
+      SELECT historical_name FROM tomorrow_ai_product_aliases
+    `);
+
+    const mappedSet = new Set(mappedItems.map(m => m.name || m.historical_item_code || m.historical_name));
+
+    // Find unmapped items
+    const unmappedItems = invoiceItems.filter(item => !mappedSet.has(item.item_name));
+
+    // Get sales volume for unmapped items
+    const unmappedNames = unmappedItems.map(i => i.item_name);
+    let salesVolume = [];
+
+    if (unmappedNames.length > 0) {
+      const placeholders = unmappedNames.map(() => '?').join(',');
+      [salesVolume] = await db.execute(`
+        SELECT
+          ii.item_name,
+          SUM(ii.qty) as total_qty,
+          COUNT(DISTINCT i.id) as invoice_count,
+          MIN(i.invoice_date) as first_seen,
+          MAX(i.invoice_date) as last_seen
+        FROM invoice_items ii
+        JOIN invoices i ON ii.invoice_id = i.id
+        WHERE ii.item_name IN (${placeholders})
+        GROUP BY ii.item_name
+        ORDER BY total_qty DESC
+      `, unmappedNames);
+    }
+
+    // Get potential duplicate/conflicting mappings
+    const [conflicts] = await db.execute(`
+      SELECT
+        historical_item_code,
+        historical_name,
+        COUNT(*) as mapping_count,
+        GROUP_CONCAT(product_id ORDER BY product_id SEPARATOR ', ') as mapped_to
+      FROM tomorrow_ai_product_aliases
+      GROUP BY historical_item_code, historical_name
+      HAVING mapping_count > 1
+    `);
+
+    // Get ML group statistics
+    const [mlStats] = await db.execute(`
+      SELECT
+        COUNT(DISTINCT ml_group_id) as total_groups,
+        COUNT(*) as total_products,
+        SUM(CASE WHEN ml_group_id IS NOT NULL THEN 1 ELSE 0 END) as with_ml_group,
+        SUM(CASE WHEN ml_group_id IS NULL THEN 1 ELSE 0 END) as without_ml_group
+      FROM tomorrow_ai_product_master
+      WHERE active = TRUE
+    `);
+
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          total_invoice_items: invoiceItems.length,
+          mapped_items: mappedSet.size,
+          unmapped_items: unmappedItems.length,
+          mapping_conflicts: conflicts.length,
+          ml_groups: mlStats[0]
+        },
+        unmapped_items: salesVolume,
+        conflicts: conflicts
+      }
+    });
+  } catch (error) {
+    console.error('Error generating validation report:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   getProducts,
   updateProductMLGroup,
@@ -255,5 +351,6 @@ module.exports = {
   getProductAliases,
   addProductAlias,
   deleteProductAlias,
-  getMLGroupSummary
+  getMLGroupSummary,
+  getValidationReport
 };
