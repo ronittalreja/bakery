@@ -192,6 +192,7 @@ async function syncSalesToTomorrowAI(req, res) {
  * Full historical sync - syncs all historical invoice/CRDR data
  * This should be run once to populate initial data
  * Resumes from where it left off if interrupted
+ * Uses bulk operations for speed (minutes instead of hours)
  */
 async function fullHistoricalSync(req, res) {
   let connection;
@@ -199,7 +200,7 @@ async function fullHistoricalSync(req, res) {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    console.log('Starting full historical sync...');
+    console.log('Starting full historical sync (bulk mode)...');
 
     // Get all invoice dates
     const [dates] = await connection.execute(
@@ -211,32 +212,51 @@ async function fullHistoricalSync(req, res) {
 
     console.log(`Found ${dates.length} unique dates to sync`);
 
-    // Get already synced dates from daily_sales table - use DATE() to ensure proper comparison
-    const [syncedDates] = await connection.execute(
-      `SELECT DISTINCT DATE(sale_date) as sale_date
+    // Get count of total synced dates
+    const [countResult] = await connection.execute(
+      `SELECT COUNT(DISTINCT sale_date) as count
        FROM tomorrow_ai_daily_sales`
     );
+    console.log('Total synced dates count:', countResult[0].count);
 
-    const syncedDateSet = new Set();
-    syncedDates.forEach(d => {
-      const dateStr = d.sale_date instanceof Date
-        ? d.sale_date.toISOString().split('T')[0]
-        : String(d.sale_date).split(' ')[0]; // Handle MySQL date format
-      syncedDateSet.add(dateStr);
-    });
+    let datesToSync;
 
-    console.log(`Found ${syncedDateSet.size} dates already synced`);
-    console.log('Synced dates sample:', Array.from(syncedDateSet).slice(0, 5));
+    // If table is empty, we need to sync all dates
+    if (countResult[0].count === 0) {
+      console.log('tomorrow_ai_daily_sales table is empty, syncing all dates');
+      datesToSync = dates;
+    } else {
+      // Get ALL synced dates for proper comparison
+      const [allSyncedDates] = await connection.execute(
+        `SELECT DISTINCT sale_date FROM tomorrow_ai_daily_sales`
+      );
 
-    // Filter out already synced dates
-    const datesToSync = dates.filter(
-      d => {
-        const dateStr = d.sale_date instanceof Date
-          ? d.sale_date.toISOString().split('T')[0]
-          : String(d.sale_date).split(' ')[0];
-        return !syncedDateSet.has(dateStr);
-      }
-    );
+      const fullSyncedDateSet = new Set();
+      allSyncedDates.forEach(d => {
+        let dateStr;
+        if (d.sale_date instanceof Date) {
+          dateStr = d.sale_date.toISOString().split('T')[0];
+        } else if (typeof d.sale_date === 'string') {
+          dateStr = d.sale_date.split(' ')[0];
+        } else {
+          dateStr = String(d.sale_date);
+        }
+        fullSyncedDateSet.add(dateStr);
+      });
+
+      console.log(`Found ${fullSyncedDateSet.size} total dates already synced`);
+      console.log('Synced dates sample:', Array.from(fullSyncedDateSet).slice(0, 5));
+
+      // Filter out already synced dates
+      datesToSync = dates.filter(
+        d => {
+          const dateStr = d.sale_date instanceof Date
+            ? d.sale_date.toISOString().split('T')[0]
+            : String(d.sale_date).split(' ')[0];
+          return !fullSyncedDateSet.has(dateStr);
+        }
+      );
+    }
 
     console.log(`Need to sync ${datesToSync.length} dates`);
 
@@ -250,55 +270,184 @@ async function fullHistoricalSync(req, res) {
           totalRecords: 0,
           skippedProducts: 0,
           aliasMatches: 0,
-          alreadySynced: syncedDateSet.size
+          alreadySynced: fullSyncedDateSet?.size || 0
         }
       });
     }
 
-    let totalRecords = 0;
+    // BULK SYNC: Fetch all data at once
+    console.log('Fetching all invoice items in bulk...');
+    const dateStrings = datesToSync.map(d => {
+      const dateStr = d.sale_date instanceof Date
+        ? d.sale_date.toISOString().split('T')[0]
+        : String(d.sale_date).split(' ')[0];
+      return dateStr;
+    });
+
+    const placeholders = dateStrings.map(() => '?').join(',');
+    const [invoiceItems] = await connection.execute(
+      `SELECT
+        DATE(i.invoice_date) as sale_date,
+        ii.item_name,
+        ii.qty
+       FROM invoices i
+       JOIN invoice_items ii ON i.id = ii.invoice_id
+       WHERE DATE(i.invoice_date) IN (${placeholders})`,
+      dateStrings
+    );
+
+    console.log(`Fetched ${invoiceItems.length} invoice items`);
+
+    // Fetch all credit notes for these dates
+    console.log('Fetching all credit notes in bulk...');
+    const [creditNotes] = await connection.execute(
+      `SELECT id, items, DATE(return_date) as return_date, DATE(date) as cn_date
+       FROM credit_notes
+       WHERE DATE(return_date) IN (${placeholders}) OR DATE(date) IN (${placeholders})`,
+      [...dateStrings, ...dateStrings]
+    );
+
+    console.log(`Fetched ${creditNotes.length} credit notes`);
+
+    // Parse all credit notes
+    const creditNoteMap = new Map();
+    for (const cn of creditNotes) {
+      try {
+        const items = typeof cn.items === 'string' ? JSON.parse(cn.items) : cn.items;
+        if (Array.isArray(items)) {
+          for (const item of items) {
+            const key = item.itemCode || item.description || item.item_name || item.name;
+            if (key) {
+              const existing = creditNoteMap.get(key) || { quantity: 0 };
+              creditNoteMap.set(key, {
+                quantity: existing.quantity + (item.quantity || 0)
+              });
+            }
+          }
+        }
+      } catch (e) {
+        // Skip invalid credit notes
+      }
+    }
+
+    // Calculate net sales by date
+    const netSalesByDate = new Map();
+    for (const invoiceItem of invoiceItems) {
+      const dateStr = invoiceItem.sale_date instanceof Date
+        ? invoiceItem.sale_date.toISOString().split('T')[0]
+        : String(invoiceItem.sale_date).split(' ')[0];
+      const itemName = invoiceItem.item_name;
+      const invoiceQty = invoiceItem.qty;
+
+      if (!netSalesByDate.has(dateStr)) {
+        netSalesByDate.set(dateStr, new Map());
+      }
+
+      const creditNoteItem = creditNoteMap.get(itemName);
+      const creditNoteQty = creditNoteItem ? creditNoteItem.quantity : 0;
+      const netQty = Math.max(0, invoiceQty - creditNoteQty);
+
+      if (netQty > 0) {
+        netSalesByDate.get(dateStr).set(itemName, netQty);
+      }
+    }
+
+    // Get all aliases and products in bulk
+    console.log('Fetching product mappings in bulk...');
+    const [aliases] = await connection.execute(
+      `SELECT
+        pa.historical_item_code,
+        pa.historical_name,
+        pm.ml_group_id
+       FROM tomorrow_ai_product_aliases pa
+       JOIN tomorrow_ai_product_master pm ON pa.product_id = pm.product_id`
+    );
+
+    const [products] = await connection.execute(
+      `SELECT name, ml_group_id FROM tomorrow_ai_product_master`
+    );
+
+    // Build lookup maps
+    const aliasMap = new Map();
+    aliases.forEach(a => {
+      aliasMap.set(a.historical_item_code, a.ml_group_id);
+      aliasMap.set(a.historical_name, a.ml_group_id);
+    });
+
+    const productMap = new Map();
+    products.forEach(p => {
+      productMap.set(p.name, p.ml_group_id);
+    });
+
+    console.log(`Loaded ${aliases.length} aliases, ${products.length} products`);
+
+    // Prepare bulk insert
+    const bulkInserts = [];
     let skippedProducts = 0;
     let aliasMatches = 0;
-    let processedCount = 0;
 
-    for (const dateObj of datesToSync) {
-      const syncDate = dateObj.sale_date instanceof Date
-        ? dateObj.sale_date.toISOString().split('T')[0]
-        : String(dateObj.sale_date).split(' ')[0];
+    for (const [dateStr, salesMap] of netSalesByDate) {
+      for (const [itemName, netQty] of salesMap) {
+        let mlGroupId = null;
 
-      console.log(`Syncing date ${processedCount + 1}/${datesToSync.length}: ${syncDate}`);
+        // Check aliases first
+        if (aliasMap.has(itemName)) {
+          mlGroupId = aliasMap.get(itemName);
+          aliasMatches++;
+        } else if (productMap.has(itemName)) {
+          mlGroupId = productMap.get(itemName);
+        }
 
-      // Sync each date
-      const syncResponse = await syncSingleDate(connection, syncDate);
-      totalRecords += syncResponse.recordsInserted;
-      skippedProducts += syncResponse.skippedProducts || 0;
-      aliasMatches += syncResponse.aliasMatches || 0;
-      processedCount++;
-
-      // Log progress every 50 dates
-      if (processedCount % 50 === 0) {
-        console.log(`Progress: ${processedCount}/${datesToSync.length} dates processed, ${totalRecords} records, ${aliasMatches} alias matches`);
+        if (mlGroupId) {
+          bulkInserts.push([dateStr, mlGroupId, netQty]);
+        } else {
+          skippedProducts++;
+        }
       }
+    }
+
+    console.log(`Prepared ${bulkInserts.length} records for bulk insert`);
+
+    // Bulk insert in batches of 1000
+    const batchSize = 1000;
+    let insertedCount = 0;
+
+    for (let i = 0; i < bulkInserts.length; i += batchSize) {
+      const batch = bulkInserts.slice(i, i + batchSize);
+      const values = batch.map(() => '(?, ?, ?)').join(',');
+      const flatParams = batch.flat();
+
+      await connection.execute(
+        `INSERT INTO tomorrow_ai_daily_sales (sale_date, ml_group_id, actual_sales, is_shop_open)
+         VALUES ${values}
+         ON DUPLICATE KEY UPDATE
+         actual_sales = VALUES(actual_sales)`,
+        flatParams
+      );
+
+      insertedCount += batch.length;
+      console.log(`Bulk insert progress: ${insertedCount}/${bulkInserts.length} records`);
     }
 
     await connection.commit();
 
-    console.log(`✓ Full historical sync completed: ${totalRecords} total records, ${aliasMatches} matched via aliases, ${skippedProducts} skipped`);
+    console.log(`✓ Bulk sync completed: ${insertedCount} records, ${aliasMatches} matched via aliases, ${skippedProducts} skipped`);
 
     res.json({
       success: true,
-      message: 'Full historical sync completed',
+      message: 'Bulk historical sync completed',
       data: {
         datesProcessed: datesToSync.length,
-        totalRecords,
+        totalRecords: insertedCount,
         skippedProducts,
         aliasMatches,
-        alreadySynced: syncedDateSet.size
+        alreadySynced: countResult[0].count
       }
     });
 
   } catch (error) {
     if (connection) await connection.rollback();
-    console.error('Error in full historical sync:', error);
+    console.error('Error in bulk historical sync:', error);
     res.status(500).json({
       success: false,
       error: error.message
