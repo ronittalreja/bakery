@@ -123,14 +123,14 @@ async function getEventForecast(req, res) {
     // Calculate dynamic year window (current-1, current-2, current-3)
     const historicalYears = [targetYear - 1, targetYear - 2, targetYear - 3];
 
-    // Get DISPLAY products
+    // Get DISPLAY products that are mapped/approved
     const [products] = await db.execute(`
       SELECT
         product_id,
         name,
         ml_group_id
       FROM tomorrow_ai_product_master
-      WHERE item_type = 'DISPLAY' AND active = TRUE
+      WHERE item_type = 'DISPLAY' AND active = TRUE AND mapping_status = 'approved'
       ORDER BY name ASC
     `);
 
@@ -145,20 +145,32 @@ async function getEventForecast(req, res) {
       const placeholders = mlGroupIds.map(() => '?').join(',');
       const yearPlaceholders = allYears.map(() => '?').join(',');
 
+      // Build date ranges for each year based on event month/day
+      const eventDate = new Date(event.event_date);
+      const eventMonth = eventDate.getMonth() + 1;
+      const eventDay = eventDate.getDate();
+
+      // Get sales for 7 days before and 1 day after the event date for each year
+      const dateConditions = allYears.map(year => {
+        const eventDateForYear = new Date(year, eventMonth - 1, eventDay);
+        const startDate = new Date(eventDateForYear);
+        startDate.setDate(startDate.getDate() - 7);
+        const endDate = new Date(eventDateForYear);
+        endDate.setDate(endDate.getDate() + 1);
+        return `(YEAR(ds.sale_date) = ${year} AND ds.sale_date BETWEEN '${startDate.toISOString().split('T')[0]}' AND '${endDate.toISOString().split('T')[0]}')`;
+      }).join(' OR ');
+
       [historicalSales] = await db.execute(`
         SELECT
           ds.ml_group_id,
           ds.sale_date,
           ds.actual_sales,
-          e.year as event_year
+          YEAR(ds.sale_date) as event_year
         FROM tomorrow_ai_daily_sales ds
-        JOIN tomorrow_ai_events e ON e.event_name = ?
         WHERE ds.ml_group_id IN (${placeholders})
-          AND e.event_name = ?
-          AND e.year IN (${yearPlaceholders})
-          AND ds.sale_date BETWEEN DATE_SUB(?, INTERVAL 7 DAY) AND DATE_ADD(?, INTERVAL 1 DAY)
+          AND (${dateConditions})
         ORDER BY ds.sale_date ASC
-      `, [event.event_name, ...mlGroupIds, event.event_name, ...allYears, event.event_date, event.event_date]);
+      `, [...mlGroupIds]);
     }
 
     console.log(`Found ${historicalSales.length} historical sales records`);
