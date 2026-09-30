@@ -566,9 +566,9 @@ async function addUnmappedItem(req, res) {
     // Insert new product
     await db.execute(`
       INSERT INTO tomorrow_ai_product_master
-      (product_id, name, category, item_type, mapping_status, active)
-      VALUES (?, ?, ?, ?, ?, TRUE)
-    `, [productId, itemName, category || 'uncategorized', itemType || 'DISPLAY', mappingStatus || 'approved']);
+      (product_id, name, category, item_type, ml_group_id, mapping_status, active)
+      VALUES (?, ?, ?, ?, NULL, ?, TRUE)
+    `, [productId, itemName, category || 'uncategorized', itemType || 'DISPLAY', mappingStatus || 'pending']);
 
     res.json({
       success: true,

@@ -159,6 +159,15 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
           p.product_id.toLowerCase().includes(query.toLowerCase())
         );
         setSearchResults(filtered);
+
+        // Auto-select the current product if it's in the results
+        if (selectedProduct) {
+          const currentProductInResults = filtered.find((p: Product) => p.product_id === selectedProduct.product_id);
+          if (currentProductInResults) {
+            setSelectedTargetProduct(currentProductInResults);
+            setSelectedSourceProducts(new Set([selectedProduct.product_id]));
+          }
+        }
       }
     } catch (error) {
       console.error('Error searching products:', error);
@@ -191,7 +200,7 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ itemName, mappingStatus: 'approved' })
+        body: JSON.stringify({ itemName, mappingStatus: 'pending' })
       });
       const data = await response.json();
       if (data.success) {
@@ -205,6 +214,37 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
     } catch (error) {
       console.error('Error adding unmapped item:', error);
       alert('Failed to add product');
+    }
+  };
+
+  const handleAddAllUnmappedItems = async () => {
+    if (!confirm(`Add all ${unmappedItems.length} unmapped items to product master?`)) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const promises = unmappedItems.map(item =>
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/products/unmapped`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ itemName: item.item_name, mappingStatus: 'pending' })
+        })
+      );
+
+      const results = await Promise.all(promises);
+      const allSuccess = results.every(r => r.ok);
+
+      if (allSuccess) {
+        setUnmappedItems([]);
+        fetchData();
+      } else {
+        alert('Some items failed to add');
+      }
+    } catch (error) {
+      console.error('Error adding all unmapped items:', error);
+      alert('Failed to add all items');
     }
   };
 
@@ -476,10 +516,17 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
           {tab === "unmapped" && unmappedItems.length > 0 && (
             <Card className="mt-6">
               <CardHeader>
-                <CardTitle>Unmapped Invoice Items</CardTitle>
-                <CardDescription>
-                  Items from invoices that are not in product master. Add to product master or mark as not for use.
-                </CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Unmapped Invoice Items</CardTitle>
+                    <CardDescription>
+                      Items from invoices that are not in product master. Add to product master or mark as not for use.
+                    </CardDescription>
+                  </div>
+                  <Button onClick={handleAddAllUnmappedItems}>
+                    Add All ({unmappedItems.length})
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <Table>
