@@ -649,6 +649,7 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
                     placeholder="Search products to link..."
                     onChange={(e) => handleSearchProducts(e.target.value)}
                     className="pl-10"
+                    autoFocus
                   />
                 </div>
               </div>
