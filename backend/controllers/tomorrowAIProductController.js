@@ -4,14 +4,39 @@
 const db = require('../config/database');
 
 /**
+ * Add mapping_status column to tomorrow_ai_product_master if not exists
+ */
+async function ensureMappingStatusColumn() {
+  try {
+    const [columns] = await db.execute(`
+      SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_NAME = 'tomorrow_ai_product_master'
+      AND COLUMN_NAME = 'mapping_status'
+    `);
+
+    if (columns.length === 0) {
+      await db.execute(`
+        ALTER TABLE tomorrow_ai_product_master
+        ADD COLUMN mapping_status ENUM('pending', 'approved', 'notforuse') DEFAULT 'pending'
+      `);
+      console.log('Added mapping_status column to tomorrow_ai_product_master');
+    }
+  } catch (error) {
+    console.error('Error ensuring mapping_status column:', error);
+  }
+}
+
+/**
  * Get all products with ML group info
  */
 async function getProducts(req, res) {
   try {
-    const { itemType } = req.query;
+    await ensureMappingStatusColumn();
+
+    const { itemType, status } = req.query;
 
     let query = `
-      SELECT 
+      SELECT
         pm.id,
         pm.product_id,
         pm.name,
@@ -20,6 +45,7 @@ async function getProducts(req, res) {
         pm.item_type,
         pm.ml_group_id,
         pm.active,
+        pm.mapping_status,
         COUNT(DISTINCT pa.id) as alias_count
       FROM tomorrow_ai_product_master pm
       LEFT JOIN tomorrow_ai_product_aliases pa ON pm.product_id = pa.product_id
@@ -33,9 +59,28 @@ async function getProducts(req, res) {
       params.push(itemType);
     }
 
+    if (status) {
+      query += ` AND pm.mapping_status = ?`;
+      params.push(status);
+    }
+
     query += ` GROUP BY pm.id ORDER BY pm.name ASC`;
 
     const [products] = await db.execute(query, params);
+
+    // Auto-assign notforuse for packaging material and special order
+    for (const product of products) {
+      if (!product.mapping_status || product.mapping_status === 'pending') {
+        if (product.item_type === 'PACKAGING_MATERIAL' || product.item_type === 'SPECIAL_ORDER') {
+          await db.execute(`
+            UPDATE tomorrow_ai_product_master
+            SET mapping_status = 'notforuse'
+            WHERE product_id = ?
+          `, [product.product_id]);
+          product.mapping_status = 'notforuse';
+        }
+      }
+    }
 
     res.json({
       success: true,
@@ -344,6 +389,139 @@ async function getValidationReport(req, res) {
   }
 }
 
+/**
+ * Approve product mapping
+ */
+async function approveProduct(req, res) {
+  try {
+    const { productId } = req.body;
+
+    if (!productId) {
+      return res.status(400).json({
+        success: false,
+        error: 'productId is required'
+      });
+    }
+
+    await db.execute(`
+      UPDATE tomorrow_ai_product_master
+      SET mapping_status = 'approved', updated_at = CURRENT_TIMESTAMP
+      WHERE product_id = ?
+    `, [productId]);
+
+    res.json({
+      success: true,
+      message: 'Product approved successfully'
+    });
+  } catch (error) {
+    console.error('Error approving product:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+/**
+ * Mark product as not for use
+ */
+async function markNotForUse(req, res) {
+  try {
+    const { productId } = req.body;
+
+    if (!productId) {
+      return res.status(400).json({
+        success: false,
+        error: 'productId is required'
+      });
+    }
+
+    await db.execute(`
+      UPDATE tomorrow_ai_product_master
+      SET mapping_status = 'notforuse', updated_at = CURRENT_TIMESTAMP
+      WHERE product_id = ?
+    `, [productId]);
+
+    res.json({
+      success: true,
+      message: 'Product marked as not for use'
+    });
+  } catch (error) {
+    console.error('Error marking product as not for use:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+/**
+ * Add alias and approve both products
+ */
+async function addAliasAndApprove(req, res) {
+  let connection;
+  try {
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    const { targetProductId, sourceProductId, historicalItemCode, historicalName } = req.body;
+
+    if (!targetProductId || !sourceProductId) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: 'targetProductId and sourceProductId are required'
+      });
+    }
+
+    // Get source product details
+    const [sourceProducts] = await connection.execute(
+      `SELECT name, product_id FROM tomorrow_ai_product_master WHERE product_id = ?`,
+      [sourceProductId]
+    );
+
+    if (sourceProducts.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        error: 'Source product not found'
+      });
+    }
+
+    const sourceProduct = sourceProducts[0];
+
+    // Add alias mapping source to target
+    await connection.execute(`
+      INSERT INTO tomorrow_ai_product_aliases
+      (product_id, historical_item_code, historical_name, effective_from)
+      VALUES (?, ?, ?, CURRENT_DATE)
+    `, [targetProductId, sourceProduct.product_id, sourceProduct.name]);
+
+    // Approve both products
+    await connection.execute(`
+      UPDATE tomorrow_ai_product_master
+      SET mapping_status = 'approved', updated_at = CURRENT_TIMESTAMP
+      WHERE product_id IN (?, ?)
+    `, [targetProductId, sourceProductId]);
+
+    await connection.commit();
+
+    res.json({
+      success: true,
+      message: 'Alias added and both products approved'
+    });
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error('Error adding alias and approving:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
 module.exports = {
   getProducts,
   updateProductMLGroup,
@@ -352,5 +530,8 @@ module.exports = {
   addProductAlias,
   deleteProductAlias,
   getMLGroupSummary,
-  getValidationReport
+  getValidationReport,
+  approveProduct,
+  markNotForUse,
+  addAliasAndApprove
 };

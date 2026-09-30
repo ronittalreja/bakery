@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, RefreshCw, AlertCircle, CheckCircle, Search, Settings, Layers, FileText } from "lucide-react";
+import { ArrowLeft, RefreshCw, Search, Check, X, Layers, FileText, Package } from "lucide-react";
 
 interface Product {
   id: number;
@@ -18,66 +17,123 @@ interface Product {
   item_type: string;
   ml_group_id: string | null;
   active: boolean;
+  mapping_status: 'pending' | 'approved' | 'notforuse';
   alias_count: number;
 }
 
-interface Alias {
-  id: number;
-  product_id: string;
-  historical_item_code: string;
-  historical_name: string;
-  effective_from: string | null;
-  effective_to: string | null;
-  current_product_name: string;
-}
-
-interface ValidationReport {
-  summary: {
-    total_invoice_items: number;
-    mapped_items: number;
-    unmapped_items: number;
-    mapping_conflicts: number;
-    ml_groups: {
-      total_groups: number;
-      total_products: number;
-      with_ml_group: number;
-      without_ml_group: number;
-    };
-  };
-  unmapped_items: Array<{
-    item_name: string;
-    total_qty: number;
-    invoice_count: number;
-    first_seen: string;
-    last_seen: string;
-  }>;
-  conflicts: Array<{
-    historical_item_code: string;
-    historical_name: string;
-    mapping_count: number;
-    mapped_to: string;
-  }>;
+interface UnmappedItem {
+  item_name: string;
+  total_qty: number;
+  invoice_count: number;
+  first_seen: string;
+  last_seen: string;
 }
 
 interface MLGroupsPageProps {
   onBack: () => void;
 }
 
+type TabType = "all" | "mapped" | "unmapped";
+
 export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
-  const [view, setView] = useState<"products" | "validation">("products");
+  const [tab, setTab] = useState<TabType>("all");
   const [products, setProducts] = useState<Product[]>([]);
-  const [aliases, setAliases] = useState<Alias[]>([]);
-  const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
+  const [unmappedItems, setUnmappedItems] = useState<UnmappedItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [selectedTargetProduct, setSelectedTargetProduct] = useState<Product | null>(null);
+  const scrollPositionRef = useRef(0);
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    fetchData();
+  }, [tab]);
 
-  const fetchProducts = async () => {
+  const fetchData = async () => {
     setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+
+      // Fetch products
+      const statusFilter = tab === "mapped" ? "approved" : tab === "unmapped" ? "pending" : undefined;
+      const statusParam = statusFilter ? `&status=${statusFilter}` : '';
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/products?${statusParam}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setProducts(data.data);
+      }
+
+      // Fetch unmapped items if on unmapped tab
+      if (tab === "unmapped") {
+        const valResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/products/validation-report`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const valData = await valResponse.json();
+        if (valData.success) {
+          setUnmappedItems(valData.data.unmapped_items);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleApprove = async (productId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/products/approve`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ productId })
+      });
+      const data = await response.json();
+      if (data.success) {
+        // Update local state without full refresh
+        setProducts(products.map(p =>
+          p.product_id === productId ? { ...p, mapping_status: 'approved' } : p
+        ));
+      }
+    } catch (error) {
+      console.error('Error approving product:', error);
+    }
+  };
+
+  const handleNotForUse = async (productId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/products/notforuse`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ productId })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setProducts(products.map(p =>
+          p.product_id === productId ? { ...p, mapping_status: 'notforuse' } : p
+        ));
+      }
+    } catch (error) {
+      console.error('Error marking product as not for use:', error);
+    }
+  };
+
+  const handleSearchProducts = async (query: string) => {
+    if (!query) {
+      setSearchResults([]);
+      return;
+    }
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/products`, {
@@ -85,45 +141,47 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
       });
       const data = await response.json();
       if (data.success) {
-        setProducts(data.data);
+        const filtered = data.data.filter((p: Product) =>
+          p.name.toLowerCase().includes(query.toLowerCase()) ||
+          p.product_id.toLowerCase().includes(query.toLowerCase())
+        );
+        setSearchResults(filtered);
       }
     } catch (error) {
-      console.error('Error fetching products:', error);
-    } finally {
-      setIsLoading(false);
+      console.error('Error searching products:', error);
     }
   };
 
-  const fetchValidationReport = async () => {
-    setIsLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/products/validation-report`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setValidationReport(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching validation report:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const handleAddAliasAndApprove = async () => {
+    if (!selectedProduct || !selectedTargetProduct) return;
 
-  const fetchAliases = async (productId: string) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/products/${productId}/aliases`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/products/alias-approve`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          targetProductId: selectedTargetProduct.product_id,
+          sourceProductId: selectedProduct.product_id
+        })
       });
       const data = await response.json();
       if (data.success) {
-        setAliases(data.data);
+        // Update both products in local state
+        setProducts(products.map(p =>
+          p.product_id === selectedProduct.product_id || p.product_id === selectedTargetProduct.product_id
+            ? { ...p, mapping_status: 'approved' }
+            : p
+        ));
+        setShowSearchModal(false);
+        setSelectedTargetProduct(null);
+        setSearchResults([]);
       }
     } catch (error) {
-      console.error('Error fetching aliases:', error);
+      console.error('Error adding alias and approving:', error);
     }
   };
 
@@ -131,6 +189,13 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.product_id.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const stats = {
+    total: products.length,
+    approved: products.filter(p => p.mapping_status === 'approved').length,
+    notforuse: products.filter(p => p.mapping_status === 'notforuse').length,
+    pending: products.filter(p => p.mapping_status === 'pending').length
+  };
 
   return (
     <div className="h-full bg-white flex flex-col">
@@ -143,11 +208,11 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
                 Back
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">ML Groups & Aliases</h1>
-                <p className="text-sm text-slate-600">Manage product mappings for ML forecasting</p>
+                <h1 className="text-2xl font-bold text-slate-900">Product Mapping</h1>
+                <p className="text-sm text-slate-600">Manage product approvals and aliases</p>
               </div>
             </div>
-            <Button onClick={() => fetchProducts()} variant="outline" size="sm">
+            <Button onClick={() => fetchData()} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
@@ -157,314 +222,260 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
 
       <div className="flex-1 overflow-auto">
         <div className="container mx-auto px-4 py-6">
-          {/* View Toggle */}
+          {/* Tabs */}
           <div className="flex gap-2 mb-6">
             <Button
-              variant={view === "products" ? "default" : "outline"}
-              onClick={() => setView("products")}
+              variant={tab === "all" ? "default" : "outline"}
+              onClick={() => setTab("all")}
               className="flex items-center gap-2"
             >
-              <Layers className="h-4 w-4" />
-              Products
+              <Package className="h-4 w-4" />
+              All Products ({stats.total})
             </Button>
             <Button
-              variant={view === "validation" ? "default" : "outline"}
-              onClick={() => {
-                setView("validation");
-                fetchValidationReport();
-              }}
+              variant={tab === "mapped" ? "default" : "outline"}
+              onClick={() => setTab("mapped")}
               className="flex items-center gap-2"
             >
-              <FileText className="h-4 w-4" />
-              Validation Report
+              <Check className="h-4 w-4" />
+              Mapped ({stats.approved})
+            </Button>
+            <Button
+              variant={tab === "unmapped" ? "default" : "outline"}
+              onClick={() => setTab("unmapped")}
+              className="flex items-center gap-2"
+            >
+              <X className="h-4 w-4" />
+              Unmapped ({stats.pending})
             </Button>
           </div>
 
-          {view === "products" && (
-            <>
-              {/* Search */}
-              <div className="mb-6">
+          {/* Stats */}
+          {tab === "all" && (
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-600">Total Products</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.total}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-600">Approved</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-600">Not For Use</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">{stats.notforuse}</div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Search */}
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          {/* Products Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {tab === "all" && "All Products"}
+                {tab === "mapped" && "Mapped Products"}
+                {tab === "unmapped" && "Unmapped Products"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product ID</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Item Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Aliases</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredProducts.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell className="font-mono text-xs">{product.product_id}</TableCell>
+                      <TableCell className="font-medium">{product.name}</TableCell>
+                      <TableCell>{product.category}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{product.item_type}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {product.mapping_status === 'approved' && (
+                          <Badge className="bg-green-500">Approved</Badge>
+                        )}
+                        {product.mapping_status === 'notforuse' && (
+                          <Badge className="bg-red-500">Not For Use</Badge>
+                        )}
+                        {product.mapping_status === 'pending' && (
+                          <Badge variant="secondary">Pending</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={product.alias_count > 0 ? "default" : "secondary"}>
+                          {product.alias_count}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleApprove(product.product_id)}
+                            disabled={product.mapping_status === 'approved'}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleNotForUse(product.product_id)}
+                            disabled={product.mapping_status === 'notforuse'}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedProduct(product);
+                              setShowSearchModal(true);
+                            }}
+                          >
+                            <Search className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Unmapped Items Table */}
+          {tab === "unmapped" && unmappedItems.length > 0 && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Unmapped Invoice Items</CardTitle>
+                <CardDescription>
+                  Items from invoices that are not in product master
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item Name</TableHead>
+                      <TableHead>Total Qty</TableHead>
+                      <TableHead>Invoice Count</TableHead>
+                      <TableHead>First Seen</TableHead>
+                      <TableHead>Last Seen</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {unmappedItems.slice(0, 50).map((item) => (
+                      <TableRow key={item.item_name}>
+                        <TableCell className="font-medium">{item.item_name}</TableCell>
+                        <TableCell>{item.total_qty}</TableCell>
+                        <TableCell>{item.invoice_count}</TableCell>
+                        <TableCell>{new Date(item.first_seen).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(item.last_seen).toLocaleDateString()}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+
+      {/* Search Modal */}
+      {showSearchModal && selectedProduct && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-2xl max-h-[80vh] overflow-auto">
+            <CardHeader>
+              <CardTitle>Search and Link Product</CardTitle>
+              <CardDescription>
+                Link "{selectedProduct.name}" to an existing product
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
-                    placeholder="Search products..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search products to link..."
+                    onChange={(e) => handleSearchProducts(e.target.value)}
                     className="pl-10"
                   />
                 </div>
               </div>
-
-              {/* Products Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Products ({filteredProducts.length})</CardTitle>
-                  <CardDescription>
-                    Manage ML group IDs and aliases for products
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Product ID</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Item Type</TableHead>
-                        <TableHead>ML Group ID</TableHead>
-                        <TableHead>Aliases</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredProducts.map((product) => (
-                        <TableRow key={product.id}>
-                          <TableCell className="font-mono text-xs">{product.product_id}</TableCell>
-                          <TableCell className="font-medium">{product.name}</TableCell>
-                          <TableCell>{product.category}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{product.item_type}</Badge>
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {product.ml_group_id || <span className="text-slate-400">-</span>}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={product.alias_count > 0 ? "default" : "secondary"}>
-                              {product.alias_count}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {product.active ? (
-                              <Badge variant="default" className="bg-green-500">Active</Badge>
-                            ) : (
-                              <Badge variant="secondary">Inactive</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedProductId(product.product_id);
-                                fetchAliases(product.product_id);
-                              }}
-                            >
-                              <Settings className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-
-              {/* Aliases Panel */}
-              {selectedProductId && (
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle>Aliases for {selectedProductId}</CardTitle>
-                    <CardDescription>
-                      Historical item codes and names mapped to this product
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Historical Code</TableHead>
-                          <TableHead>Historical Name</TableHead>
-                          <TableHead>Effective From</TableHead>
-                          <TableHead>Effective To</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {aliases.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={4} className="text-center text-slate-500">
-                              No aliases found
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          aliases.map((alias) => (
-                            <TableRow key={alias.id}>
-                              <TableCell className="font-mono text-xs">{alias.historical_item_code}</TableCell>
-                              <TableCell>{alias.historical_name}</TableCell>
-                              <TableCell>{alias.effective_from || '-'}</TableCell>
-                              <TableCell>{alias.effective_to || '-'}</TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              )}
-            </>
-          )}
-
-          {view === "validation" && (
-            <>
-              {isLoading ? (
-                <div className="text-center py-8">
-                  <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-slate-400" />
-                  <p className="text-slate-600">Loading validation report...</p>
+              {searchResults.length > 0 && (
+                <div className="space-y-2 max-h-60 overflow-auto">
+                  {searchResults.map((product) => (
+                    <div
+                      key={product.id}
+                      onClick={() => setSelectedTargetProduct(product)}
+                      className={`p-3 border rounded cursor-pointer hover:bg-slate-50 ${
+                        selectedTargetProduct?.product_id === product.product_id ? 'bg-blue-50 border-blue-500' : ''
+                      }`}
+                    >
+                      <div className="font-medium">{product.name}</div>
+                      <div className="text-sm text-slate-600">{product.product_id}</div>
+                    </div>
+                  ))}
                 </div>
-              ) : validationReport ? (
-                <>
-                  {/* Summary Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-slate-600">Total Invoice Items</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{validationReport.summary.total_invoice_items}</div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-slate-600">Mapped Items</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold text-green-600">{validationReport.summary.mapped_items}</div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-slate-600">Unmapped Items</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold text-red-600">{validationReport.summary.unmapped_items}</div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* ML Groups Stats */}
-                  <Card className="mb-6">
-                    <CardHeader>
-                      <CardTitle>ML Group Statistics</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div>
-                          <div className="text-sm text-slate-600">Total Groups</div>
-                          <div className="text-xl font-bold">{validationReport.summary.ml_groups.total_groups}</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-slate-600">Total Products</div>
-                          <div className="text-xl font-bold">{validationReport.summary.ml_groups.total_products}</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-slate-600">With ML Group</div>
-                          <div className="text-xl font-bold text-green-600">{validationReport.summary.ml_groups.with_ml_group}</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-slate-600">Without ML Group</div>
-                          <div className="text-xl font-bold text-red-600">{validationReport.summary.ml_groups.without_ml_group}</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Unmapped Items */}
-                  {validationReport.unmapped_items.length > 0 && (
-                    <Card className="mb-6">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <AlertCircle className="h-5 w-5 text-red-500" />
-                          Unmapped Items ({validationReport.unmapped_items.length})
-                        </CardTitle>
-                        <CardDescription>
-                          These items exist in invoices but are not mapped to any product or alias
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Item Name</TableHead>
-                              <TableHead>Total Qty</TableHead>
-                              <TableHead>Invoice Count</TableHead>
-                              <TableHead>First Seen</TableHead>
-                              <TableHead>Last Seen</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {validationReport.unmapped_items.slice(0, 50).map((item) => (
-                              <TableRow key={item.item_name}>
-                                <TableCell className="font-medium">{item.item_name}</TableCell>
-                                <TableCell>{item.total_qty}</TableCell>
-                                <TableCell>{item.invoice_count}</TableCell>
-                                <TableCell>{new Date(item.first_seen).toLocaleDateString()}</TableCell>
-                                <TableCell>{new Date(item.last_seen).toLocaleDateString()}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                        {validationReport.unmapped_items.length > 50 && (
-                          <p className="text-sm text-slate-500 mt-4">
-                            Showing 50 of {validationReport.unmapped_items.length} unmapped items
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Conflicts */}
-                  {validationReport.conflicts.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <AlertCircle className="h-5 w-5 text-amber-500" />
-                          Mapping Conflicts ({validationReport.conflicts.length})
-                        </CardTitle>
-                        <CardDescription>
-                          These historical items are mapped to multiple products
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Historical Code</TableHead>
-                              <TableHead>Historical Name</TableHead>
-                              <TableHead>Mapping Count</TableHead>
-                              <TableHead>Mapped To</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {validationReport.conflicts.map((conflict) => (
-                              <TableRow key={`${conflict.historical_item_code}-${conflict.historical_name}`}>
-                                <TableCell className="font-mono text-xs">{conflict.historical_item_code}</TableCell>
-                                <TableCell>{conflict.historical_name}</TableCell>
-                                <TableCell>
-                                  <Badge variant="destructive">{conflict.mapping_count}</Badge>
-                                </TableCell>
-                                <TableCell className="font-mono text-xs">{conflict.mapped_to}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {validationReport.unmapped_items.length === 0 && validationReport.conflicts.length === 0 && (
-                    <Alert>
-                      <CheckCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        All items are properly mapped! No issues found.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </>
-              ) : null}
-            </>
-          )}
+              )}
+              <div className="flex gap-2 mt-4">
+                <Button
+                  onClick={handleAddAliasAndApprove}
+                  disabled={!selectedTargetProduct}
+                  className="flex-1"
+                >
+                  Link and Approve
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowSearchModal(false);
+                    setSelectedTargetProduct(null);
+                    setSearchResults([]);
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      )}
     </div>
   );
 }
