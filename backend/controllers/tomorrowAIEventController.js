@@ -123,17 +123,21 @@ async function getEventForecast(req, res) {
     // Calculate dynamic year window (current-1, current-2, current-3)
     const historicalYears = [targetYear - 1, targetYear - 2, targetYear - 3];
 
-    // Get DISPLAY products that are mapped/approved, grouped by ml_group_id
+    // Get DISPLAY products that are mapped/approved
+    // Use alias table to resolve to canonical products
+    // If a product is in historical_item_code, it's aliased to product_id - use the target
     const [products] = await db.execute(`
-      SELECT
-        MIN(product_id) as product_id,
-        MAX(name) as name,
-        ml_group_id,
-        COUNT(*) as product_count
-      FROM tomorrow_ai_product_master
-      WHERE item_type = 'DISPLAY' AND active = TRUE AND mapping_status = 'approved'
-      GROUP BY ml_group_id
-      ORDER BY name ASC
+      SELECT DISTINCT
+        COALESCE(a.product_id, pm.product_id) as product_id,
+        COALESCE(target_pm.name, pm.name) as name,
+        COALESCE(target_pm.ml_group_id, pm.ml_group_id) as ml_group_id
+      FROM tomorrow_ai_product_master pm
+      LEFT JOIN tomorrow_ai_product_aliases a ON pm.product_id = a.historical_item_code
+      LEFT JOIN tomorrow_ai_product_master target_pm ON a.product_id = target_pm.product_id
+      WHERE pm.item_type = 'DISPLAY' 
+        AND pm.active = TRUE 
+        AND pm.mapping_status = 'approved'
+      ORDER BY COALESCE(target_pm.name, pm.name) ASC
     `);
 
     console.log(`Fetching forecast for ${products.length} products, event: ${event.event_name}, years: [${targetYear}, ...historicalYears]`);
@@ -217,7 +221,7 @@ async function getEventForecast(req, res) {
         product_id: product.product_id,
         product_name: product.name,
         ml_group_id: product.ml_group_id,
-        prediction: prediction,
+        prediction: recommendedOrder,
         recommended_order: recommendedOrder,
         historical: historical
       });
