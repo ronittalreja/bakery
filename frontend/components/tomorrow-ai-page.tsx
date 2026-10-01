@@ -366,7 +366,7 @@ export default function TomorrowAIPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Item</TableHead>
-                      <TableHead className="text-right">{yearWindow?.prediction_year} Prediction</TableHead>
+                      <TableHead className="text-right">{yearWindow?.prediction_year} Expected</TableHead>
                       {yearWindow?.historical_years.map(year => (
                         <TableHead key={year} className="text-right">{year}</TableHead>
                       ))}
