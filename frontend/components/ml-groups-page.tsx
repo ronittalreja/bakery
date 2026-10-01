@@ -441,6 +441,7 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
                     <TableHead>Name</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Item Type</TableHead>
+                    <TableHead>ML Group ID</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Aliases</TableHead>
                     <TableHead>Actions</TableHead>
@@ -455,6 +456,7 @@ export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
                       <TableCell>
                         <Badge variant="outline">{product.item_type}</Badge>
                       </TableCell>
+                      <TableCell className="font-mono text-xs">{product.ml_group_id || '-'}</TableCell>
                       <TableCell>
                         {product.mapping_status === 'approved' && (
                           <Badge className="bg-green-500">Approved</Badge>
