@@ -1,4 +1,4 @@
-// Tomorrow AI Event-Based Demand Forecasting Page
+// Events AI Event-Based Demand Forecasting Page
 // Event-based demand forecasting for Monginis
 
 "use client";
@@ -98,7 +98,7 @@ export default function TomorrowAIPage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/forecast?eventName=${event.event_name}&year=${event.year}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/forecast?eventName=${encodeURIComponent(event.event_name)}&year=${event.year}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
@@ -118,7 +118,7 @@ export default function TomorrowAIPage() {
   const fetchEventPattern = async (event: Event, mlGroupId: string) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/pattern?eventName=${event.event_name}&mlGroupId=${mlGroupId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/pattern?eventName=${encodeURIComponent(event.event_name)}&year=${event.year}&mlGroupId=${mlGroupId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
@@ -185,6 +185,7 @@ export default function TomorrowAIPage() {
     if (name.includes('new year')) return '🎉';
     if (name.includes('mother')) return '🌸';
     if (name.includes('father')) return '👨';
+    if (name.includes('children')) return '🧒';
     if (name.includes('eid')) return '🌙';
     if (name.includes('independence')) return '🇮🇳';
     if (name.includes('raksha')) return '🧵';
@@ -206,7 +207,7 @@ export default function TomorrowAIPage() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Brain className="h-6 w-6 text-purple-600" />
-                  Tomorrow AI
+                  Events AI
                 </CardTitle>
                 <CardDescription>
                   Event-based demand forecasting
@@ -304,7 +305,7 @@ export default function TomorrowAIPage() {
               <CardHeader>
                 <CardTitle>Data Sync</CardTitle>
                 <CardDescription>
-                  Sync invoice/CRDR data to Tomorrow AI tables
+                  Sync invoice/CRDR data to Events AI tables
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -370,14 +371,13 @@ export default function TomorrowAIPage() {
                       {yearWindow?.historical_years.map(year => (
                         <TableHead key={year} className="text-right">{year}</TableHead>
                       ))}
-                      <TableHead className="text-right">Recommended Order</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {forecasts.map((forecast, index) => (
                       <TableRow key={index}>
                         <TableCell className="font-medium">{forecast.product_name}</TableCell>
-                        <TableCell className="text-right font-bold text-purple-600">
+                        <TableCell className="text-right font-bold text-green-600">
                           {forecast.prediction}
                         </TableCell>
                         {yearWindow?.historical_years.map(year => (
@@ -385,9 +385,6 @@ export default function TomorrowAIPage() {
                             {forecast.historical[year] !== null ? forecast.historical[year] : '—'}
                           </TableCell>
                         ))}
-                        <TableCell className="text-right font-bold text-green-600">
-                          {forecast.recommended_order}
-                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

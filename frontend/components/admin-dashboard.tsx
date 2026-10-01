@@ -124,7 +124,7 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
       color: "bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-teal-200",
     },
     {
-      title: "Tomorrow AI",
+      title: "Events AI",
       description: "Demand forecasting system",
       icon: Sparkles,
       page: "tomorrow-ai" as AdminPage,
@@ -266,16 +266,17 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
       case "todays-stock":
         return <TodaysStockPage onBack={() => setCurrentPage("admin")} />;
       case "sales":
-        return <TodaysSalesPage onBack={() => setCurrentPage("admin")} />;
+        return <TodaysSalesPage onBack={() => setCurrentPage("dashboard")} />;
       case "credit-notes":
         return (
-          <CreditNotesPage 
-            onBack={() => setCurrentPage("admin")} 
+          <CreditNotesPage
+            onBack={() => setCurrentPage("dashboard")}
             onViewCreditNote={(id, month) => {
               setSelectedCreditNoteId(id);
               setSelectedCreditNoteMonth(month);
               setCurrentPage("credit-note-details");
             }}
+            initialMonth={new Date().toISOString().slice(0, 7)}
           />
         );
       case "credit-note-details":

@@ -99,12 +99,18 @@ async function getEventForecast(req, res) {
 
     // Get event details - handle undefined parameters
     let query, params;
-    if (eventId && eventName) {
+    if (eventId && eventName && year) {
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ?`;
+      params = [eventName, year];
+    } else if (eventId && eventName) {
       query = `SELECT * FROM tomorrow_ai_events WHERE id = ? OR event_name = ?`;
       params = [eventId, eventName];
     } else if (eventId) {
       query = `SELECT * FROM tomorrow_ai_events WHERE id = ?`;
       params = [eventId];
+    } else if (eventName && year) {
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ?`;
+      params = [eventName, year];
     } else {
       query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ?`;
       params = [eventName];
@@ -277,7 +283,7 @@ async function getEventForecast(req, res) {
  */
 async function getEventPattern(req, res) {
   try {
-    const { eventId, eventName, mlGroupId } = req.query;
+    const { eventId, eventName, year, mlGroupId } = req.query;
 
     if (!eventId && !eventName) {
       return res.status(400).json({ success: false, error: 'eventId or eventName required' });
@@ -289,12 +295,18 @@ async function getEventPattern(req, res) {
 
     // Get event - handle undefined parameters
     let query, params;
-    if (eventId && eventName) {
+    if (eventId && eventName && year) {
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ?`;
+      params = [eventName, year];
+    } else if (eventId && eventName) {
       query = `SELECT * FROM tomorrow_ai_events WHERE id = ? OR event_name = ?`;
       params = [eventId, eventName];
     } else if (eventId) {
       query = `SELECT * FROM tomorrow_ai_events WHERE id = ?`;
       params = [eventId];
+    } else if (eventName && year) {
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ?`;
+      params = [eventName, year];
     } else {
       query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ?`;
       params = [eventName];
@@ -318,10 +330,10 @@ async function getEventPattern(req, res) {
       CROSS JOIN tomorrow_ai_events e
       WHERE ds.ml_group_id = ?
           AND e.event_name = ?
+          AND e.year = ?
           AND ds.sale_date BETWEEN DATE_SUB(e.event_date, INTERVAL 7 DAY) AND e.event_date
-          AND e.year = YEAR(ds.sale_date)
       ORDER BY e.year ASC, days_to_event ASC
-    `, [mlGroupId, event.event_name]);
+    `, [mlGroupId, event.event_name, event.year]);
     
     // Group by days_to_event and average across years
     const patternByDay = {};

@@ -30,7 +30,9 @@ async function populateEvents() {
       { event_name: 'Diwali', event_type: 'FESTIVAL', event_date: '2024-10-31', year: 2024, description: 'Diwali Festival of Lights' },
       { event_name: 'Govardhan Puja', event_type: 'FESTIVAL', event_date: '2024-11-02', year: 2024, description: 'Govardhan Puja' },
       { event_name: 'Bhai Dooj', event_type: 'FESTIVAL', event_date: '2024-11-03', year: 2024, description: 'Bhai Dooj' },
+      { event_name: 'Children Day', event_type: 'SPECIAL_DAY', event_date: '2024-11-14', year: 2024, description: 'Children Day' },
       { event_name: 'Christmas', event_type: 'HOLIDAY', event_date: '2024-12-25', year: 2024, description: 'Christmas Day' },
+      { event_name: 'New Year Eve', event_type: 'SPECIAL_DAY', event_date: '2024-12-31', year: 2024, description: 'New Year Eve' },
 
       // 2025 Events
       { event_name: 'New Year', event_type: 'HOLIDAY', event_date: '2025-01-01', year: 2025, description: 'New Year Day' },
@@ -54,7 +56,9 @@ async function populateEvents() {
       { event_name: 'Diwali', event_type: 'FESTIVAL', event_date: '2025-10-20', year: 2025, description: 'Diwali Festival of Lights' },
       { event_name: 'Govardhan Puja', event_type: 'FESTIVAL', event_date: '2025-10-21', year: 2025, description: 'Govardhan Puja' },
       { event_name: 'Bhai Dooj', event_type: 'FESTIVAL', event_date: '2025-10-22', year: 2025, description: 'Bhai Dooj' },
+      { event_name: 'Children Day', event_type: 'SPECIAL_DAY', event_date: '2025-11-14', year: 2025, description: 'Children Day' },
       { event_name: 'Christmas', event_type: 'HOLIDAY', event_date: '2025-12-25', year: 2025, description: 'Christmas Day' },
+      { event_name: 'New Year Eve', event_type: 'SPECIAL_DAY', event_date: '2025-12-31', year: 2025, description: 'New Year Eve' },
 
       // 2026 Events
       { event_name: 'New Year', event_type: 'HOLIDAY', event_date: '2026-01-01', year: 2026, description: 'New Year Day' },
@@ -78,7 +82,9 @@ async function populateEvents() {
       { event_name: 'Diwali', event_type: 'FESTIVAL', event_date: '2026-11-08', year: 2026, description: 'Diwali Festival of Lights' },
       { event_name: 'Govardhan Puja', event_type: 'FESTIVAL', event_date: '2026-11-09', year: 2026, description: 'Govardhan Puja' },
       { event_name: 'Bhai Dooj', event_type: 'FESTIVAL', event_date: '2026-11-10', year: 2026, description: 'Bhai Dooj' },
+      { event_name: 'Children Day', event_type: 'SPECIAL_DAY', event_date: '2026-11-14', year: 2026, description: 'Children Day' },
       { event_name: 'Christmas', event_type: 'HOLIDAY', event_date: '2026-12-25', year: 2026, description: 'Christmas Day' },
+      { event_name: 'New Year Eve', event_type: 'SPECIAL_DAY', event_date: '2026-12-31', year: 2026, description: 'New Year Eve' },
     ];
 
     let inserted = 0;
