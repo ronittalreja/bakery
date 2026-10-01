@@ -180,10 +180,10 @@ async function getEventForecast(req, res) {
         });
       }
 
-      // Get sales for 7 days before and 1 day after the event date for each year
+      // Get sales for the day before and event date for each year
       const dateConditions = allYears.map(year => {
         let eventDateForYear;
-        
+
         if (isFixedDate) {
           // Fixed-date events: Use same month/day for all years
           eventDateForYear = new Date(year, eventMonth - 1, eventDay);
@@ -191,11 +191,11 @@ async function getEventForecast(req, res) {
           // Dynamic-date events: Use pre-fetched date or fallback
           eventDateForYear = eventDatesByYear[year] || new Date(year, eventMonth - 1, eventDay);
         }
-        
+
         const startDate = new Date(eventDateForYear);
-        startDate.setDate(startDate.getDate() - 1); // 1 day prior
+        startDate.setDate(startDate.getDate() - 1); // 1 day before
         const endDate = new Date(eventDateForYear);
-        // Event day included (no change)
+        // Event day included
         return `(YEAR(ds.sale_date) = ${year} AND ds.sale_date BETWEEN '${startDate.toISOString().split('T')[0]}' AND '${endDate.toISOString().split('T')[0]}')`;
       }).join(' OR ');
 
