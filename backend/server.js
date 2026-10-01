@@ -1066,83 +1066,133 @@ app.post('/api/populate-tomorrow-ai-events', async (req, res) => {
       { event_name: 'New Year', event_type: 'HOLIDAY', date_rule: 'fixed', month: 1, day: 1, description: 'New Year Day' },
       { event_name: 'Republic Day', event_type: 'HOLIDAY', date_rule: 'fixed', month: 1, day: 26, description: 'Republic Day of India' },
       { event_name: 'Valentine Day', event_type: 'SPECIAL_DAY', date_rule: 'fixed', month: 2, day: 14, description: 'Valentine Day' },
+      { event_name: 'Gandhi Jayanti', event_type: 'HOLIDAY', date_rule: 'fixed', month: 10, day: 2, description: 'Gandhi Jayanti' },
       { event_name: 'Independence Day', event_type: 'HOLIDAY', date_rule: 'fixed', month: 8, day: 15, description: 'Independence Day of India' },
+      { event_name: 'Children Day', event_type: 'SPECIAL_DAY', date_rule: 'fixed', month: 11, day: 14, description: 'Children Day' },
       { event_name: 'Christmas', event_type: 'HOLIDAY', date_rule: 'fixed', month: 12, day: 25, description: 'Christmas Day' },
-      { event_name: 'Family Day', event_type: 'SPECIAL_DAY', date_rule: 'fixed', month: 6, day: 1, description: 'Family Day' },
+      { event_name: 'New Year Eve', event_type: 'SPECIAL_DAY', date_rule: 'fixed', month: 12, day: 31, description: 'New Year Eve' },
       
       // Nth weekday events
       { event_name: 'Mother Day', event_type: 'SPECIAL_DAY', date_rule: 'nth_weekday', month: 5, weekday: 0, n: 2, description: 'Mother Day (2nd Sunday of May)' },
       { event_name: 'Father Day', event_type: 'SPECIAL_DAY', date_rule: 'nth_weekday', month: 6, weekday: 0, n: 3, description: 'Father Day (3rd Sunday of June)' },
       { event_name: 'Friendship Day', event_type: 'SPECIAL_DAY', date_rule: 'nth_weekday', month: 8, weekday: 0, n: 1, description: 'Friendship Day (1st Sunday of August)' },
-      { event_name: 'Children Day', event_type: 'SPECIAL_DAY', date_rule: 'nth_weekday', month: 11, weekday: 2, n: 2, description: 'Children Day (2nd Tuesday of November)' },
       
       // Moving festivals (manual dates for now - should use API)
       { event_name: 'Holi', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Holi Festival of Colors' },
       { event_name: 'Good Friday', event_type: 'HOLIDAY', date_rule: 'manual', description: 'Good Friday' },
+      { event_name: 'Easter Sunday', event_type: 'SPECIAL_DAY', date_rule: 'manual', description: 'Easter Sunday' },
       { event_name: 'Eid ul-Fitr', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Eid ul-Fitr' },
+      { event_name: 'Buddha Purnima', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Buddha Purnima' },
       { event_name: 'Eid al-Adha', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Eid al-Adha' },
       { event_name: 'Raksha Bandhan', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Raksha Bandhan' },
       { event_name: 'Janmashtami', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Janmashtami' },
       { event_name: 'Ganesh Chaturthi', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Ganesh Chaturthi' },
+      { event_name: 'Onam', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Onam Festival' },
       { event_name: 'Dussehra', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Dussehra' },
       { event_name: 'Diwali', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Diwali Festival of Lights' },
+      { event_name: 'Govardhan Puja', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Govardhan Puja' },
+      { event_name: 'Bhai Dooj', event_type: 'FESTIVAL', date_rule: 'manual', description: 'Bhai Dooj' },
     ];
     
-    // Manual dates for moving festivals (2024-2027)
+    // Manual dates for moving festivals (2024-2028)
     const manualDates = {
       'Holi': {
         2024: '2024-03-25',
         2025: '2025-03-14',
         2026: '2026-03-04',
         2027: '2027-02-24',
+        2028: '2028-03-14',
       },
       'Good Friday': {
         2024: '2024-03-29',
         2025: '2025-04-18',
         2026: '2026-04-03',
         2027: '2027-03-26',
+        2028: '2028-04-14',
+      },
+      'Easter Sunday': {
+        2024: '2024-03-31',
+        2025: '2025-04-20',
+        2026: '2026-04-05',
+        2027: '2027-03-28',
+        2028: '2028-04-16',
       },
       'Eid ul-Fitr': {
         2024: '2024-04-11',
         2025: '2025-03-30',
         2026: '2026-03-20',
         2027: '2027-03-09',
+        2028: '2028-02-28',
+      },
+      'Buddha Purnima': {
+        2024: '2024-05-23',
+        2025: '2025-05-12',
+        2026: '2026-05-12',
+        2027: '2027-05-02',
+        2028: '2028-05-21',
       },
       'Eid al-Adha': {
         2024: '2024-06-17',
         2025: '2025-06-06',
         2026: '2026-05-27',
         2027: '2027-05-17',
+        2028: '2028-06-06',
       },
       'Raksha Bandhan': {
         2024: '2024-08-19',
         2025: '2025-08-09',
         2026: '2026-08-29',
         2027: '2027-08-18',
+        2028: '2028-08-07',
       },
       'Janmashtami': {
         2024: '2024-08-26',
         2025: '2025-08-16',
         2026: '2026-08-05',
         2027: '2027-08-25',
+        2028: '2028-08-14',
       },
       'Ganesh Chaturthi': {
         2024: '2024-09-07',
         2025: '2025-08-27',
         2026: '2026-09-16',
         2027: '2027-09-05',
+        2028: '2028-08-23',
+      },
+      'Onam': {
+        2024: '2024-09-15',
+        2025: '2025-09-05',
+        2026: '2026-09-14',
+        2027: '2027-09-03',
+        2028: '2028-08-22',
       },
       'Dussehra': {
         2024: '2024-10-12',
         2025: '2025-10-02',
         2026: '2026-10-21',
         2027: '2027-10-10',
+        2028: '2028-09-29',
       },
       'Diwali': {
         2024: '2024-10-31',
         2025: '2025-10-20',
         2026: '2026-11-08',
         2027: '2027-10-29',
+        2028: '2028-10-17',
+      },
+      'Govardhan Puja': {
+        2024: '2024-11-02',
+        2025: '2025-10-21',
+        2026: '2026-11-09',
+        2027: '2027-10-31',
+        2028: '2028-10-18',
+      },
+      'Bhai Dooj': {
+        2024: '2024-11-03',
+        2025: '2025-10-22',
+        2026: '2026-11-10',
+        2027: '2027-11-01',
+        2028: '2028-10-19',
       },
     };
     
@@ -1166,12 +1216,13 @@ app.post('/api/populate-tomorrow-ai-events', async (req, res) => {
         
         if (eventDate) {
           await connection.execute(`
-            INSERT INTO tomorrow_ai_events 
-            (event_name, event_type, event_date, year, description)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO tomorrow_ai_events
+            (event_name, event_type, event_date, year, description, status)
+            VALUES (?, ?, ?, ?, ?, 'approved')
             ON DUPLICATE KEY UPDATE
             event_type = VALUES(event_type),
             description = VALUES(description),
+            status = 'approved',
             updated_at = CURRENT_TIMESTAMP
           `, [
             rule.event_name,

@@ -41,6 +41,7 @@ import { TodaysSalesPage } from "@/components/todays-sales-page";
 import CreditNotesPage from "@/components/credit-notes-page";
 import CreditNoteDetailsPage from "@/components/credit-note-details-page";
 import TomorrowAIPage from "@/components/tomorrow-ai-page";
+import { ManageEventsPage } from "@/components/manage-events-page";
 
 type AdminPage =
   | "dashboard"
@@ -60,7 +61,8 @@ type AdminPage =
   | "sales"
   | "credit-notes"
   | "credit-note-details"
-  | "tomorrow-ai";
+  | "tomorrow-ai"
+  | "manage-events";
 
 interface AdminDashboardProps {
   onBackToStaff?: () => void;
@@ -248,6 +250,21 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
                   </div>
                 </div>
               </div>
+              <div
+                onClick={() => setCurrentPage("manage-events")}
+                className="group cursor-pointer"
+              >
+                <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-purple-200 flex items-center justify-center">
+                      <Sparkles className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                      Manage Events
+                    </h3>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -265,6 +282,8 @@ export function AdminDashboard({ onBackToStaff }: AdminDashboardProps) {
         return <ReturnsPage onBack={() => setCurrentPage("admin")} />;
       case "todays-stock":
         return <TodaysStockPage onBack={() => setCurrentPage("admin")} />;
+      case "manage-events":
+        return <ManageEventsPage onBack={() => setCurrentPage("admin")} />;
       case "sales":
         return <TodaysSalesPage onBack={() => setCurrentPage("dashboard")} />;
       case "credit-notes":

@@ -9,9 +9,9 @@ const db = require('../config/database');
 async function getNextEvent(req, res) {
   try {
     const today = new Date().toISOString().split('T')[0];
-    
+
     const [events] = await db.execute(`
-      SELECT 
+      SELECT
         id,
         event_name,
         event_type,
@@ -19,7 +19,7 @@ async function getNextEvent(req, res) {
         year,
         description
       FROM tomorrow_ai_events
-      WHERE event_date >= ?
+      WHERE event_date >= ? AND status = 'approved'
       ORDER BY event_date ASC
       LIMIT 1
     `, [today]);
@@ -64,7 +64,7 @@ async function getUpcomingEvents(req, res) {
 
     // Use hardcoded LIMIT to avoid parameter binding issues
     const safeLimitInt = Math.min(Math.max(safeLimit, 1), 100); // Clamp between 1 and 100
-    const query = `SELECT id, event_name, event_type, event_date, year, description FROM tomorrow_ai_events WHERE event_date >= ? ORDER BY event_date ASC LIMIT ${safeLimitInt}`;
+    const query = `SELECT id, event_name, event_type, event_date, year, description FROM tomorrow_ai_events WHERE event_date >= ? AND status = 'approved' ORDER BY event_date ASC LIMIT ${safeLimitInt}`;
     const [events] = await db.execute(query, [String(today)]);
 
     const eventsWithDays = events.map(event => {
@@ -372,9 +372,54 @@ async function getEventPattern(req, res) {
   }
 }
 
+/**
+ * Get all events for management
+ */
+async function getAllEvents(req, res) {
+  try {
+    const [events] = await db.execute(`
+      SELECT id, event_name, event_type, event_date, year, description, status
+      FROM tomorrow_ai_events
+      ORDER BY event_date ASC
+    `);
+
+    res.json({ success: true, data: events });
+  } catch (error) {
+    console.error('Error getting all events:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Update event status (approve/reject)
+ */
+async function updateEventStatus(req, res) {
+  try {
+    const { eventId } = req.params;
+    const { status } = req.body;
+
+    if (!['approved', 'rejected', 'pending'].includes(status)) {
+      return res.status(400).json({ success: false, error: 'Invalid status' });
+    }
+
+    await db.execute(`
+      UPDATE tomorrow_ai_events
+      SET status = ?
+      WHERE id = ?
+    `, [status, eventId]);
+
+    res.json({ success: true, message: 'Event status updated' });
+  } catch (error) {
+    console.error('Error updating event status:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
 module.exports = {
   getNextEvent,
   getUpcomingEvents,
   getEventForecast,
-  getEventPattern
+  getEventPattern,
+  getAllEvents,
+  updateEventStatus
 };
