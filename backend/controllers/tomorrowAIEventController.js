@@ -124,23 +124,28 @@ async function getEventForecast(req, res) {
     const historicalYears = [targetYear - 1, targetYear - 2, targetYear - 3];
 
     // Get DISPLAY products that are mapped/approved
-    // Show only canonical products (targets of aliases) or products with no aliases
-    // This ensures one row per product group
+    // Use alias table to resolve to canonical products
+    // If a product is aliased (historical_item_code), use the target product
+    // Group by the resolved product_id to ensure one row per canonical product
     const [products] = await db.execute(`
       SELECT
-        pm.product_id,
-        pm.name,
-        pm.ml_group_id
-      FROM tomorrow_ai_product_master pm
-      WHERE pm.item_type = 'DISPLAY' 
-        AND pm.active = TRUE 
-        AND pm.mapping_status = 'approved'
-        AND pm.product_id NOT IN (
-          SELECT DISTINCT historical_item_code 
-          FROM tomorrow_ai_product_aliases 
-          WHERE historical_item_code IS NOT NULL
-        )
-      ORDER BY pm.name ASC
+        resolved_product_id as product_id,
+        MAX(name) as name,
+        MAX(ml_group_id) as ml_group_id
+      FROM (
+        SELECT
+          COALESCE(a.product_id, pm.product_id) as resolved_product_id,
+          COALESCE(target_pm.name, pm.name) as name,
+          COALESCE(target_pm.ml_group_id, pm.ml_group_id) as ml_group_id
+        FROM tomorrow_ai_product_master pm
+        LEFT JOIN tomorrow_ai_product_aliases a ON pm.product_id = a.historical_item_code
+        LEFT JOIN tomorrow_ai_product_master target_pm ON a.product_id = target_pm.product_id
+        WHERE pm.item_type = 'DISPLAY' 
+          AND pm.active = TRUE 
+          AND pm.mapping_status = 'approved'
+      ) resolved
+      GROUP BY resolved_product_id
+      ORDER BY MAX(name) ASC
     `);
 
     console.log(`Fetching forecast for ${products.length} products, event: ${event.event_name}, years: [${targetYear}, ...historicalYears]`);
