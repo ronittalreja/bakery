@@ -240,6 +240,11 @@ async function getEventForecast(req, res) {
         ? Math.round(historicalValues.reduce((a, b) => a + b, 0) / historicalValues.length)
         : 0;
 
+      // Skip if all historical years have zero sales
+      if (historicalValues.length === 0) {
+        continue;
+      }
+
       // Recommended order (10% buffer)
       const recommendedOrder = Math.ceil(prediction * 1.1);
 
@@ -254,7 +259,7 @@ async function getEventForecast(req, res) {
         product_id: product.product_id,
         product_name: product.name,
         ml_group_id: product.ml_group_id,
-        prediction: recommendedOrder,
+        prediction: prediction,
         recommended_order: recommendedOrder,
         historical: historical
       });
