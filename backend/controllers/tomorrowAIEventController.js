@@ -132,22 +132,15 @@ async function getEventForecast(req, res) {
     // Group by the resolved product_id to ensure one row per canonical product
     const [products] = await db.execute(`
       SELECT
-        resolved_product_id as product_id,
-        MAX(name) as name,
-        MAX(ml_group_id) as ml_group_id
-      FROM (
-        SELECT
-          COALESCE(a.product_id, pm.product_id) as resolved_product_id,
-          COALESCE(target_pm.name, pm.name) as name,
-          COALESCE(target_pm.ml_group_id, pm.ml_group_id) as ml_group_id
-        FROM tomorrow_ai_product_master pm
-        LEFT JOIN tomorrow_ai_product_aliases a ON pm.product_id = a.historical_item_code
-        LEFT JOIN tomorrow_ai_product_master target_pm ON a.product_id = target_pm.product_id
-        WHERE pm.item_type = 'DISPLAY' 
-          AND pm.active = TRUE 
-          AND pm.mapping_status = 'approved'
-      ) resolved
-      GROUP BY resolved_product_id
+        MIN(pm.product_id) as product_id,
+        MAX(pm.name) as name,
+        pm.ml_group_id
+      FROM tomorrow_ai_product_master pm
+      WHERE pm.item_type = 'DISPLAY' 
+        AND pm.active = TRUE 
+        AND pm.mapping_status = 'approved'
+        AND pm.ml_group_id IS NOT NULL
+      GROUP BY pm.ml_group_id
       ORDER BY MAX(name) ASC
     `);
 

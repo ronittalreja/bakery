@@ -220,6 +220,7 @@ async function fullHistoricalSync(req, res) {
     console.log('Total synced dates count:', countResult[0].count);
 
     let datesToSync;
+    let fullSyncedDateSet = new Set();
 
     // If table is empty, we need to sync all dates
     if (countResult[0].count === 0) {
@@ -231,7 +232,6 @@ async function fullHistoricalSync(req, res) {
         `SELECT DISTINCT sale_date FROM tomorrow_ai_daily_sales`
       );
 
-      const fullSyncedDateSet = new Set();
       allSyncedDates.forEach(d => {
         let dateStr;
         if (d.sale_date instanceof Date) {
