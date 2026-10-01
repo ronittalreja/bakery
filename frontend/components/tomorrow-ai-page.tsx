@@ -238,19 +238,19 @@ export default function TomorrowAIPage() {
             {nextEvent && (
               <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-2xl">
+                  <CardTitle className="flex items-center gap-2 text-xl">
                     🎉 Next Event
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-8">
-                    <div className="text-4xl mb-4">{getEventEmoji(nextEvent.event_name)}</div>
-                    <h2 className="text-3xl font-bold mb-2">{nextEvent.event_name}</h2>
-                    <div className="text-5xl font-bold text-purple-600 mb-2">{nextEvent.days_to_go}</div>
-                    <div className="text-xl text-muted-foreground mb-4">DAYS TO GO</div>
-                    <div className="text-lg font-medium mb-6">{formatDate(nextEvent.event_date)}</div>
+                  <div className="text-center py-4">
+                    <div className="text-3xl mb-2">{getEventEmoji(nextEvent.event_name)}</div>
+                    <h2 className="text-2xl font-bold mb-1">{nextEvent.event_name}</h2>
+                    <div className="text-4xl font-bold text-purple-600 mb-1">{nextEvent.days_to_go}</div>
+                    <div className="text-sm text-muted-foreground mb-3">DAYS TO GO</div>
+                    <div className="text-base font-medium mb-4">{formatDate(nextEvent.event_date)}</div>
                     <Button 
-                      size="lg" 
+                      size="default" 
                       onClick={() => fetchEventForecast(nextEvent)}
                       disabled={isLoading}
                       className="bg-purple-600 hover:bg-purple-700"

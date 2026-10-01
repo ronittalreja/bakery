@@ -87,7 +87,7 @@ async function getUpcomingEvents(req, res) {
 
 /**
  * Get event forecast with historical comparison
- * Uses dynamic year window: current year (prediction) and previous 3 years
+ * Handles fixed-date events (same date each year) and dynamic-date events (different dates)
  */
 async function getEventForecast(req, res) {
   try {
@@ -119,6 +119,9 @@ async function getEventForecast(req, res) {
     const event = events[0];
     const currentYear = new Date().getFullYear();
     const targetYear = year || event.year || currentYear || currentYear;
+    const isFixedDate = event.is_fixed_date === 1 || event.is_fixed_date === true;
+
+    console.log(`Event: ${event.event_name}, is_fixed_date: ${isFixedDate}`);
 
     // Calculate dynamic year window (current-1, current-2, current-3)
     const historicalYears = [targetYear - 1, targetYear - 2, targetYear - 3];
@@ -159,14 +162,35 @@ async function getEventForecast(req, res) {
       const placeholders = mlGroupIds.map(() => '?').join(',');
       const yearPlaceholders = allYears.map(() => '?').join(',');
 
-      // Build date ranges for each year based on event month/day
+      // Build date ranges for each year based on event type
       const eventDate = new Date(event.event_date);
       const eventMonth = eventDate.getMonth() + 1;
       const eventDay = eventDate.getDate();
 
       // Get sales for 7 days before and 1 day after the event date for each year
       const dateConditions = allYears.map(year => {
-        const eventDateForYear = new Date(year, eventMonth - 1, eventDay);
+        let eventDateForYear;
+        
+        if (isFixedDate) {
+          // Fixed-date events: Use same month/day for all years
+          eventDateForYear = new Date(year, eventMonth - 1, eventDay);
+        } else {
+          // Dynamic-date events: Find the actual event date for this year
+          // Query the events table to get the specific date for this year
+          const [yearEvents] = await db.execute(`
+            SELECT event_date FROM tomorrow_ai_events 
+            WHERE event_name = ? AND year = ?
+            LIMIT 1
+          `, [event.event_name, year]);
+          
+          if (yearEvents.length > 0) {
+            eventDateForYear = new Date(yearEvents[0].event_date);
+          } else {
+            // Fallback: use the target year's event date as reference
+            eventDateForYear = new Date(year, eventMonth - 1, eventDay);
+          }
+        }
+        
         const startDate = new Date(eventDateForYear);
         startDate.setDate(startDate.getDate() - 7);
         const endDate = new Date(eventDateForYear);

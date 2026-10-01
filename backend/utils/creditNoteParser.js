@@ -1188,11 +1188,16 @@ class CreditNoteParser {
         if (!item.itemCode) {
           errors.push(`Credit Note ${cnIndex + 1}, Item ${index + 1}: Item code missing`);
         }
-        if (!item.quantity || item.quantity <= 0) {
-          errors.push(`Credit Note ${cnIndex + 1}, Item ${index + 1}: Invalid quantity`);
+        
+        // More robust quantity validation - handle strings, zero, and edge cases
+        const qty = parseFloat(item.quantity);
+        if (isNaN(qty) || qty < 0) {
+          errors.push(`Credit Note ${cnIndex + 1}, Item ${index + 1}: Invalid quantity (${item.quantity})`);
         }
-        if (item.rtd !== 15.00 && item.rtd !== 0.00) {
-          errors.push(`Credit Note ${cnIndex + 1}, Item ${index + 1}: Invalid RTD value (should be 15.00 or 0.00)`);
+        
+        // More lenient RTD validation - allow any numeric RTD value
+        if (item.rtd !== undefined && item.rtd !== null && isNaN(parseFloat(item.rtd))) {
+          errors.push(`Credit Note ${cnIndex + 1}, Item ${index + 1}: Invalid RTD value (${item.rtd})`);
         }
       });
     });
