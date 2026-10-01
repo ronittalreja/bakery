@@ -194,9 +194,9 @@ async function getEventForecast(req, res) {
         }
         
         const startDate = new Date(eventDateForYear);
-        startDate.setDate(startDate.getDate() - 7);
+        startDate.setDate(startDate.getDate() - 1); // 1 day prior
         const endDate = new Date(eventDateForYear);
-        endDate.setDate(endDate.getDate() + 1);
+        // Event day included (no change)
         return `(YEAR(ds.sale_date) = ${year} AND ds.sale_date BETWEEN '${startDate.toISOString().split('T')[0]}' AND '${endDate.toISOString().split('T')[0]}')`;
       }).join(' OR ');
 
