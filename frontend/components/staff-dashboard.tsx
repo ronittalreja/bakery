@@ -35,8 +35,9 @@ import { ManageDecorationsPage } from "@/components/manage-decorations-page";
 import { AdminStockManagementPage } from "@/components/admin-stock-management-page";
 import { AddSalesPage } from "@/components/edit-sales-page";
 import { MLGroupsPage } from "@/components/ml-groups-page";
+import { ManageEventsPage } from "@/components/manage-events-page";
 
-type StaffPage = "dashboard" | "upload-invoice" | "record-sale" | "stock" | "sales-summary" | "returns" | "credit-notes" | "credit-note-details" | "developer" | "manage-products" | "manage-decorations" | "manage-stock" | "edit-sales" | "ml-groups";
+type StaffPage = "dashboard" | "upload-invoice" | "record-sale" | "stock" | "sales-summary" | "returns" | "credit-notes" | "credit-note-details" | "developer" | "manage-products" | "manage-decorations" | "manage-stock" | "edit-sales" | "ml-groups" | "manage-events";
 
 interface StaffDashboardProps {
   onSwitchToAdmin?: () => void;
@@ -247,6 +248,21 @@ export function StaffDashboard({ onSwitchToAdmin }: StaffDashboardProps) {
                     </div>
                   </div>
                 </div>
+                <div
+                  onClick={() => setCurrentPage("manage-events")}
+                  className="group cursor-pointer"
+                >
+                  <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-purple-200 flex items-center justify-center">
+                        <Sparkles className="h-6 w-6 text-white" />
+                      </div>
+                      <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                        Manage Events
+                      </h3>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           );
@@ -260,6 +276,8 @@ export function StaffDashboard({ onSwitchToAdmin }: StaffDashboardProps) {
           return <AddSalesPage onBack={() => setCurrentPage("developer")} />;
         case "ml-groups":
           return <MLGroupsPage onBack={() => setCurrentPage("developer")} />;
+        case "manage-events":
+          return <ManageEventsPage onBack={() => setCurrentPage("developer")} />;
         default:
           return (
             <div className="h-full bg-white flex items-center justify-center">
