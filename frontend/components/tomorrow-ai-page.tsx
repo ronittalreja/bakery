@@ -82,7 +82,7 @@ export default function TomorrowAIPage() {
   const fetchUpcomingEvents = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/upcoming?limit=10`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/upcoming?limit=3`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
@@ -181,7 +181,7 @@ export default function TomorrowAIPage() {
     if (name.includes('valentine')) return '❤️';
     if (name.includes('holi')) return '🎨';
     if (name.includes('diwali')) return '🪔';
-    if (name.includes('christmas')) return '🎄';
+
     if (name.includes('new year')) return '🎉';
     if (name.includes('mother')) return '🌸';
     if (name.includes('father')) return '👨';
