@@ -167,6 +167,20 @@ async function getEventForecast(req, res) {
       const eventMonth = eventDate.getMonth() + 1;
       const eventDay = eventDate.getDate();
 
+      // Pre-fetch dynamic event dates for all years (single query)
+      let eventDatesByYear = {};
+      if (!isFixedDate) {
+        const yearPlaceholders = allYears.map(() => '?').join(',');
+        const [dynamicEvents] = await db.execute(`
+          SELECT year, event_date FROM tomorrow_ai_events 
+          WHERE event_name = ? AND year IN (${yearPlaceholders})
+        `, [event.event_name, ...allYears]);
+        
+        dynamicEvents.forEach(e => {
+          eventDatesByYear[e.year] = new Date(e.event_date);
+        });
+      }
+
       // Get sales for 7 days before and 1 day after the event date for each year
       const dateConditions = allYears.map(year => {
         let eventDateForYear;
@@ -175,20 +189,8 @@ async function getEventForecast(req, res) {
           // Fixed-date events: Use same month/day for all years
           eventDateForYear = new Date(year, eventMonth - 1, eventDay);
         } else {
-          // Dynamic-date events: Find the actual event date for this year
-          // Query the events table to get the specific date for this year
-          const [yearEvents] = await db.execute(`
-            SELECT event_date FROM tomorrow_ai_events 
-            WHERE event_name = ? AND year = ?
-            LIMIT 1
-          `, [event.event_name, year]);
-          
-          if (yearEvents.length > 0) {
-            eventDateForYear = new Date(yearEvents[0].event_date);
-          } else {
-            // Fallback: use the target year's event date as reference
-            eventDateForYear = new Date(year, eventMonth - 1, eventDay);
-          }
+          // Dynamic-date events: Use pre-fetched date or fallback
+          eventDateForYear = eventDatesByYear[year] || new Date(year, eventMonth - 1, eventDay);
         }
         
         const startDate = new Date(eventDateForYear);
