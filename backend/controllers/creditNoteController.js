@@ -731,7 +731,7 @@ const getCreditNoteHistory = async (req, res) => {
   }
 };
 
-// Get missing return dates for a month (dates with returns but no credit notes)
+// Get missing return dates for a month (all calendar dates without credit notes)
 const getMissingReturnDates = async (req, res) => {
   try {
     const { month } = req.query;
@@ -743,13 +743,7 @@ const getMissingReturnDates = async (req, res) => {
       });
     }
     
-    // Get all dates in the month that have returns
-    const [returnDates] = await db.execute(`
-      SELECT DISTINCT DATE(return_date) as return_date
-      FROM returns
-      WHERE DATE_FORMAT(return_date, '%Y-%m') = ?
-      ORDER BY return_date ASC
-    `, [month]);
+    const [year, monthNum] = month.split('-').map(Number);
     
     // Get all dates in the month that have credit notes
     const [creditNoteDates] = await db.execute(`
@@ -759,11 +753,20 @@ const getMissingReturnDates = async (req, res) => {
       ORDER BY return_date ASC
     `, [month]);
     
-    // Find dates that have returns but no credit notes
-    const creditNoteDateSet = new Set(creditNoteDates.map(d => d.return_date.toISOString().split('T')[0]));
-    const missingDates = returnDates
-      .map(d => d.return_date.toISOString().split('T')[0])
-      .filter(date => !creditNoteDateSet.has(date));
+    const creditNoteDateSet = new Set(
+      creditNoteDates.map(d => d.return_date.toISOString().split('T')[0])
+    );
+    
+    // Generate all calendar dates for the month
+    const missingDates = [];
+    const daysInMonth = new Date(year, monthNum, 0).getDate();
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(monthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      if (!creditNoteDateSet.has(dateStr)) {
+        missingDates.push(dateStr);
+      }
+    }
     
     res.json({
       success: true,

@@ -318,8 +318,8 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
             <div className="flex items-center gap-3 mb-3">
               <AlertCircle className="h-5 w-5 text-red-600" />
               <div>
-                <div className="text-lg font-bold text-red-900">Missing Return Dates</div>
-                <div className="text-sm text-red-700">{missingDates.length} date(s) with returns but no credit notes</div>
+                <div className="text-lg font-bold text-red-900">Missing Credit Note Dates</div>
+                <div className="text-sm text-red-700">{missingDates.length} date(s) without credit notes</div>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
