@@ -52,6 +52,7 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [missingDates, setMissingDates] = useState<string[]>([]);
 
   const fetchCreditNotes = async () => {
     setIsLoading(true);
@@ -100,8 +101,45 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
     }
   };
 
+  const fetchMissingDates = async () => {
+    if (!selectedMonth) {
+      setMissingDates([]);
+      return;
+    }
+
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/credit-notes/missing-dates?month=${selectedMonth}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch missing dates");
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setMissingDates(data.missingDates || []);
+      }
+    } catch (err: any) {
+      console.error('Error fetching missing dates:', err);
+      setMissingDates([]);
+    }
+  };
+
   useEffect(() => {
     fetchCreditNotes();
+    fetchMissingDates();
   }, [selectedMonth]);
 
   useEffect(() => {
@@ -273,6 +311,29 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
             </div>
           </div>
         </div>
+
+        {/* Missing Return Dates Card */}
+        {selectedMonth && missingDates.length > 0 && (
+          <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg border border-red-300 shadow-lg p-4 sm:p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <div>
+                <div className="text-lg font-bold text-red-900">Missing Return Dates</div>
+                <div className="text-sm text-red-700">{missingDates.length} date(s) with returns but no credit notes</div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {missingDates.map((date) => (
+                <span
+                  key={date}
+                  className="inline-flex items-center px-3 py-1 rounded-full bg-red-200 text-red-800 text-sm font-medium border border-red-300"
+                >
+                  {formatDate(date)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Error Alert */}
         {error && (

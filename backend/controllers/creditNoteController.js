@@ -731,6 +731,52 @@ const getCreditNoteHistory = async (req, res) => {
   }
 };
 
+// Get missing return dates for a month (dates with returns but no credit notes)
+const getMissingReturnDates = async (req, res) => {
+  try {
+    const { month } = req.query;
+    
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid month format. Use YYYY-MM' 
+      });
+    }
+    
+    // Get all dates in the month that have returns
+    const [returnDates] = await db.execute(`
+      SELECT DISTINCT DATE(return_date) as return_date
+      FROM returns
+      WHERE DATE_FORMAT(return_date, '%Y-%m') = ?
+      ORDER BY return_date ASC
+    `, [month]);
+    
+    // Get all dates in the month that have credit notes
+    const [creditNoteDates] = await db.execute(`
+      SELECT DISTINCT DATE(COALESCE(return_date, date)) as return_date
+      FROM credit_notes
+      WHERE DATE_FORMAT(COALESCE(return_date, date), '%Y-%m') = ?
+      ORDER BY return_date ASC
+    `, [month]);
+    
+    // Find dates that have returns but no credit notes
+    const creditNoteDateSet = new Set(creditNoteDates.map(d => d.return_date.toISOString().split('T')[0]));
+    const missingDates = returnDates
+      .map(d => d.return_date.toISOString().split('T')[0])
+      .filter(date => !creditNoteDateSet.has(date));
+    
+    res.json({
+      success: true,
+      month,
+      missingDates,
+      count: missingDates.length
+    });
+  } catch (error) {
+    console.error('Error fetching missing return dates:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // Store parsed credit note in database
 const storeCreditNote = async (req, res) => {
   try {
@@ -1606,6 +1652,7 @@ module.exports = {
   uploadCreditNote,
   parseCreditNote,
   parseCreditNoteFromPath,
+  getMissingReturnDates,
   getCreditNoteHistory,
   storeCreditNote,
   getAllCreditNotes,
