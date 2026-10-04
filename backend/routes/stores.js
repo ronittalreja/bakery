@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const storeController = require('../controllers/storeController');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const { requireRole } = require('../middleware/storeAccess');
 
 // Get all stores (filtered by user role)
