@@ -145,6 +145,10 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
       return
     }
 
+    if (!confirm("This is your final warning! Deleting this store will permanently remove all associated data. Are you absolutely sure?")) {
+      return
+    }
+
     try {
       const token = localStorage.getItem("token")
       const data = await apiClient<{ success: boolean }>(

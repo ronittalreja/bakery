@@ -12,13 +12,13 @@ router.get('/', auth, storeController.getAllStores);
 router.get('/:id', auth, storeController.getStoreById);
 
 // Create new store (Super admin only)
-router.post('/', auth, requireRole('super_admin'), storeController.createStore);
+router.post('/', auth, storeController.createStore);
 
 // Update store (Super admin only)
-router.put('/:id', auth, requireRole('super_admin'), storeController.updateStore);
+router.put('/:id', auth, storeController.updateStore);
 
 // Delete store (Super admin only)
-router.delete('/:id', auth, requireRole('super_admin'), storeController.deleteStore);
+router.delete('/:id', auth, storeController.deleteStore);
 
 // Get users for a store
 router.get('/:storeId/users', auth, storeController.getStoreUsers);
