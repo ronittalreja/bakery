@@ -1,8 +1,14 @@
 const db = require('../config/database');
 
 class Decoration {
-  static async findAll() {
-    const [rows] = await db.execute('SELECT * FROM decorations WHERE is_active = 1');
+  static async findAll(storeId) {
+    let query = 'SELECT * FROM decorations WHERE is_active = 1';
+    const params = [];
+    if (storeId) {
+      query += ' AND store_id = ?';
+      params.push(storeId);
+    }
+    const [rows] = await db.execute(query, params);
     return rows;
   }
 

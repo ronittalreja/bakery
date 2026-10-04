@@ -183,9 +183,10 @@ const uploadCreditNoteHandler = async (req, res) => {
         const [tableStructure] = await db.execute('DESCRIBE credit_notes');
         console.log('Credit notes table structure:', tableStructure);
         
+        const storeId = req.user?.store_id;
         const [existing] = await db.execute(
-          'SELECT id, cloudinary_url FROM credit_notes WHERE credit_note_number = ? AND date = ?',
-          [creditNote.creditNoteNumber, creditNote.date]
+          'SELECT id, cloudinary_url FROM credit_notes WHERE credit_note_number = ? AND date = ? AND store_id = ?',
+          [creditNote.creditNoteNumber, creditNote.date, storeId]
         );
         
         console.log('Query result for existing credit notes:', {
@@ -342,9 +343,10 @@ const uploadCreditNoteHandler = async (req, res) => {
             `, [returnDate]);
             
             // Get credit note items for this specific credit note
+            const storeId = req.user?.store_id;
             const [creditNoteData] = await db.execute(`
-              SELECT items FROM credit_notes WHERE id = ?
-            `, [creditNote.id]);
+              SELECT items FROM credit_notes WHERE id = ? AND store_id = ?
+            `, [creditNote.id, storeId]);
             
             if (creditNoteData.length > 0) {
               const items = JSON.parse(creditNoteData[0].items);

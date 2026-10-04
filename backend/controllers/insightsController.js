@@ -8,6 +8,7 @@ const router = express.Router();
 const getMonthlyInsights = async (req, res) => {
   try {
     const { month } = req.params;
+    const storeId = req.user?.store_id;
     
     // Handle "all" case for full year data
     if (month.includes('-all')) {
@@ -16,7 +17,7 @@ const getMonthlyInsights = async (req, res) => {
         return res.status(400).json({ success: false, error: 'Invalid year format' });
       }
 
-      console.log(`Fetching insights for full year: ${year}`);
+      console.log(`Fetching insights for full year: ${year}, store_id: ${storeId}`);
 
       // Return demo data if demo user
       if (req.isDemo) {
@@ -77,15 +78,15 @@ const getMonthlyInsights = async (req, res) => {
         return res.json({ success: true, data: insightsData });
       }
 
-      // Fetch full year data from database
+      // Fetch full year data from database - filter by store_id
       const [salesData] = await db.execute(
-        `SELECT COALESCE(SUM(total_amount), 0) as totalSales FROM invoices WHERE YEAR(invoice_date) = ?`,
-        [year]
+        `SELECT COALESCE(SUM(total_amount), 0) as totalSales FROM invoices WHERE YEAR(invoice_date) = ? AND store_id = ?`,
+        [year, storeId]
       );
       
       const [expensesData] = await db.execute(
-        `SELECT COALESCE(SUM(amount), 0) as totalExpenses FROM expenses WHERE YEAR(expense_date) = ?`,
-        [year]
+        `SELECT COALESCE(SUM(amount), 0) as totalExpenses FROM expenses WHERE YEAR(expense_date) = ? AND store_id = ?`,
+        [year, storeId]
       );
 
       const totalSales = salesData[0].totalSales;
@@ -199,7 +200,7 @@ const getMonthlyInsights = async (req, res) => {
 
     // Fetch all raw data with simple queries, then calculate in JS
     
-    // Get all invoices and items for the month with category
+    // Get all invoices and items for the month with category - filter by store_id
     // Use invoice item rates (historical prices) and current product sale prices for MRP
     const [invoicesData] = await db.execute(`
       SELECT 
@@ -215,36 +216,36 @@ const getMonthlyInsights = async (req, res) => {
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
       LEFT JOIN products p ON ii.item_code = p.item_code
-      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
-    `, [month]);
+      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ? AND i.store_id = ?
+    `, [month, storeId]);
 
-    // Get all credit notes for the month
+    // Get all credit notes for the month - filter by store_id
     const [creditNotesData] = await db.execute(`
       SELECT gross_value, date
       FROM credit_notes
-      WHERE DATE_FORMAT(date, '%Y-%m') = ?
-    `, [month]);
+      WHERE DATE_FORMAT(date, '%Y-%m') = ? AND store_id = ?
+    `, [month, storeId]);
 
-    // Get all returns for the month
+    // Get all returns for the month - filter by store_id
     const [returnsData] = await db.execute(`
       SELECT loss_amount, return_date
       FROM returns
-      WHERE DATE_FORMAT(return_date, '%Y-%m') = ?
-    `, [month]);
+      WHERE DATE_FORMAT(return_date, '%Y-%m') = ? AND store_id = ?
+    `, [month, storeId]);
 
-    // Get all expenses for the month
+    // Get all expenses for the month - filter by store_id
     const [expensesData] = await db.execute(`
       SELECT amount, expense_date
       FROM expenses
-      WHERE DATE_FORMAT(expense_date, '%Y-%m') = ?
-    `, [month]);
+      WHERE DATE_FORMAT(expense_date, '%Y-%m') = ? AND store_id = ?
+    `, [month, storeId]);
 
-    // Calculate total return charges (total loss) from credit notes for the month
+    // Calculate total return charges (total loss) from credit notes for the month - filter by store_id
     const [creditNotesItemsData] = await db.execute(`
       SELECT items
       FROM credit_notes
-      WHERE DATE_FORMAT(COALESCE(return_date, date), '%Y-%m') = ?
-    `, [month]);
+      WHERE DATE_FORMAT(COALESCE(return_date, date), '%Y-%m') = ? AND store_id = ?
+    `, [month, storeId]);
 
     let totalReturnCharges = 0;
     for (const row of creditNotesItemsData) {

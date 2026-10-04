@@ -5,6 +5,7 @@ const db = require('../config/database');
 const getExpenses = async (req, res) => {
   try {
     const { month, year } = req.query;
+    const storeId = req.user?.store_id;
     
     // Handle "all" case for full year data
     if (month === 'all' || month.includes('-all')) {
@@ -33,8 +34,8 @@ const getExpenses = async (req, res) => {
       }
       
       const [expenses] = await db.execute(
-        'SELECT * FROM expenses WHERE YEAR(expense_date) = ?',
-        [yearToUse]
+        'SELECT * FROM expenses WHERE YEAR(expense_date) = ? AND store_id = ?',
+        [yearToUse, storeId]
       );
       
       return res.json({ success: true, expenses });
@@ -46,7 +47,7 @@ const getExpenses = async (req, res) => {
       return res.json({ success: true, expenses: demoExpenses });
     }
     
-    const expenses = await Expense.findAll(month, year);
+    const expenses = await Expense.findAll(month, year, storeId);
     
     res.json({ success: true, expenses });
   } catch (error) {
@@ -58,9 +59,10 @@ const createExpense = async (req, res) => {
   try {
     const { expenseDate, category, description, amount } = req.body;
     const staffId = req.user.id;
+    const storeId = req.user?.store_id;
     
     const expense = await Expense.create({
-      expenseDate, category, description, amount, staffId
+      expenseDate, category, description, amount, staffId, storeId
     });
     
     res.json({ success: true, expense });

@@ -16,10 +16,11 @@ async function syncSalesToTomorrowAI(req, res) {
 
     const { date } = req.body;
     const syncDate = date || new Date().toISOString().split('T')[0];
+    const storeId = req.user?.store_id;
 
-    console.log(`Starting sync for date: ${syncDate}`);
+    console.log(`Starting sync for date: ${syncDate}, store_id: ${storeId}`);
 
-    // 1. Fetch invoice items for the date from existing invoices table
+    // 1. Fetch invoice items for the date from existing invoices table - filter by store_id
     const [invoiceItems] = await connection.execute(
       `SELECT 
         DATE(i.invoice_date) as sale_date,
@@ -28,13 +29,13 @@ async function syncSalesToTomorrowAI(req, res) {
         i.id as invoice_id
        FROM invoices i
        JOIN invoice_items ii ON i.id = ii.invoice_id
-       WHERE DATE(i.invoice_date) = ?`,
-      [syncDate]
+       WHERE DATE(i.invoice_date) = ? AND i.store_id = ?`,
+      [syncDate, storeId]
     );
 
     console.log(`Found ${invoiceItems.length} invoice items for ${syncDate}`);
 
-    // 2. Fetch credit notes for the date from existing credit_notes table
+    // 2. Fetch credit notes for the date from existing credit_notes table - filter by store_id
     const [creditNotes] = await connection.execute(
       `SELECT 
         id,
@@ -42,8 +43,8 @@ async function syncSalesToTomorrowAI(req, res) {
         DATE(return_date) as return_date,
         DATE(date) as cn_date
        FROM credit_notes
-       WHERE DATE(return_date) = ? OR DATE(date) = ?`,
-      [syncDate, syncDate]
+       WHERE (DATE(return_date) = ? OR DATE(date) = ?) AND store_id = ?`,
+      [syncDate, syncDate, storeId]
     );
 
     console.log(`Found ${creditNotes.length} credit notes for ${syncDate}`);

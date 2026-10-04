@@ -4,13 +4,15 @@ const { getDemoData, demoData } = require('../middleware/demoMode');
 
 const getAllDecorations = async (req, res) => {
   try {
+    const storeId = req.user?.store_id;
+    
     // Return demo data if demo user
     if (req.isDemo) {
       const demoDecorations = getDemoData('decorations');
       return res.json({ success: true, decorations: demoDecorations });
     }
     
-    const decorations = await Decoration.findAll();
+    const decorations = await Decoration.findAll(storeId);
     res.json({ success: true, decorations });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -52,6 +54,7 @@ const getDecorationBySkuOrName = async (req, res) => {
 const createDecoration = async (req, res) => {
   try {
     const { sku, name, category, price, costPrice, stock, image } = req.body;
+    const storeId = req.user?.store_id;
     
     const decoration = await Decoration.create({
       sku,
@@ -60,7 +63,8 @@ const createDecoration = async (req, res) => {
       cost: costPrice || 0,
       sale_price: price,
       stock_quantity: stock,
-      image_url: image
+      image_url: image,
+      store_id: storeId
     });
     
     res.json({ success: true, decoration });

@@ -2,12 +2,16 @@
 const db = require('../config/database');
 
 class Expense {
-  static async findAll(month, year) {
+  static async findAll(month, year, storeId) {
     let query = 'SELECT * FROM expenses';
     const params = [];
     if (month && year) {
       query += ' WHERE MONTH(expense_date) = ? AND YEAR(expense_date) = ?';
       params.push(parseInt(month), parseInt(year));
+    }
+    if (storeId) {
+      query += (params.length > 0 ? ' AND' : ' WHERE') + ' store_id = ?';
+      params.push(storeId);
     }
     const [rows] = await db.execute(query, params);
     return rows;
@@ -15,8 +19,8 @@ class Expense {
 
   static async create(data) {
     const [result] = await db.execute(
-      'INSERT INTO expenses (expense_date, category, description, amount, staff_id) VALUES (?, ?, ?, ?, ?)',
-      [data.expenseDate, data.category, data.description, data.amount, data.staffId]
+      'INSERT INTO expenses (expense_date, category, description, amount, staff_id, store_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [data.expenseDate, data.category, data.description, data.amount, data.staffId, data.storeId]
     );
     return result.insertId;
   }
