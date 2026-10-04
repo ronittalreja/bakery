@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { ArrowLeft, Plus, Edit2, Trash2, Store } from "lucide-react"
 import { apiClient } from "@/lib/apiClient"
 
@@ -34,6 +35,8 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
   const [error, setError] = useState("")
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingStore, setEditingStore] = useState<Store | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [storeToDelete, setStoreToDelete] = useState<number | null>(null)
   
   // Create form state
   const [newUsername, setNewUsername] = useState("")
@@ -141,18 +144,17 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
   }
 
   const handleDeleteStore = async (storeId: number) => {
-    if (!confirm("Are you sure you want to delete this store? This action cannot be undone.")) {
-      return
-    }
+    setStoreToDelete(storeId)
+    setDeleteDialogOpen(true)
+  }
 
-    if (!confirm("This is your final warning! Deleting this store will permanently remove all associated data. Are you absolutely sure?")) {
-      return
-    }
+  const confirmDeleteStore = async () => {
+    if (!storeToDelete) return
 
     try {
       const token = localStorage.getItem("token")
       const data = await apiClient<{ success: boolean }>(
-        `/api/stores/${storeId}`,
+        `/api/stores/${storeToDelete}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` }
@@ -160,10 +162,13 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
       )
 
       if (data.success) {
+        setDeleteDialogOpen(false)
+        setStoreToDelete(null)
         fetchStores()
       }
     } catch (err: any) {
       setError(err.message || "Failed to delete store")
+      setDeleteDialogOpen(false)
     }
   }
 
@@ -365,6 +370,24 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
             ))
           )}
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to delete this store?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. Deleting this store will permanently remove all associated data including users, products, invoices, and sales records.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setStoreToDelete(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteStore} className="bg-red-600 hover:bg-red-700">
+                Delete Store
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   )

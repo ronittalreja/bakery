@@ -588,23 +588,25 @@ const getSalesSummary = async (req, res) => {
       });
     }
 
-    // Fetch invoices for the date
+    // Fetch invoices for the date - filter by store_id
+    const storeId = req.user?.store_id || 1;
     const [invoices] = await db.execute(
       `SELECT id, total_amount FROM invoices 
-       WHERE DATE(invoice_date) = ?`,
-      [date]
+       WHERE DATE(invoice_date) = ? AND store_id = ?`,
+      [date, storeId]
     );
 
-    // Fetch credit notes with return date matching the invoice date
+    // Fetch credit notes with return date matching the invoice date - filter by store_id
     const [creditNotes] = await db.execute(
       `SELECT id, items FROM credit_notes 
-       WHERE DATE(return_date) = ? OR DATE(date) = ?`,
-      [date, date]
+       WHERE (DATE(return_date) = ? OR DATE(date) = ?) AND store_id = ?`,
+      [date, date, storeId]
     );
 
-    // Fetch all products to get categories and MRP (sale_price)
+    // Fetch all products to get categories and MRP (sale_price) - filter by store_id
     const [products] = await db.execute(
-      `SELECT id, item_code, name, category, sale_price FROM products WHERE is_active = 1`
+      `SELECT id, item_code, name, category, sale_price FROM products WHERE is_active = 1 AND store_id = ?`,
+      [storeId]
     );
 
     // Create a map of product name to product info (for category and MRP)
@@ -799,23 +801,25 @@ const getSalesByDate = async (req, res) => {
       return res.json({ success: true, data: transformedSales, summary });
     }
 
-    // Fetch invoices for the date
+    // Fetch invoices for the date - filter by store_id
+    const storeId = req.user?.store_id || 1;
     const [invoices] = await db.execute(
       `SELECT id, invoice_number, invoice_date, total_amount FROM invoices 
-       WHERE DATE(invoice_date) = ?`,
-      [date]
+       WHERE DATE(invoice_date) = ? AND store_id = ?`,
+      [date, storeId]
     );
 
-    // Fetch credit notes with return date matching the invoice date
+    // Fetch credit notes with return date matching the invoice date - filter by store_id
     const [creditNotes] = await db.execute(
       `SELECT id, credit_note_number, date, return_date, items FROM credit_notes 
-       WHERE DATE(return_date) = ? OR DATE(date) = ?`,
-      [date, date]
+       WHERE (DATE(return_date) = ? OR DATE(date) = ?) AND store_id = ?`,
+      [date, date, storeId]
     );
 
-    // Fetch all products to get categories and MRP (sale_price)
+    // Fetch all products to get categories and MRP (sale_price) - filter by store_id
     const [products] = await db.execute(
-      `SELECT id, item_code, name, category, sale_price FROM products WHERE is_active = 1`
+      `SELECT id, item_code, name, category, sale_price FROM products WHERE is_active = 1 AND store_id = ?`,
+      [storeId]
     );
 
     // Create a map of product name to product info (for category and MRP)

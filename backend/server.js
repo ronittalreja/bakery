@@ -57,11 +57,21 @@ const authMiddleware = (roles = []) => (req, res, next) => {
   }
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
-    if (roles.length && !roles.includes(decoded.role) && !decoded.isDemo) {
-      console.error('Forbidden: Invalid role:', decoded.role, req.method, req.url);
-      return res.status(403).json({ error: 'Forbidden' });
+    
+    // Map old roles to new multi-tenant roles
+    const roleMapping = {
+      'staff': 'store_manager',
+      'admin': 'super_admin'
+    };
+    const mappedRole = roleMapping[decoded.role] || decoded.role;
+    
+    // Check if user has required role (or is super_admin)
+    if (roles.length && !roles.includes(mappedRole) && !roles.includes(decoded.role) && mappedRole !== 'super_admin' && !decoded.isDemo) {
+      console.error('Forbidden: Invalid role:', decoded.role, '(mapped:', mappedRole, ')', req.method, req.url);
+      return res.status(403).json({ error: 'Forbidden: Invalid role' });
     }
-    req.user = decoded;
+    
+    req.user = { ...decoded, mappedRole };
     // Apply demo mode middleware
     demoModeMiddleware(req, res, next);
   } catch (error) {
@@ -73,23 +83,23 @@ const authMiddleware = (roles = []) => (req, res, next) => {
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/stores', require('./routes/stores'));
-app.use('/api/invoices', authMiddleware(['staff', 'admin']), require('./routes/invoices'));
-app.use('/api/credit-notes', authMiddleware(['staff', 'admin']), require('./routes/creditNotes'));
-app.use('/api/stock', authMiddleware(['staff', 'admin']), require('./routes/stock'));
-app.use('/api/sales', authMiddleware(['staff', 'admin']), require('./routes/sales'));
-app.use('/api/add-sales', authMiddleware(['staff', 'admin']), require('./routes/add-sales'));
-app.use('/api/returns', authMiddleware(['staff', 'admin']), require('./routes/returns'));
-app.use('/api/decorations', authMiddleware(['staff', 'admin']), require('./routes/decorations'));
-app.use('/api/expenses', authMiddleware(['admin']), require('./routes/expenses'));
-app.use('/api/reports', authMiddleware(['admin']), require('./routes/reports'));
-app.use('/api/ros-receipts', authMiddleware(['staff', 'admin']), require('./routes/rosReceipts'));
-app.use('/api/insights', authMiddleware(['admin']), require('./routes/insights'));
+app.use('/api/invoices', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/invoices'));
+app.use('/api/credit-notes', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/creditNotes'));
+app.use('/api/stock', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/stock'));
+app.use('/api/sales', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/sales'));
+app.use('/api/add-sales', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/add-sales'));
+app.use('/api/returns', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/returns'));
+app.use('/api/decorations', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/decorations'));
+app.use('/api/expenses', authMiddleware(['super_admin', 'admin']), require('./routes/expenses'));
+app.use('/api/reports', authMiddleware(['super_admin', 'admin']), require('./routes/reports'));
+app.use('/api/ros-receipts', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/rosReceipts'));
+app.use('/api/insights', authMiddleware(['super_admin', 'admin']), require('./routes/insights'));
 app.use('/api/tomorrow-ai/products', require('./routes/tomorrowAIProducts'));
-app.use('/api/tomorrow-ai', authMiddleware(['admin']), require('./routes/tomorrowAI'));
-app.use('/api/tomorrow-ai/features', authMiddleware(['admin']), require('./routes/tomorrowAIFeatures'));
-app.use('/api/tomorrow-ai/model', authMiddleware(['admin']), require('./routes/tomorrowAIModel'));
-app.use('/api/tomorrow-ai/events', authMiddleware(['admin']), require('./routes/tomorrowAIEvents'));
-app.use('/api/products', authMiddleware(['staff', 'admin']), require('./routes/products'));
+app.use('/api/tomorrow-ai', authMiddleware(['super_admin', 'admin']), require('./routes/tomorrowAI'));
+app.use('/api/tomorrow-ai/features', authMiddleware(['super_admin', 'admin']), require('./routes/tomorrowAIFeatures'));
+app.use('/api/tomorrow-ai/model', authMiddleware(['super_admin', 'admin']), require('./routes/tomorrowAIModel'));
+app.use('/api/tomorrow-ai/events', authMiddleware(['super_admin', 'admin']), require('./routes/tomorrowAIEvents'));
+app.use('/api/products', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/products'));
 
 // Daily sync job - runs automatically
 // Uncomment to enable automatic daily sync
