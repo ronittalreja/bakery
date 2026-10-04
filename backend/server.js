@@ -143,6 +143,64 @@ app.post('/api/migrate', async (req, res) => {
     `);
     console.log('✅ Inserted default users');
 
+    // Create stores table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS stores (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        store_code VARCHAR(50) UNIQUE NOT NULL,
+        store_name VARCHAR(255) NOT NULL,
+        address TEXT,
+        city VARCHAR(100),
+        state VARCHAR(100),
+        pincode VARCHAR(10),
+        contact_person VARCHAR(255),
+        contact_phone VARCHAR(20),
+        contact_email VARCHAR(255),
+        area_manager_id INT,
+        regional_manager_id INT,
+        status ENUM('active', 'inactive') DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_store_code (store_code),
+        INDEX idx_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ Created stores table');
+
+    // Insert initial store
+    await connection.execute(`
+      INSERT INTO stores (store_code, store_name, city, status)
+      VALUES ('R3309', 'R3309 Bakery', 'Mumbai', 'active')
+      ON DUPLICATE KEY UPDATE store_name = 'R3309 Bakery'
+    `);
+    console.log('✅ Inserted initial store');
+
+    // Add store_id column to users if not exists
+    try {
+      await connection.execute(`ALTER TABLE users ADD COLUMN store_id INT NULL AFTER id`);
+      await connection.execute(`ALTER TABLE users ADD INDEX idx_store_id (store_id)`);
+      console.log('✅ Added store_id column to users table');
+    } catch (err) {
+      if (err.code === 'ER_DUP_FIELDNAME') {
+        console.log('✅ store_id column already exists in users table');
+      }
+    }
+
+    // Add role column to users if not exists
+    try {
+      await connection.execute(`ALTER TABLE users ADD COLUMN role ENUM('store_manager', 'area_manager', 'regional_manager', 'super_admin') DEFAULT 'store_manager' AFTER username`);
+      await connection.execute(`ALTER TABLE users ADD INDEX idx_role (role)`);
+      console.log('✅ Added role column to users table');
+    } catch (err) {
+      if (err.code === 'ER_DUP_FIELDNAME') {
+        console.log('✅ role column already exists in users table');
+      }
+    }
+
+    // Update existing users with store_id
+    await connection.execute(`UPDATE users SET store_id = 1 WHERE store_id IS NULL`);
+    console.log('✅ Updated existing users with store_id');
+
     // Create products table
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS products (
