@@ -21,7 +21,7 @@ const DateContext = createContext<DateContextType | undefined>(undefined)
 
 interface DateProviderProps {
   children: ReactNode
-  userRole: "admin" | "staff"
+  userRole: "store_manager" | "super_admin" | "area_manager" | "regional_manager"
 }
 
 export function DateProvider({ children, userRole }: DateProviderProps) {
@@ -48,7 +48,7 @@ export function DateProvider({ children, userRole }: DateProviderProps) {
       if (newToday !== today) {
         setToday(newToday)
         // Auto-update dates to new day at midnight
-        if (userRole === "staff") {
+        if (userRole === "store_manager" || userRole === "area_manager" || userRole === "regional_manager") {
           setSelectedDate(newToday)
           setCurrentWorkingDate(newToday)
           setAdminControlledStaffDate(newToday)
@@ -58,7 +58,7 @@ export function DateProvider({ children, userRole }: DateProviderProps) {
       } else if (today !== newToday) {
         // Force refresh if there's a mismatch
         setToday(newToday)
-        if (userRole === "staff") {
+        if (userRole === "store_manager" || userRole === "area_manager" || userRole === "regional_manager") {
           setSelectedDate(newToday)
           setCurrentWorkingDate(newToday)
           setAdminControlledStaffDate(newToday)
@@ -78,12 +78,12 @@ export function DateProvider({ children, userRole }: DateProviderProps) {
   }, [today, userRole, setSelectedDate, setCurrentWorkingDate, setAdminControlledStaffDate, setAdminMainDate])
 
   const isToday = selectedDate === today
-  const canEdit = userRole === "admin" || (selectedDate === currentWorkingDate && !isDayEnded)
+  const canEdit = userRole === "super_admin" || (selectedDate === currentWorkingDate && !isDayEnded)
 
-  const staffCanEndDay = userRole === "staff" && selectedDate === adminControlledStaffDate && !isDayEnded
+  const staffCanEndDay = (userRole === "store_manager" || userRole === "area_manager" || userRole === "regional_manager") && selectedDate === adminControlledStaffDate && !isDayEnded
 
   const endDay = () => {
-    if (userRole === "staff" && selectedDate === adminControlledStaffDate && !isDayEnded) {
+    if ((userRole === "store_manager" || userRole === "area_manager" || userRole === "regional_manager") && selectedDate === adminControlledStaffDate && !isDayEnded) {
       setIsDayEnded(true)
       // Advance to next day
       const nextDate = new Date(adminControlledStaffDate)
@@ -100,7 +100,7 @@ export function DateProvider({ children, userRole }: DateProviderProps) {
   }
 
   const resetWorkingDate = (date: string) => {
-    if (userRole === "admin") {
+    if (userRole === "super_admin") {
       setCurrentWorkingDate(date)
       setSelectedDate(date)
       setIsDayEnded(false)
@@ -108,7 +108,7 @@ export function DateProvider({ children, userRole }: DateProviderProps) {
   }
 
   const adminSetStaffDate = (date: string) => {
-    if (userRole === "admin") {
+    if (userRole === "super_admin") {
       setAdminControlledStaffDate(date)
       setCurrentWorkingDate(date)
       setSelectedDate(date)
@@ -116,7 +116,7 @@ export function DateProvider({ children, userRole }: DateProviderProps) {
     }
   }
 
-  const effectiveSelectedDate = userRole === "admin" ? adminMainDate : selectedDate
+  const effectiveSelectedDate = userRole === "super_admin" ? adminMainDate : selectedDate
 
   return (
     <DateContext.Provider
