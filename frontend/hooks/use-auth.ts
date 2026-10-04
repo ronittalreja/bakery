@@ -8,7 +8,8 @@ import type { User } from "@/types";
 interface TokenPayload {
   id: string;
   username: string;
-  role: "staff" | "admin";
+  role: "store_manager" | "area_manager" | "regional_manager" | "super_admin";
+  store_id?: number;
   isDemo?: boolean;
   iat: number;
   exp: number;
@@ -97,6 +98,7 @@ export const useAuth = () => {
           id: userData.id,
           username: userData.username,
           role: userData.role,
+          store_id: userData.store_id,
           isDemo: userData.isDemo || false,
         };
         setUser(user);
@@ -173,6 +175,7 @@ export const useAuth = () => {
             id: decodedPayload.id,
             username: decodedPayload.username,
             role: decodedPayload.role,
+            store_id: decodedPayload.store_id,
             isDemo: decodedPayload.isDemo || false,
           };
 

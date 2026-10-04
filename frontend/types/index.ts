@@ -1,7 +1,8 @@
 export interface User {
   id: string;
   username: string;
-  role: "staff" | "admin";
+  role: "store_manager" | "area_manager" | "regional_manager" | "super_admin";
+  store_id?: number;
   isDemo?: boolean;
 }
 
