@@ -2,6 +2,7 @@
 // Manages store CRUD operations and user assignments
 
 const db = require('../config/database');
+const bcrypt = require('bcrypt');
 
 /**
  * Get all stores
@@ -60,7 +61,10 @@ const getStoreById = async (req, res) => {
  * Create new store (Super admin only)
  */
 const createStore = async (req, res) => {
+  const connection = await db.getConnection();
   try {
+    await connection.beginTransaction();
+
     const {
       store_code,
       store_name,
@@ -72,27 +76,55 @@ const createStore = async (req, res) => {
       contact_phone,
       contact_email,
       area_manager_id,
-      regional_manager_id
+      regional_manager_id,
+      username,
+      password
     } = req.body;
 
     if (!store_code || !store_name) {
+      await connection.rollback();
       return res.status(400).json({ success: false, error: 'Store code and name are required' });
     }
 
-    const [result] = await db.execute(
+    // Insert store
+    const [result] = await connection.execute(
       `INSERT INTO stores (store_code, store_name, address, city, state, pincode, contact_person, contact_phone, contact_email, area_manager_id, regional_manager_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [store_code, store_name, address, city, state, pincode, contact_person, contact_phone, contact_email, area_manager_id, regional_manager_id]
     );
 
-    const [newStore] = await db.execute('SELECT * FROM stores WHERE id = ?', [result.insertId]);
-    res.json({ success: true, store: newStore[0] });
+    const storeId = result.insertId;
+
+    // If username and password provided, create a user for this store
+    if (username && password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await connection.execute(
+        `INSERT INTO users (username, password, role, store_id)
+         VALUES (?, ?, 'store_manager', ?)`,
+        [username, hashedPassword, storeId]
+      );
+    }
+
+    await connection.commit();
+
+    const [newStore] = await db.execute('SELECT * FROM stores WHERE id = ?', [storeId]);
+    
+    let user = null;
+    if (username && password) {
+      const [users] = await db.execute('SELECT id, username, role, store_id FROM users WHERE username = ?', [username]);
+      user = users[0] || null;
+    }
+
+    res.json({ success: true, store: newStore[0], user });
   } catch (error) {
+    await connection.rollback();
     console.error('Error creating store:', error);
     if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ success: false, error: 'Store code already exists' });
+      return res.status(400).json({ success: false, error: 'Store code or username already exists' });
     }
     res.status(500).json({ success: false, error: error.message });
+  } finally {
+    connection.release();
   }
 };
 
@@ -100,8 +132,13 @@ const createStore = async (req, res) => {
  * Update store (Super admin only)
  */
 const updateStore = async (req, res) => {
+  const connection = await db.getConnection();
   try {
+    await connection.beginTransaction();
+
     const { id } = req.params;
+    const { username, password, ...storeUpdates } = req.body;
+    
     const updates = [];
     const values = [];
 
@@ -112,24 +149,57 @@ const updateStore = async (req, res) => {
     ];
 
     allowedFields.forEach(field => {
-      if (req.body[field] !== undefined) {
+      if (storeUpdates[field] !== undefined) {
         updates.push(`${field} = ?`);
-        values.push(req.body[field]);
+        values.push(storeUpdates[field]);
       }
     });
 
-    if (updates.length === 0) {
-      return res.status(400).json({ success: false, error: 'No fields to update' });
+    if (updates.length > 0) {
+      values.push(id);
+      await connection.execute(`UPDATE stores SET ${updates.join(', ')} WHERE id = ?`, values);
     }
 
-    values.push(id);
-    await db.execute(`UPDATE stores SET ${updates.join(', ')} WHERE id = ?`, values);
+    // Update user credentials if provided
+    if (username || password) {
+      const [store] = await connection.execute('SELECT * FROM stores WHERE id = ?', [id]);
+      if (store.length === 0) {
+        await connection.rollback();
+        return res.status(404).json({ success: false, error: 'Store not found' });
+      }
+
+      const userUpdates = [];
+      const userValues = [];
+
+      if (username) {
+        userUpdates.push('username = ?');
+        userValues.push(username);
+      }
+      if (password) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        userUpdates.push('password = ?');
+        userValues.push(hashedPassword);
+      }
+
+      if (userUpdates.length > 0) {
+        userValues.push(store[0].store_code); // Use store_code as username to find user
+        await connection.execute(
+          `UPDATE users SET ${userUpdates.join(', ')} WHERE username = ?`,
+          userValues
+        );
+      }
+    }
+
+    await connection.commit();
 
     const [updatedStore] = await db.execute('SELECT * FROM stores WHERE id = ?', [id]);
     res.json({ success: true, store: updatedStore[0] });
   } catch (error) {
+    await connection.rollback();
     console.error('Error updating store:', error);
     res.status(500).json({ success: false, error: error.message });
+  } finally {
+    connection.release();
   }
 };
 
@@ -137,20 +207,40 @@ const updateStore = async (req, res) => {
  * Delete store (Super admin only)
  */
 const deleteStore = async (req, res) => {
+  const connection = await db.getConnection();
   try {
+    await connection.beginTransaction();
+
     const { id } = req.params;
     
+    // Check if store exists
+    const [store] = await connection.execute('SELECT * FROM stores WHERE id = ?', [id]);
+    if (store.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, error: 'Store not found' });
+    }
+
     // Check if store has any data
-    const [creditNotes] = await db.execute('SELECT COUNT(*) as count FROM credit_notes WHERE store_id = ?', [id]);
+    const [creditNotes] = await connection.execute('SELECT COUNT(*) as count FROM credit_notes WHERE store_id = ?', [id]);
     if (creditNotes[0].count > 0) {
+      await connection.rollback();
       return res.status(400).json({ success: false, error: 'Cannot delete store with existing credit notes' });
     }
 
-    await db.execute('UPDATE stores SET status = "inactive" WHERE id = ?', [id]);
-    res.json({ success: true, message: 'Store deactivated successfully' });
+    // Delete associated user
+    await connection.execute('DELETE FROM users WHERE store_id = ?', [id]);
+
+    // Deactivate store
+    await connection.execute('UPDATE stores SET status = "inactive" WHERE id = ?', [id]);
+
+    await connection.commit();
+    res.json({ success: true, message: 'Store deactivated and user deleted successfully' });
   } catch (error) {
+    await connection.rollback();
     console.error('Error deleting store:', error);
     res.status(500).json({ success: false, error: error.message });
+  } finally {
+    connection.release();
   }
 };
 

@@ -1,6 +1,6 @@
 const express = require('express');
 const rosReceiptController = require('../controllers/rosReceiptController');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const { rosReceiptUpload } = require('../utils/cloudinary');
 
 const router = express.Router();

@@ -21,6 +21,7 @@ import {
   Edit3,
   Calendar,
   Layers,
+  Store,
 } from "lucide-react";
 import { UploadInvoicePage } from "@/components/upload-invoice-page";
 import { RecordSalePage } from "@/components/record-sale-page";
@@ -36,8 +37,9 @@ import { AdminStockManagementPage } from "@/components/admin-stock-management-pa
 import { AddSalesPage } from "@/components/edit-sales-page";
 import { MLGroupsPage } from "@/components/ml-groups-page";
 import { ManageEventsPage } from "@/components/manage-events-page";
+import { ManageStoresPage } from "@/components/manage-stores-page";
 
-type StaffPage = "dashboard" | "upload-invoice" | "record-sale" | "stock" | "sales-summary" | "returns" | "credit-notes" | "credit-note-details" | "developer" | "manage-products" | "manage-decorations" | "manage-stock" | "edit-sales" | "ml-groups" | "manage-events";
+type StaffPage = "dashboard" | "upload-invoice" | "record-sale" | "stock" | "sales-summary" | "returns" | "credit-notes" | "credit-note-details" | "developer" | "manage-products" | "manage-decorations" | "manage-stock" | "edit-sales" | "ml-groups" | "manage-events" | "manage-stores";
 
 interface DeveloperDashboardProps {
   onSwitchToUser?: () => void;
@@ -263,6 +265,21 @@ export function DeveloperDashboard({ onSwitchToUser }: DeveloperDashboardProps) 
                     </div>
                   </div>
                 </div>
+                <div
+                  onClick={() => setCurrentPage("manage-stores")}
+                  className="group cursor-pointer"
+                >
+                  <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-rose-200 flex items-center justify-center">
+                        <Store className="h-6 w-6 text-white" />
+                      </div>
+                      <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                        Manage Stores
+                      </h3>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           );
@@ -278,6 +295,8 @@ export function DeveloperDashboard({ onSwitchToUser }: DeveloperDashboardProps) 
           return <MLGroupsPage onBack={() => setCurrentPage("developer")} />;
         case "manage-events":
           return <ManageEventsPage onBack={() => setCurrentPage("developer")} />;
+        case "manage-stores":
+          return <ManageStoresPage onBack={() => setCurrentPage("developer")} />;
         default:
           return (
             <div className="h-full bg-white flex items-center justify-center">
