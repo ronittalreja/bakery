@@ -1863,6 +1863,29 @@ async function ensureColumn(table, column, type) {
   } catch (e) {
     if (e.code === 'ER_DUP_FIELDNAME') {
       console.log('role column already exists in users table');
+      // Check if enum needs to be updated
+      try {
+        const [columns] = await db.execute(`SHOW COLUMNS FROM users LIKE 'role'`);
+        if (columns.length > 0) {
+          const currentType = columns[0].Type;
+          if (!currentType.includes('store_manager')) {
+            console.log('Updating role column enum to support new roles...');
+            // Expand enum to include both old and new values
+            await db.execute(
+              `ALTER TABLE users MODIFY COLUMN role ENUM('staff','admin','store_manager','area_manager','regional_manager','super_admin') DEFAULT 'store_manager'`
+            );
+            // Update existing users to new roles
+            await db.execute(`UPDATE users SET role = 'store_manager' WHERE role IN ('staff', 'admin')`);
+            // Shrink enum to only new values
+            await db.execute(
+              `ALTER TABLE users MODIFY COLUMN role ENUM('store_manager','area_manager','regional_manager','super_admin') DEFAULT 'store_manager'`
+            );
+            console.log('role column enum updated successfully');
+          }
+        }
+      } catch (enumError) {
+        console.warn('role column enum update warning:', enumError.message);
+      }
     } else {
       console.warn('role column addition warning:', e.message);
     }
