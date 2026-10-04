@@ -11,52 +11,75 @@ class CreditNote {
       reason,
       status = 'active',
       notes = '',
-      created_by
+      created_by,
+      store_id = 1
     } = creditNoteData;
 
     const [result] = await db.execute(
       `INSERT INTO credit_notes (
         credit_note_number, customer_name, customer_email, customer_phone, 
-        amount, reason, status, notes, created_by, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        amount, reason, status, notes, created_by, store_id, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         credit_note_number, customer_name, customer_email, customer_phone,
-        amount, reason, status, notes, created_by
+        amount, reason, status, notes, created_by, store_id
       ]
     );
 
     return result.insertId;
   }
 
-  static async findById(id) {
-    const [rows] = await db.execute(
-      'SELECT * FROM credit_notes WHERE id = ?',
-      [id]
-    );
+  static async findById(id, storeId = null) {
+    let query = 'SELECT * FROM credit_notes WHERE id = ?';
+    const params = [id];
+    
+    if (storeId) {
+      query += ' AND store_id = ?';
+      params.push(storeId);
+    }
+    
+    const [rows] = await db.execute(query, params);
     return rows[0];
   }
 
-  static async findByMonth(month, year) {
-    const [rows] = await db.execute(
-      'SELECT * FROM credit_notes WHERE MONTH(created_at) = ? AND YEAR(created_at) = ? ORDER BY created_at DESC',
-      [month, year]
-    );
+  static async findByMonth(month, year, storeId = null) {
+    let query = 'SELECT * FROM credit_notes WHERE MONTH(created_at) = ? AND YEAR(created_at) = ?';
+    const params = [month, year];
+    
+    if (storeId) {
+      query += ' AND store_id = ?';
+      params.push(storeId);
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    const [rows] = await db.execute(query, params);
     return rows;
   }
 
-  static async updateStatus(id, status) {
-    const [result] = await db.execute(
-      'UPDATE credit_notes SET status = ?, updated_at = NOW() WHERE id = ?',
-      [status, id]
-    );
+  static async updateStatus(id, status, storeId = null) {
+    let query = 'UPDATE credit_notes SET status = ?, updated_at = NOW() WHERE id = ?';
+    const params = [status, id];
+    
+    if (storeId) {
+      query += ' AND store_id = ?';
+      params.push(storeId);
+    }
+    
+    const [result] = await db.execute(query, params);
     return result.affectedRows > 0;
   }
 
-  static async delete(id) {
-    const [result] = await db.execute(
-      'DELETE FROM credit_notes WHERE id = ?',
-      [id]
-    );
+  static async delete(id, storeId = null) {
+    let query = 'DELETE FROM credit_notes WHERE id = ?';
+    const params = [id];
+    
+    if (storeId) {
+      query += ' AND store_id = ?';
+      params.push(storeId);
+    }
+    
+    const [result] = await db.execute(query, params);
     return result.affectedRows > 0;
   }
 }

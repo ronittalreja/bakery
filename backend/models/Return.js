@@ -4,8 +4,9 @@ const db = require('../config/database');
 class Return {
   static async createGrmReturn(data, connection = db) {
     try {
+      const storeId = data.store_id || 1;
       const [result] = await connection.execute(
-        'INSERT INTO returns (return_date, type, product_id, batch_id, quantity, invoice_price, loss_amount, staff_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO returns (return_date, type, product_id, batch_id, quantity, invoice_price, loss_amount, staff_id, store_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [
           data.returnDate,
           'GRM',
@@ -14,7 +15,8 @@ class Return {
           data.quantity,
           data.invoicePrice,
           data.lossAmount,
-          data.staffId
+          data.staffId,
+          storeId
         ]
       );
       return result.insertId;
@@ -26,8 +28,9 @@ class Return {
 
   static async createGvnDamage(data, connection = db) {
     try {
+      const storeId = data.store_id || 1;
       const [result] = await connection.execute(
-        'INSERT INTO returns (return_date, type, product_id, batch_id, quantity, invoice_price, loss_amount, staff_id) VALUES (?, ?, ?, ?, ?, ?, 0, ?)',
+        'INSERT INTO returns (return_date, type, product_id, batch_id, quantity, invoice_price, loss_amount, staff_id, store_id) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)',
         [
           data.damageDate,
           'GVN',
@@ -35,7 +38,8 @@ class Return {
           data.batchId,
           data.quantity,
           data.invoicePrice,
-          data.staffId
+          data.staffId,
+          storeId
         ]
       );
       return result.insertId;
@@ -45,22 +49,27 @@ class Return {
     }
   }
 
-  static async getGrmReturns(targetDate, connection = db) {
+  static async getGrmReturns(targetDate, storeId = null, connection = db) {
     try {
       const yesterday = new Date(targetDate);
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-      const [rows] = await connection.execute(
-        `
+      let query = `
         SELECT r.*, p.name, p.item_code, p.invoice_price
         FROM returns r
         JOIN products p ON r.product_id = p.id
         JOIN stock_batches sb ON r.batch_id = sb.id
         WHERE r.type = 'GRM' AND r.return_date = ? AND sb.quantity > 0 AND sb.expiry_date = ?
-        `,
-        [targetDate, yesterdayStr]
-      );
+      `;
+      const params = [targetDate, yesterdayStr];
+      
+      if (storeId) {
+        query += ' AND r.store_id = ?';
+        params.push(storeId);
+      }
+
+      const [rows] = await connection.execute(query, params);
       return rows;
     } catch (error) {
       console.error('Error in Return.getGrmReturns:', error);
@@ -68,17 +77,22 @@ class Return {
     }
   }
 
-  static async getGvnDamages(targetDate, connection = db) {
+  static async getGvnDamages(targetDate, storeId = null, connection = db) {
     try {
-      const [rows] = await connection.execute(
-        `
+      let query = `
         SELECT r.*, p.name, p.item_code, p.invoice_price
         FROM returns r
         JOIN products p ON r.product_id = p.id
         WHERE r.type = 'GVN' AND r.return_date = ?
-        `,
-        [targetDate]
-      );
+      `;
+      const params = [targetDate];
+      
+      if (storeId) {
+        query += ' AND r.store_id = ?';
+        params.push(storeId);
+      }
+
+      const [rows] = await connection.execute(query, params);
       return rows;
     } catch (error) {
       console.error('Error in Return.getGvnDamages:', error);
@@ -86,16 +100,21 @@ class Return {
     }
   }
 
-  static async getGrmReturnsSummary(date, connection = db) {
+  static async getGrmReturnsSummary(date, storeId = null, connection = db) {
     try {
-      const [rows] = await connection.execute(
-        `
+      let query = `
         SELECT COUNT(*) AS totalReturns, SUM(quantity) AS totalQuantity, SUM(loss_amount) AS totalLoss
         FROM returns
         WHERE type = 'GRM' AND return_date = ?
-        `,
-        [date]
-      );
+      `;
+      const params = [date];
+      
+      if (storeId) {
+        query += ' AND store_id = ?';
+        params.push(storeId);
+      }
+
+      const [rows] = await connection.execute(query, params);
       return {
         totalReturns: Number(rows[0].totalReturns) || 0,
         totalQuantity: Number(rows[0].totalQuantity) || 0,
@@ -107,16 +126,21 @@ class Return {
     }
   }
 
-  static async getGvnDamagesSummary(date, connection = db) {
+  static async getGvnDamagesSummary(date, storeId = null, connection = db) {
     try {
-      const [rows] = await connection.execute(
-        `
+      let query = `
         SELECT COUNT(*) AS totalDamages, SUM(quantity) AS totalQuantity
         FROM returns
         WHERE type = 'GVN' AND return_date = ?
-        `,
-        [date]
-      );
+      `;
+      const params = [date];
+      
+      if (storeId) {
+        query += ' AND store_id = ?';
+        params.push(storeId);
+      }
+
+      const [rows] = await connection.execute(query, params);
       return {
         totalDamages: Number(rows[0].totalDamages) || 0,
         totalQuantity: Number(rows[0].totalQuantity) || 0

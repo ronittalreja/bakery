@@ -4,8 +4,9 @@ const db = require('../config/database');
 class Invoice {
   static async create(invoiceData, connection = db) {
     try {
+      const storeId = invoiceData.store_id || 1;
       const [result] = await connection.execute(
-        'INSERT INTO invoices (invoice_number, invoice_date, store, customer_name, total_amount, file_reference) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO invoices (invoice_number, invoice_date, store, customer_name, total_amount, file_reference, store_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [
           invoiceData.invoiceNo,
           invoiceData.invoiceDate || null,
@@ -13,6 +14,7 @@ class Invoice {
           invoiceData.customerName || invoiceData.store || 'Unknown Customer',
           invoiceData.totalAmount,
           invoiceData.fileReference || null,
+          storeId
         ]
       );
       return result.insertId;
@@ -22,9 +24,17 @@ class Invoice {
     }
   }
 
-  static async findByDate(invoiceDate, connection = db) {
+  static async findByDate(invoiceDate, storeId = null, connection = db) {
     try {
-      const [rows] = await connection.execute('SELECT * FROM invoices WHERE invoice_date = ?', [invoiceDate]);
+      let query = 'SELECT * FROM invoices WHERE invoice_date = ?';
+      const params = [invoiceDate];
+      
+      if (storeId) {
+        query += ' AND store_id = ?';
+        params.push(storeId);
+      }
+      
+      const [rows] = await connection.execute(query, params);
       return rows;
     } catch (error) {
       console.error('Error in Invoice.findByDate:', error);

@@ -3,14 +3,16 @@ const db = require('../config/database');
 class StockBatch {
   static async create(batchData, connection = db) {
     try {
+      const storeId = batchData.store_id || 1;
       const [result] = await connection.execute(
-        'INSERT INTO stock_batches (product_id, quantity, expiry_date, invoice_date, invoice_reference) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO stock_batches (product_id, quantity, expiry_date, invoice_date, invoice_reference, store_id) VALUES (?, ?, ?, ?, ?, ?)',
         [
           batchData.productId,
           batchData.quantity,
           batchData.expiryDate,
           batchData.invoiceDate,
-          batchData.invoiceReference
+          batchData.invoiceReference,
+          storeId
         ]
       );
       return result.insertId;
@@ -20,12 +22,17 @@ class StockBatch {
     }
   }
 
-  static async findByProductId(productId, connection = db) {
+  static async findByProductId(productId, storeId = null, connection = db) {
     try {
-      const [rows] = await connection.execute(
-        'SELECT * FROM stock_batches WHERE product_id = ? AND quantity > 0 ORDER BY invoice_date ASC',
-        [productId]
-      );
+      let query = 'SELECT * FROM stock_batches WHERE product_id = ? AND quantity > 0 ORDER BY invoice_date ASC';
+      const params = [productId];
+      
+      if (storeId) {
+        query = 'SELECT * FROM stock_batches WHERE product_id = ? AND store_id = ? AND quantity > 0 ORDER BY invoice_date ASC';
+        params.push(storeId);
+      }
+      
+      const [rows] = await connection.execute(query, params);
       return rows;
     } catch (error) {
       console.error('Error in StockBatch.findByProductId:', error);
@@ -48,7 +55,7 @@ class StockBatch {
     }
   }
 
-  static async getAvailableStock({ date, productId } = {}, connection = db) {
+  static async getAvailableStock({ date, productId, storeId } = {}, connection = db) {
     try {
       // Reference date defaults to today; used only for expiry filtering
       const referenceDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date)
@@ -84,6 +91,12 @@ class StockBatch {
 
       const params = [];
 
+      // Apply store filter if provided
+      if (storeId) {
+        query += ' AND sb.store_id = ?';
+        params.push(storeId);
+      }
+
       // Apply product filter if provided
       if (productId) {
         query += ' AND sb.product_id = ?';
@@ -116,13 +129,13 @@ class StockBatch {
     }
   }
 
-  static async getAggregatedAvailableStockByProduct({ date } = {}, connection = db) {
+  static async getAggregatedAvailableStockByProduct({ date, storeId } = {}, connection = db) {
     try {
       const referenceDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date)
         ? date
         : new Date().toISOString().split('T')[0];
 
-      const query = `
+      let query = `
         SELECT 
           p.id AS product_id,
           p.name,
@@ -143,10 +156,18 @@ class StockBatch {
         LEFT JOIN stock_batches sb ON sb.product_id = p.id 
           AND (CASE WHEN p.shelf_life_days IS NOT NULL AND p.shelf_life_days >= 0 THEN DATE_ADD(sb.invoice_date, INTERVAL p.shelf_life_days DAY) ELSE sb.expiry_date END) > ?
         WHERE p.is_active = 1
-        GROUP BY p.id, p.name, p.item_code, p.hsn_code, p.invoice_price, p.sale_price, p.grm_value, p.image_url, p.category, p.shelf_life_days
-        ORDER BY p.name ASC`;
+      `;
+      
+      const params = [referenceDate];
 
-      const [rows] = await connection.execute(query, [referenceDate]);
+      if (storeId) {
+        query += ' AND sb.store_id = ?';
+        params.push(storeId);
+      }
+
+      query += ' GROUP BY p.id, p.name, p.item_code, p.hsn_code, p.invoice_price, p.sale_price, p.grm_value, p.image_url, p.category, p.shelf_life_days ORDER BY p.name ASC';
+
+      const [rows] = await connection.execute(query, params);
       return rows.map(row => ({
         product_id: row.product_id,
         name: row.name,

@@ -24,13 +24,29 @@ class Product {
     }
     return { category: undefined, shelf_life_days: undefined };
   }
-  static async findAll() {
-    const [rows] = await db.execute('SELECT * FROM products WHERE is_active = 1');
+  static async findAll(storeId = null) {
+    let query = 'SELECT * FROM products WHERE is_active = 1';
+    const params = [];
+    
+    if (storeId) {
+      query += ' AND store_id = ?';
+      params.push(storeId);
+    }
+    
+    const [rows] = await db.execute(query, params);
     return rows;
   }
 
-  static async findById(id) {
-    const [rows] = await db.execute('SELECT * FROM products WHERE id = ?', [id]);
+  static async findById(id, storeId = null) {
+    let query = 'SELECT * FROM products WHERE id = ?';
+    const params = [id];
+    
+    if (storeId) {
+      query += ' AND store_id = ?';
+      params.push(storeId);
+    }
+    
+    const [rows] = await db.execute(query, params);
     return rows[0];
   }
 
@@ -40,6 +56,7 @@ class Product {
       const grmValue = data.grm_value || (data.invoice_price * 0.15);
       const itemCode = data.item_code || `ITEM-${Date.now()}`;
       const imageUrl = processImageUrl(data.image_url) || '/placeholder.svg';
+      const storeId = data.store_id || 1; // Default to store 1 if not provided
 
       // Auto category/shelf life from item code if not provided
       const inferred = this.inferCategoryAndShelfLife(itemCode);
@@ -47,10 +64,10 @@ class Product {
       const shelfLifeDays = data.shelf_life_days != null ? data.shelf_life_days : inferred.shelf_life_days;
       
       const [result] = await db.execute(
-        'INSERT INTO products (item_code, name, invoice_price, sale_price, grm_value, hsn_code, image_url, category, shelf_life_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [itemCode, data.name, data.invoice_price, salePrice, grmValue, data.hsn_code || '19059010', imageUrl, category, shelfLifeDays]
+        'INSERT INTO products (item_code, name, invoice_price, sale_price, grm_value, hsn_code, image_url, category, shelf_life_days, store_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [itemCode, data.name, data.invoice_price, salePrice, grmValue, data.hsn_code || '19059010', imageUrl, category, shelfLifeDays, storeId]
       );
-      return this.findById(result.insertId);
+      return this.findById(result.insertId, storeId);
     } catch (error) {
       console.error('Error in Product.create:', error);
       throw error;
