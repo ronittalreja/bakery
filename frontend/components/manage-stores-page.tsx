@@ -38,7 +38,6 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
   // Create form state
   const [newUsername, setNewUsername] = useState("")
   const [newPassword, setNewPassword] = useState("")
-  const [newStoreName, setNewStoreName] = useState("")
   
   // Edit form state
   const [editUsername, setEditUsername] = useState("")
@@ -70,8 +69,8 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
     e.preventDefault()
     setError("")
 
-    if (!newUsername || !newPassword || !newStoreName) {
-      setError("All fields are required")
+    if (!newUsername || !newPassword) {
+      setError("Username and password are required")
       return
     }
 
@@ -87,7 +86,6 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
           },
           body: JSON.stringify({
             store_code: newUsername,
-            store_name: newStoreName,
             username: newUsername,
             password: newPassword
           })
@@ -98,7 +96,6 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
         setShowCreateForm(false)
         setNewUsername("")
         setNewPassword("")
-        setNewStoreName("")
         fetchStores()
       }
     } catch (err: any) {
@@ -233,16 +230,6 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="newStoreName">Store Name</Label>
-                  <Input
-                    id="newStoreName"
-                    value={newStoreName}
-                    onChange={(e) => setNewStoreName(e.target.value)}
-                    placeholder="e.g., R3310 Bakery"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="newPassword">Password</Label>
                   <Input
                     id="newPassword"
@@ -264,7 +251,6 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
                       setShowCreateForm(false)
                       setNewUsername("")
                       setNewPassword("")
-                      setNewStoreName("")
                     }}
                   >
                     Cancel

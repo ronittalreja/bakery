@@ -67,30 +67,20 @@ const createStore = async (req, res) => {
 
     const {
       store_code,
-      store_name,
-      address,
-      city,
-      state,
-      pincode,
-      contact_person,
-      contact_phone,
-      contact_email,
-      area_manager_id,
-      regional_manager_id,
       username,
       password
     } = req.body;
 
-    if (!store_code || !store_name) {
+    if (!store_code) {
       await connection.rollback();
-      return res.status(400).json({ success: false, error: 'Store code and name are required' });
+      return res.status(400).json({ success: false, error: 'Store code is required' });
     }
 
-    // Insert store
+    // Insert store (store_name will be same as store_code)
     const [result] = await connection.execute(
-      `INSERT INTO stores (store_code, store_name, address, city, state, pincode, contact_person, contact_phone, contact_email, area_manager_id, regional_manager_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [store_code, store_name, address, city, state, pincode, contact_person, contact_phone, contact_email, area_manager_id, regional_manager_id]
+      `INSERT INTO stores (store_code, store_name, status)
+       VALUES (?, ?, 'active')`,
+      [store_code, store_code]
     );
 
     const storeId = result.insertId;
