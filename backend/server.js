@@ -1818,6 +1818,18 @@ async function ensureColumn(table, column, type) {
     console.warn('Stores table creation warning:', e.message);
   }
 
+  // Add status column to stores if not exists
+  try {
+    await db.execute(`ALTER TABLE stores ADD COLUMN status ENUM('active', 'inactive') DEFAULT 'active'`);
+    console.log('status column added to stores table');
+  } catch (e) {
+    if (e.code === 'ER_DUP_FIELDNAME') {
+      console.log('status column already exists in stores table');
+    } else {
+      console.warn('status column addition warning:', e.message);
+    }
+  }
+
   // Insert initial store
   try {
     await db.execute(`

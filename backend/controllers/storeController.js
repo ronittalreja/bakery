@@ -13,22 +13,35 @@ const bcrypt = require('bcrypt');
 const getAllStores = async (req, res) => {
   try {
     const user = req.user;
-    let query = 'SELECT * FROM stores WHERE status = "active"';
+    
+    // Check if status column exists
+    const [columns] = await db.execute(
+      `SHOW COLUMNS FROM stores LIKE 'status'`
+    );
+    
+    const hasStatusColumn = columns.length > 0;
+    
+    let query = 'SELECT * FROM stores';
     const params = [];
+
+    // Only add status filter if column exists
+    if (hasStatusColumn) {
+      query += ' WHERE status = "active"';
+    }
 
     // Filter based on user role
     if (user.role === 'store_manager') {
-      query += ' AND id = ?';
+      query += hasStatusColumn ? ' AND id = ?' : ' WHERE id = ?';
       params.push(user.store_id);
     } else if (user.role === 'area_manager') {
-      query += ' AND area_manager_id = ?';
+      query += hasStatusColumn ? ' AND area_manager_id = ?' : ' WHERE area_manager_id = ?';
       params.push(user.id);
     } else if (user.role === 'regional_manager') {
-      query += ' AND regional_manager_id = ?';
+      query += hasStatusColumn ? ' AND regional_manager_id = ?' : ' WHERE regional_manager_id = ?';
       params.push(user.id);
     }
 
-    query += ' ORDER BY store_name ASC';
+    query += ' ORDER BY store_code ASC';
 
     const [stores] = await db.execute(query, params);
     res.json({ success: true, stores });
