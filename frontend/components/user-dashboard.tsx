@@ -365,7 +365,7 @@ export function UserDashboard({ onBackToDeveloper }: UserDashboardProps) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <User className="h-6 w-6 text-slate-900" />
-                  <h1 className="text-lg sm:text-2xl font-bold text-slate-900 truncate">Welcome back, R3309</h1>
+                  <h1 className="text-lg sm:text-2xl font-bold text-slate-900 truncate">Welcome back, {user?.username}</h1>
                 </div>
               </div>
             </div>

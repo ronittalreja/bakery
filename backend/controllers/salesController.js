@@ -589,7 +589,11 @@ const getSalesSummary = async (req, res) => {
     }
 
     // Fetch invoices for the date - filter by store_id
-    const storeId = req.user?.store_id || 1;
+    const storeId = req.user?.store_id;
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+    
     const [invoices] = await db.execute(
       `SELECT id, total_amount FROM invoices 
        WHERE DATE(invoice_date) = ? AND store_id = ?`,
@@ -802,7 +806,11 @@ const getSalesByDate = async (req, res) => {
     }
 
     // Fetch invoices for the date - filter by store_id
-    const storeId = req.user?.store_id || 1;
+    const storeId = req.user?.store_id;
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+    
     const [invoices] = await db.execute(
       `SELECT id, invoice_number, invoice_date, total_amount FROM invoices 
        WHERE DATE(invoice_date) = ? AND store_id = ?`,
