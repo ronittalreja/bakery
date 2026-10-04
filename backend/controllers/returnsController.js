@@ -6,6 +6,8 @@ const { getDemoData } = require('../middleware/demoMode');
 
 const getGrmReturns = async (req, res) => {
   try {
+    const storeId = req.store_id || req.user?.store_id;
+    
     // Return demo data if demo user
     if (req.isDemo) {
       const demoReturns = getDemoData('returns');
@@ -44,42 +46,35 @@ const getGrmReturns = async (req, res) => {
     const today = new Date(targetDate);
     const todayStr = today.toISOString().split('T')[0];
 
-    const [rows] = await db.execute(
-      `SELECT 
+    const query = `
+      SELECT 
         sb.id as batch_id,
         sb.product_id,
-        sb.quantity as batch_quantity,
-        -- Effective expiry based on current product shelf life
-        CASE 
-          WHEN p.shelf_life_days IS NOT NULL AND p.shelf_life_days >= 0 THEN DATE_ADD(sb.invoice_date, INTERVAL p.shelf_life_days DAY)
-          ELSE sb.expiry_date
-        END AS expiry_date,
-        sb.invoice_date,
-        sb.invoice_reference,
         p.name,
         p.item_code,
-        p.category,
-        p.shelf_life_days,
         p.invoice_price,
-        p.hsn_code,
-        p.image_url,
-        sb.quantity AS available_quantity
+        sb.quantity as batch_quantity,
+        sb.expiry_date,
+        sb.quantity as available_quantity,
+        p.shelf_life_days
       FROM stock_batches sb
       JOIN products p ON sb.product_id = p.id
       WHERE p.is_active = 1
-        AND (p.shelf_life_days IS NULL OR p.shelf_life_days > 0)
-        AND DATE(
-          CASE 
-            WHEN p.shelf_life_days IS NOT NULL AND p.shelf_life_days >= 0 THEN DATE_ADD(sb.invoice_date, INTERVAL p.shelf_life_days DAY)
-            ELSE sb.expiry_date
-          END
-        ) = ?
-      HAVING available_quantity > 0
-      ORDER BY p.name`,
-      [todayStr]
-    );
+        AND sb.quantity > 0
+        AND sb.expiry_date = ?
+        ${storeId ? 'AND sb.store_id = ?' : ''}
+      ORDER BY p.name
+    `;
+    
+    const params = [todayStr];
+    if (storeId) params.push(storeId);
+    
+    const [rows] = await db.execute(query, params);
 
     // Also get already processed returns for the target date
+    const processedParams = [targetDate];
+    if (storeId) processedParams.push(storeId);
+    
     const [processedReturns] = await db.execute(
       `SELECT 
         r.id,
@@ -99,8 +94,9 @@ const getGrmReturns = async (req, res) => {
       FROM returns r
       JOIN products p ON r.product_id = p.id
       JOIN stock_batches sb ON r.batch_id = sb.id
-      WHERE r.type = 'GRM' AND r.return_date = ?`,
-      [targetDate]
+      WHERE r.type = 'GRM' AND r.return_date = ?
+      ${storeId ? 'AND r.store_id = ?' : ''}`,
+      processedParams
     );
 
     res.json({
@@ -110,29 +106,28 @@ const getGrmReturns = async (req, res) => {
         product_id: row.product_id,
         name: row.name,
         item_code: row.item_code,
-        category: row.category,
         shelf_life_days: row.shelf_life_days,
         quantity: Number(row.available_quantity),
         invoice_price: Number(row.invoice_price),
-        image_url: row.image_url || '/placeholder.svg',
-        hsn_code: row.hsn_code || '',
+        image_url: '/placeholder.svg',
+        hsn_code: '',
         grm_value: Number((row.available_quantity * row.invoice_price * 0.15).toFixed(2)),
         expiry_date: row.expiry_date,
-        invoice_date: row.invoice_date,
-        invoice_reference: row.invoice_reference
+        invoice_date: null,
+        invoice_reference: null
       })),
-      processed: processedReturns.map(row => ({
+      processedReturns: processedReturns.map(row => ({
         id: row.id,
         product_id: row.product_id,
         batch_id: row.batch_id,
-        name: row.name,
-        item_code: row.item_code,
         quantity: Number(row.quantity),
+        return_date: row.return_date,
         invoice_price: Number(row.invoice_price),
         loss_amount: Number(row.loss_amount),
-        return_date: row.return_date,
-        image_url: row.image_url || '/placeholder.svg',
-        hsn_code: row.hsn_code || '',
+        name: row.name,
+        item_code: row.item_code,
+        hsn_code: row.hsn_code,
+        image_url: row.image_url,
         expiry_date: row.expiry_date,
         invoice_date: row.invoice_date,
         invoice_reference: row.invoice_reference

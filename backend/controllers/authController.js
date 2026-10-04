@@ -29,14 +29,21 @@ const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role, isDemo: user.username === 'demo' },
+      { 
+        id: user.id, 
+        username: user.username, 
+        role: user.role || 'store_manager', 
+        store_id: user.store_id,
+        isDemo: user.username === 'demo' 
+      },
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '365d' } // 1 year for persistent sessions
     );
 
     const response = {
       token,
-      role: user.role
+      role: user.role || 'store_manager',
+      store_id: user.store_id
     };
     console.log('Login response:', response);
     res.json(response);

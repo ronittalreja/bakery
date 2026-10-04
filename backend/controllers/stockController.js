@@ -6,6 +6,7 @@ const { demoData } = require('../middleware/demoMode');
 const getStock = async (req, res) => {
   try {
     const { date } = req.query;
+    const storeId = req.store_id || req.user?.store_id;
     const targetDate = date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
 
     // Return demo data if demo user
@@ -13,7 +14,7 @@ const getStock = async (req, res) => {
       const demoStock = demoData.stockBatches.map(batch => {
         const product = demoData.products.find(p => p.id === batch.product_id);
         return {
-          id: batch.product_id, // Use product_id as id so frontend can match with products
+          id: batch.product_id,
           product_id: batch.product_id,
           quantity: batch.quantity,
           expiry_date: batch.expiry_date,
@@ -26,7 +27,7 @@ const getStock = async (req, res) => {
           sale_price: product?.sale_price || 0,
           grm_value: product?.grm_value || 0,
           image_url: product?.image_url || '/placeholder.svg',
-          batchId: String(batch.id) // Add batchId for frontend stock validation
+          batchId: String(batch.id)
         };
       }).filter(item => item.quantity > 0);
 
@@ -36,10 +37,8 @@ const getStock = async (req, res) => {
       });
     }
 
-    // For historical sales, we need to show all stock that existed on the target date
-    // This includes items that were available even if they expired on that date
-    const [rows] = await db.execute(
-      `SELECT 
+    const query = `
+      SELECT 
         sb.id,
         sb.product_id,
         sb.quantity,
@@ -57,10 +56,15 @@ const getStock = async (req, res) => {
       FROM stock_batches sb
       JOIN products p ON sb.product_id = p.id
       WHERE sb.invoice_date <= ? AND p.is_active = 1
+      ${storeId ? 'AND sb.store_id = ?' : ''}
       HAVING available_quantity > 0
-      ORDER BY p.name`,
-      [targetDate]
-    );
+      ORDER BY p.name
+    `;
+    
+    const params = [targetDate];
+    if (storeId) params.push(storeId);
+    
+    const [rows] = await db.execute(query, params);
 
     res.json({
       success: true,
@@ -196,6 +200,7 @@ const getLowStockAlerts = async (req, res) => {
 
 const addStockBatch = async (req, res) => {
   try {
+    const storeId = req.store_id || req.user?.store_id || 1;
     const { productId, quantity, invoiceDate, invoiceReference } = req.body;
     
     if (!productId || !quantity || !invoiceDate) {
@@ -234,7 +239,8 @@ const addStockBatch = async (req, res) => {
       quantity,
       expiryDate,
       invoiceDate,
-      invoiceReference: invoiceReference || null
+      invoiceReference: invoiceReference || null,
+      store_id: storeId
     });
 
     res.json({ 

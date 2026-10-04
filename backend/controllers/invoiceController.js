@@ -275,6 +275,8 @@ const uploadInvoice = async (req, res) => {
     try {
       await connection.beginTransaction();
 
+      const storeId = req.store_id || req.user?.store_id || 1;
+
       // Create invoice
       const invoiceId = await Invoice.create(
         {
@@ -283,7 +285,7 @@ const uploadInvoice = async (req, res) => {
           store: parsedData.store,
           totalAmount: parsedData.totalAmount,
           fileReference: fileName,
-          
+          store_id: storeId
         },
         connection
       );

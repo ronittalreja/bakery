@@ -861,6 +861,7 @@ const storeCreditNote = async (req, res) => {
 const getAllCreditNotes = async (req, res) => {
   try {
     const { month } = req.query;
+    const storeId = req.store_id || req.user?.store_id;
     
     // Handle "all" case for full year data
     if (month && (month === 'all' || month.includes('-all'))) {
@@ -929,10 +930,14 @@ const getAllCreditNotes = async (req, res) => {
           COALESCE(status, 'pending') as status
         FROM credit_notes
         WHERE YEAR(COALESCE(return_date, date)) = ?
+        ${storeId ? 'AND store_id = ?' : ''}
         ORDER BY date DESC, created_at DESC LIMIT 100
       `;
       
-      const [creditNotes] = await db.execute(query, [yearToUse]);
+      const params = [yearToUse];
+      if (storeId) params.push(storeId);
+      
+      const [creditNotes] = await db.execute(query, params);
       
       const validCreditNotes = creditNotes.filter(row => {
         try {
@@ -1033,6 +1038,11 @@ const getAllCreditNotes = async (req, res) => {
     if (month) {
       query += ` WHERE DATE_FORMAT(COALESCE(return_date, date), '%Y-%m') = ?`;
       params.push(month);
+    }
+    
+    if (storeId) {
+      query += month ? ` AND store_id = ?` : ` WHERE store_id = ?`;
+      params.push(storeId);
     }
     
     query += ` ORDER BY date DESC, created_at DESC LIMIT 100`; // Added limit for performance

@@ -18,13 +18,15 @@ const syncProductPrices = async (productId, invoicePrice, salePrice) => {
 
 const getAllProducts = async (req, res) => {
   try {
+    const storeId = req.store_id || req.user?.store_id;
+    
     // Return demo data if demo user
     if (req.isDemo) {
       const demoProducts = getDemoData('products');
       return res.json({ success: true, products: demoProducts });
     }
     
-    const products = await Product.findAll();
+    const products = await Product.findAll(storeId);
     res.json({ success: true, products });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -34,8 +36,9 @@ const getAllProducts = async (req, res) => {
 const getProduct = async (req, res) => {
   try {
     const { id } = req.params;
+    const storeId = req.store_id || req.user?.store_id;
     
-    const product = await Product.findById(id);
+    const product = await Product.findById(id, storeId);
     
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
@@ -65,6 +68,7 @@ const getProductByItemCode = async (req, res) => {
 
 const createProduct = async (req, res) => {
   try {
+    const storeId = req.store_id || req.user?.store_id || 1;
     const { name, itemCode, hsnCode, description, category, shelfLifeDays, invoicePrice, salePrice, grmValue, imageUrl, isActive } = req.body;
     
     // Map incoming camelCase to DB snake_case
@@ -79,7 +83,8 @@ const createProduct = async (req, res) => {
       sale_price: salePrice,
       grm_value: grmValue,
       image_url: imageUrl,
-      is_active: typeof isActive === 'boolean' ? (isActive ? 1 : 0) : undefined
+      is_active: typeof isActive === 'boolean' ? (isActive ? 1 : 0) : undefined,
+      store_id: storeId
     });
     
     // Sync prices to stock batches (for any existing batches)

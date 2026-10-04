@@ -72,6 +72,7 @@ const authMiddleware = (roles = []) => (req, res, next) => {
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/stores', require('./routes/stores'));
 app.use('/api/invoices', authMiddleware(['staff', 'admin']), require('./routes/invoices'));
 app.use('/api/credit-notes', authMiddleware(['staff', 'admin']), require('./routes/creditNotes'));
 app.use('/api/stock', authMiddleware(['staff', 'admin']), require('./routes/stock'));
@@ -1069,7 +1070,7 @@ app.post('/api/populate-tomorrow-ai-events', async (req, res) => {
       { event_name: 'Gandhi Jayanti', event_type: 'HOLIDAY', date_rule: 'fixed', month: 10, day: 2, description: 'Gandhi Jayanti' },
       { event_name: 'Independence Day', event_type: 'HOLIDAY', date_rule: 'fixed', month: 8, day: 15, description: 'Independence Day of India' },
       { event_name: 'Children Day', event_type: 'SPECIAL_DAY', date_rule: 'fixed', month: 11, day: 14, description: 'Children Day' },
-      { event_name: 'Christmas', event_type: 'HOLIDAY', date_rule: 'fixed', month: 12, day: 25, description: 'Christmas Day' },
+
       { event_name: 'New Year Eve', event_type: 'SPECIAL_DAY', date_rule: 'fixed', month: 12, day: 31, description: 'New Year Eve' },
       
       // Nth weekday events
