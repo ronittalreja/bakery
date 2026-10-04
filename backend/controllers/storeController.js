@@ -14,30 +14,19 @@ const getAllStores = async (req, res) => {
   try {
     const user = req.user;
     
-    // Check if status column exists
-    const [columns] = await db.execute(
-      `SHOW COLUMNS FROM stores LIKE 'status'`
-    );
-    
-    const hasStatusColumn = columns.length > 0;
-    
+    // Try with status filter first, fall back to simple query
     let query = 'SELECT * FROM stores';
     const params = [];
 
-    // Only add status filter if column exists
-    if (hasStatusColumn) {
-      query += ' WHERE status = "active"';
-    }
-
     // Filter based on user role
     if (user.role === 'store_manager') {
-      query += hasStatusColumn ? ' AND id = ?' : ' WHERE id = ?';
+      query += ' WHERE id = ?';
       params.push(user.store_id);
     } else if (user.role === 'area_manager') {
-      query += hasStatusColumn ? ' AND area_manager_id = ?' : ' WHERE area_manager_id = ?';
+      query += ' WHERE area_manager_id = ?';
       params.push(user.id);
     } else if (user.role === 'regional_manager') {
-      query += hasStatusColumn ? ' AND regional_manager_id = ?' : ' WHERE regional_manager_id = ?';
+      query += ' WHERE regional_manager_id = ?';
       params.push(user.id);
     }
 
