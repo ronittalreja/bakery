@@ -90,10 +90,10 @@ app.use('/api/sales', authMiddleware(['store_manager', 'staff', 'admin', 'super_
 app.use('/api/add-sales', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/add-sales'));
 app.use('/api/returns', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/returns'));
 app.use('/api/decorations', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/decorations'));
-app.use('/api/expenses', authMiddleware(['super_admin', 'admin']), require('./routes/expenses'));
+app.use('/api/expenses', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/expenses'));
 app.use('/api/reports', authMiddleware(['super_admin', 'admin']), require('./routes/reports'));
 app.use('/api/ros-receipts', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/rosReceipts'));
-app.use('/api/insights', authMiddleware(['super_admin', 'admin']), require('./routes/insights'));
+app.use('/api/insights', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/insights'));
 app.use('/api/tomorrow-ai/products', require('./routes/tomorrowAIProducts'));
 app.use('/api/tomorrow-ai', authMiddleware(['super_admin', 'admin']), require('./routes/tomorrowAI'));
 app.use('/api/tomorrow-ai/features', authMiddleware(['super_admin', 'admin']), require('./routes/tomorrowAIFeatures'));
