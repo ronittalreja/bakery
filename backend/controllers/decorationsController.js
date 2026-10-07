@@ -203,26 +203,32 @@ const getDecorationForSale = async (decorationId, isDemo = false) => {
 const getDecorationsForAddSales = async (req, res) => {
   try {
     const { date } = req.query;
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
     
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return res.status(400).json({ success: false, error: 'Valid date is required' });
     }
 
-    // Get all active decorations
+    // Get all active decorations - filter by store_id
     const [decorations] = await db.execute(
-      'SELECT id, sku, name, category, sale_price, stock_quantity, image_url FROM decorations WHERE is_active = 1'
+      'SELECT id, sku, name, category, sale_price, stock_quantity, image_url FROM decorations WHERE is_active = 1 AND store_id = ?',
+      [storeId]
     );
 
     // For each decoration, calculate available stock considering sales on that date
     const decorationsWithAvailability = await Promise.all(
       decorations.map(async (decoration) => {
-        // Get total sold quantity for this decoration on the specific date
+        // Get total sold quantity for this decoration on the specific date - filter by store_id
         const [soldData] = await db.execute(`
           SELECT SUM(si.quantity) as sold_quantity
           FROM sales s
           JOIN sale_items si ON s.id = si.sale_id
-          WHERE si.item_id = ? AND DATE(s.sale_date) = ?
-        `, [decoration.id, date]);
+          WHERE si.item_id = ? AND DATE(s.sale_date) = ? AND s.store_id = ?
+        `, [decoration.id, date, storeId]);
 
         const soldQuantity = Number(soldData[0]?.sold_quantity || 0);
         const availableQuantity = Math.max(0, decoration.stock_quantity - soldQuantity);

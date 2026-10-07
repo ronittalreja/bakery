@@ -224,6 +224,11 @@ const getGvnDamages = async (req, res) => {
   try {
     const { date } = req.query;
     const targetDate = date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
 
     // Return demo data if demo user
     if (req.isDemo) {
@@ -255,7 +260,7 @@ const getGvnDamages = async (req, res) => {
       return res.json({ success: true, data: demoGvnDamages });
     }
 
-    // Get stock received today that can be marked as damaged
+    // Get stock received today that can be marked as damaged - filter by store_id
     const [availableStock] = await db.execute(
       `SELECT 
         sb.id as batch_id,
@@ -277,13 +282,13 @@ const getGvnDamages = async (req, res) => {
         sb.quantity AS available_quantity
       FROM stock_batches sb
       JOIN products p ON sb.product_id = p.id
-      WHERE sb.invoice_date = ? AND p.is_active = 1
+      WHERE sb.invoice_date = ? AND p.is_active = 1 AND sb.store_id = ?
       HAVING available_quantity > 0
       ORDER BY p.name`,
-      [targetDate]
+      [targetDate, storeId]
     );
 
-    // Get already processed damages for the target date
+    // Get already processed damages for the target date - filter by store_id
     const [processedDamages] = await db.execute(
       `SELECT 
         r.id,
@@ -302,8 +307,8 @@ const getGvnDamages = async (req, res) => {
       FROM returns r
       JOIN products p ON r.product_id = p.id
       JOIN stock_batches sb ON r.batch_id = sb.id
-      WHERE r.type = 'GVN' AND r.return_date = ?`,
-      [targetDate]
+      WHERE r.type = 'GVN' AND r.return_date = ? AND sb.store_id = ?`,
+      [targetDate, storeId]
     );
 
     res.json({

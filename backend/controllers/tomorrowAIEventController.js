@@ -9,11 +9,6 @@ const db = require('../config/database');
 async function getNextEvent(req, res) {
   try {
     const today = new Date().toISOString().split('T')[0];
-    const storeId = req.user?.store_id;
-
-    if (!storeId) {
-      return res.status(400).json({ success: false, error: 'User store_id not found' });
-    }
 
     const [events] = await db.execute(`
       SELECT
@@ -24,10 +19,10 @@ async function getNextEvent(req, res) {
         year,
         description
       FROM tomorrow_ai_events
-      WHERE event_date >= ? AND status = 'approved' AND store_id = ?
+      WHERE event_date >= ? AND status = 'approved'
       ORDER BY event_date ASC
       LIMIT 1
-    `, [today, storeId]);
+    `, [today]);
     
     if (events.length === 0) {
       return res.json({ success: true, data: null });
@@ -60,22 +55,17 @@ async function getUpcomingEvents(req, res) {
     const today = new Date().toISOString().split('T')[0];
     const limit = req.query.limit ? parseInt(req.query.limit) : 10;
     const safeLimit = isNaN(limit) ? 10 : limit;
-    const storeId = req.user?.store_id;
-
-    if (!storeId) {
-      return res.status(400).json({ success: false, error: 'User store_id not found' });
-    }
 
     if (!today) {
       return res.status(400).json({ success: false, error: 'Invalid date' });
     }
 
-    console.log('getUpcomingEvents - today:', today, 'limit:', safeLimit, 'store_id:', storeId);
+    console.log('getUpcomingEvents - today:', today, 'limit:', safeLimit);
 
     // Use hardcoded LIMIT to avoid parameter binding issues
     const safeLimitInt = Math.min(Math.max(safeLimit, 1), 100); // Clamp between 1 and 100
-    const query = `SELECT id, event_name, event_type, event_date, year, description FROM tomorrow_ai_events WHERE event_date >= ? AND status = 'approved' AND store_id = ? ORDER BY event_date ASC LIMIT ${safeLimitInt}`;
-    const [events] = await db.execute(query, [String(today), storeId]);
+    const query = `SELECT id, event_name, event_type, event_date, year, description FROM tomorrow_ai_events WHERE event_date >= ? AND status = 'approved' ORDER BY event_date ASC LIMIT ${safeLimitInt}`;
+    const [events] = await db.execute(query, [String(today)]);
 
     const eventsWithDays = events.map(event => {
       const eventDate = new Date(event.event_date);
@@ -102,33 +92,27 @@ async function getUpcomingEvents(req, res) {
 async function getEventForecast(req, res) {
   try {
     const { eventId, eventName, year } = req.params;
-    const storeId = req.user?.store_id;
-
-    if (!storeId) {
-      return res.status(400).json({ success: false, error: 'User store_id not found' });
-    }
-
     if (!eventId && !eventName) {
       return res.status(400).json({ success: false, error: 'eventId or eventName required' });
     }
 
-    // Get event details - handle undefined parameters with store_id filtering
+    // Get event details - handle undefined parameters (events are global)
     let query, params;
     if (eventId && eventName && year) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ? AND store_id = ?`;
-      params = [eventName, year, storeId];
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ?`;
+      params = [eventName, year];
     } else if (eventId && eventName) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE (id = ? OR event_name = ?) AND store_id = ?`;
-      params = [eventId, eventName, storeId];
+      query = `SELECT * FROM tomorrow_ai_events WHERE (id = ? OR event_name = ?)`;
+      params = [eventId, eventName];
     } else if (eventId) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE id = ? AND store_id = ?`;
-      params = [eventId, storeId];
+      query = `SELECT * FROM tomorrow_ai_events WHERE id = ?`;
+      params = [eventId];
     } else if (eventName && year) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ? AND store_id = ?`;
-      params = [eventName, year, storeId];
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ?`;
+      params = [eventName, year];
     } else {
-      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND store_id = ?`;
-      params = [eventName, storeId];
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ?`;
+      params = [eventName];
     }
 
     const [events] = await db.execute(query, params);
@@ -141,8 +125,13 @@ async function getEventForecast(req, res) {
     const currentYear = new Date().getFullYear();
     const targetYear = year || event.year || currentYear || currentYear;
     const isFixedDate = event.is_fixed_date === 1 || event.is_fixed_date === true;
+    const storeId = req.user?.store_id;
 
-    console.log(`Event: ${event.event_name}, is_fixed_date: ${isFixedDate}`);
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+
+    console.log(`Event: ${event.event_name}, is_fixed_date: ${isFixedDate}, store_id: ${storeId}`);
 
     // Calculate dynamic year window (current-1, current-2, current-3)
     const historicalYears = [targetYear - 1, targetYear - 2, targetYear - 3];
@@ -318,23 +307,23 @@ async function getEventPattern(req, res) {
       return res.status(400).json({ success: false, error: 'mlGroupId required' });
     }
 
-    // Get event - handle undefined parameters with store_id filtering
+    // Get event - handle undefined parameters (events are global)
     let query, params;
     if (eventId && eventName && year) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ? AND store_id = ?`;
-      params = [eventName, year, storeId];
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ?`;
+      params = [eventName, year];
     } else if (eventId && eventName) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE (id = ? OR event_name = ?) AND store_id = ?`;
-      params = [eventId, eventName, storeId];
+      query = `SELECT * FROM tomorrow_ai_events WHERE (id = ? OR event_name = ?)`;
+      params = [eventId, eventName];
     } else if (eventId) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE id = ? AND store_id = ?`;
-      params = [eventId, storeId];
+      query = `SELECT * FROM tomorrow_ai_events WHERE id = ?`;
+      params = [eventId];
     } else if (eventName && year) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ? AND store_id = ?`;
-      params = [eventName, year, storeId];
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ?`;
+      params = [eventName, year];
     } else {
-      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND store_id = ?`;
-      params = [eventName, storeId];
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ?`;
+      params = [eventName];
     }
 
     const [events] = await db.execute(query, params);
@@ -403,18 +392,11 @@ async function getEventPattern(req, res) {
  */
 async function getAllEvents(req, res) {
   try {
-    const storeId = req.user?.store_id;
-
-    if (!storeId) {
-      return res.status(400).json({ success: false, error: 'User store_id not found' });
-    }
-
     const [events] = await db.execute(`
       SELECT id, event_name, event_type, event_date, year, description, status
       FROM tomorrow_ai_events
-      WHERE store_id = ?
       ORDER BY event_date ASC
-    `, [storeId]);
+    `);
 
     res.json({ success: true, data: events });
   } catch (error) {
