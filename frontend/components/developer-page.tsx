@@ -142,12 +142,12 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
                 onClick={() => !item.disabled && setCurrentPage(item.page)}
                 className={`group cursor-pointer ${item.disabled ? "opacity-50" : ""}`}
               >
-                <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className={`w-12 h-12 rounded-lg ${item.color} flex items-center justify-center`}>
-                      <Icon className="h-6 w-6 text-white" />
+                <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-4 sm:p-6 h-full" style={{ width: '184.2px', height: '131.1px' }}>
+                  <div className="flex flex-col items-center text-center space-y-2">
+                    <div className={`w-10 h-10 rounded-lg ${item.color} flex items-center justify-center`}>
+                      <Icon className="h-5 w-5 text-white" />
                     </div>
-                    <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                    <h3 className="text-xs font-medium text-slate-900 leading-tight">
                       {item.title}
                     </h3>
                   </div>
@@ -310,12 +310,12 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
                         onClick={() => !item.disabled && setCurrentPage(item.page)}
                         className={`group cursor-pointer ${item.disabled ? "opacity-50" : ""}`}
                       >
-                        <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
-                          <div className="flex flex-col items-center text-center space-y-4">
-                            <div className={`w-12 h-12 rounded-lg ${item.color} flex items-center justify-center`}>
-                              <Icon className="h-6 w-6 text-white" />
+                        <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-4 sm:p-6 h-full" style={{ width: '184.2px', height: '131.1px' }}>
+                          <div className="flex flex-col items-center text-center space-y-2">
+                            <div className={`w-10 h-10 rounded-lg ${item.color} flex items-center justify-center`}>
+                              <Icon className="h-5 w-5 text-white" />
                             </div>
-                            <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                            <h3 className="text-xs font-medium text-slate-900 leading-tight">
                               {item.title}
                             </h3>
                           </div>
@@ -338,24 +338,25 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
                     Create Store
                   </Button>
                 </div>
-                <div className="grid grid-cols-1 gap-4 max-w-4xl mx-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
                   {stores.map((store) => (
                     <Card
                       key={store.id}
                       className="hover:shadow-lg transition-shadow cursor-pointer"
+                      style={{ width: '184.2px', height: '131.1px' }}
                       onClick={() => {
                         setSelectedStore(store)
                         setCurrentPage("store-view")
                       }}
                     >
-                      <CardHeader>
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 text-white flex items-center justify-center">
-                            <Store className="h-5 w-5" />
+                      <CardHeader className="p-4">
+                        <div className="flex flex-col items-center text-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 text-white flex items-center justify-center">
+                            <Store className="h-4 w-4" />
                           </div>
                           <div>
-                            <CardTitle className="text-lg">{store.store_name}</CardTitle>
-                            <CardDescription>{store.store_code}</CardDescription>
+                            <CardTitle className="text-xs">{store.store_name}</CardTitle>
+                            <CardDescription className="text-xs">{store.store_code}</CardDescription>
                           </div>
                         </div>
                       </CardHeader>

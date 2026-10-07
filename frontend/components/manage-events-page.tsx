@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowLeft, Check, X, RefreshCw, Calendar, Edit, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, Check, X, RefreshCw, Calendar, Edit, Trash2, Plus } from "lucide-react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 
 interface Event {
@@ -25,13 +27,18 @@ interface Event {
 export function ManageEventsPage({ onBack }: { onBack: () => void }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [filter, setFilter] = usePersistedState<'all' | 'pending' | 'approved' | 'rejected'>('manage_events_filter', 'all');
+  const [filter, setFilter] = usePersistedState<'all' | 'approved' | 'rejected'>('manage_events_filter', 'all');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [newEventName, setNewEventName] = useState('');
+  const [newEventDate, setNewEventDate] = useState('');
+  const [newEventType, setNewEventType] = useState<'fixed' | 'dynamic'>('fixed');
+  const [dynamicYearDates, setDynamicYearDates] = useState<Record<number, string>>({});
 
-  // Generate years from current year - 2 to current year + 1
-  const years = Array.from({ length: 4 }, (_, i) => new Date().getFullYear() - 2 + i);
+  // Generate years from current year - 2 to current year
+  const years = Array.from({ length: 3 }, (_, i) => new Date().getFullYear() - 2 + i);
 
   useEffect(() => {
     fetchEvents();
@@ -55,7 +62,7 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
     }
   };
 
-  const updateEventStatus = async (eventId: number, status: 'approved' | 'rejected' | 'pending') => {
+  const updateEventStatus = async (eventId: number, status: 'approved' | 'rejected') => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/${eventId}/status`, {
@@ -98,6 +105,68 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
     }
   };
 
+  const createEvent = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      if (newEventType === 'fixed') {
+        // Create event for all years with the same date
+        const eventsToCreate = years.map(year => {
+          const [month, day] = newEventDate.split('-');
+          const eventDate = `${year}-${month}-${day}`;
+          return {
+            event_name: newEventName,
+            event_type: 'fixed',
+            event_date: eventDate,
+            year: year,
+            description: `${newEventName} (Fixed event)`,
+            status: 'approved'
+          };
+        });
+
+        for (const eventData of eventsToCreate) {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(eventData)
+          });
+        }
+      } else {
+        // Dynamic event - create with specific dates for each year
+        for (const [year, date] of Object.entries(dynamicYearDates)) {
+          if (date) {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                event_name: newEventName,
+                event_type: 'dynamic',
+                event_date: date,
+                year: parseInt(year),
+                description: `${newEventName} (Dynamic event)`,
+                status: 'approved'
+              })
+            });
+          }
+        }
+      }
+
+      setShowAddEvent(false);
+      setNewEventName('');
+      setNewEventDate('');
+      setDynamicYearDates({});
+      fetchEvents();
+    } catch (error) {
+      console.error('Error creating event:', error);
+    }
+  };
+
   const deleteEvent = async (eventId: number) => {
     try {
       const token = localStorage.getItem('token');
@@ -129,14 +198,21 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
   };
 
   const getDatesForYear = (year: number) => {
-    const dates = [];
-    const startDate = new Date(year, 0, 1);
-    const endDate = new Date(year, 11, 31);
-    
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      dates.push(new Date(d).toISOString().split('T')[0]);
+    const months = [];
+    for (let month = 0; month < 12; month++) {
+      const dates = [];
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        dates.push({
+          date: date.toISOString().split('T')[0],
+          day: date.getDate(),
+          month: date.toLocaleString('default', { month: 'short' })
+        });
+      }
+      months.push({ monthName: new Date(year, month).toLocaleString('default', { month: 'long' }), dates });
     }
-    return dates;
+    return months;
   };
 
   const filteredEvents = events.filter(event => {
@@ -230,13 +306,6 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
               All ({events.filter(e => e.year === selectedYear).length})
             </Button>
             <Button
-              variant={filter === 'pending' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('pending')}
-            >
-              Pending ({events.filter(e => e.status === 'pending' && e.year === selectedYear).length})
-            </Button>
-            <Button
               variant={filter === 'approved' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setFilter('approved')}
@@ -253,6 +322,89 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Add Event Button */}
+      <Dialog open={showAddEvent} onOpenChange={setShowAddEvent}>
+        <DialogTrigger asChild>
+          <Button className="w-full">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Event
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Event</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="eventName">Event Name</Label>
+              <Input
+                id="eventName"
+                value={newEventName}
+                onChange={(e) => setNewEventName(e.target.value)}
+                placeholder="e.g., Christmas"
+              />
+            </div>
+            <div>
+              <Label htmlFor="eventType">Event Type</Label>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  variant={newEventType === 'fixed' ? 'default' : 'outline'}
+                  onClick={() => setNewEventType('fixed')}
+                >
+                  Fixed
+                </Button>
+                <Button
+                  variant={newEventType === 'dynamic' ? 'default' : 'outline'}
+                  onClick={() => setNewEventType('dynamic')}
+                >
+                  Dynamic
+                </Button>
+              </div>
+            </div>
+            {newEventType === 'fixed' && (
+              <div>
+                <Label htmlFor="eventDate">Date (MM-DD)</Label>
+                <Input
+                  id="eventDate"
+                  type="date"
+                  value={newEventDate}
+                  onChange={(e) => setNewEventDate(e.target.value)}
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  This will create the event on this date for all years
+                </p>
+              </div>
+            )}
+            {newEventType === 'dynamic' && (
+              <div>
+                <Label>Select Date for Each Year</Label>
+                <div className="space-y-2 mt-2">
+                  {years.map((year) => (
+                    <div key={year}>
+                      <Label htmlFor={`date-${year}`}>{year}</Label>
+                      <Input
+                        id={`date-${year}`}
+                        type="date"
+                        value={dynamicYearDates[year] || ''}
+                        onChange={(e) => setDynamicYearDates({ ...dynamicYearDates, [year]: e.target.value })}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowAddEvent(false)}>
+                Cancel
+              </Button>
+              <Button onClick={createEvent} disabled={!newEventName || (newEventType === 'fixed' && !newEventDate) || (newEventType === 'dynamic' && Object.values(dynamicYearDates).filter(d => d).length === 0)}>
+                Create Event
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Events Table */}
       <Card>
@@ -285,24 +437,6 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
                   <TableCell>{formatDate(event.event_date)}</TableCell>
                   <TableCell>{getStatusBadge(event.status)}</TableCell>
                   <TableCell className="text-right">
-                    {event.status === 'pending' && (
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => updateEventStatus(event.id, 'approved')}
-                        >
-                          <Check className="h-4 w-4 text-green-600" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => deleteEvent(event.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    )}
                     {event.status === 'approved' && (
                       <div className="flex justify-end gap-2">
                         <Dialog>
@@ -326,24 +460,31 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
                               <p className="text-sm text-muted-foreground">
                                 Select multiple dates for forecast calculation. Invoices from these dates will be used for real-time forecast API.
                               </p>
-                              <div className="grid grid-cols-7 gap-2">
-                                {getDatesForYear(event.year).map((date) => {
-                                  const dateObj = new Date(date);
-                                  const isSelected = selectedDates.includes(date);
-                                  return (
-                                    <button
-                                      key={date}
-                                      onClick={() => handleDateToggle(date)}
-                                      className={`p-2 text-sm rounded border ${
-                                        isSelected
-                                          ? 'bg-purple-600 text-white border-purple-600'
-                                          : 'bg-white hover:bg-gray-100'
-                                      }`}
-                                    >
-                                      {dateObj.getDate()}
-                                    </button>
-                                  );
-                                })}
+                              <div className="space-y-4">
+                                {getDatesForYear(event.year).map((month) => (
+                                  <div key={month.monthName}>
+                                    <h4 className="font-medium text-sm mb-2">{month.monthName}</h4>
+                                    <div className="grid grid-cols-7 gap-2">
+                                      {month.dates.map((date) => {
+                                        const isSelected = selectedDates.includes(date.date);
+                                        return (
+                                          <button
+                                            key={date.date}
+                                            onClick={() => handleDateToggle(date.date)}
+                                            title={`${date.month} ${date.day}`}
+                                            className={`p-2 text-sm rounded border ${
+                                              isSelected
+                                                ? 'bg-purple-600 text-white border-purple-600'
+                                                : 'bg-white hover:bg-gray-100'
+                                            }`}
+                                          >
+                                            {date.day}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                               <div className="flex justify-end gap-2 pt-4">
                                 <Button variant="outline" onClick={() => {
@@ -359,6 +500,13 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
                             </div>
                           </DialogContent>
                         </Dialog>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateEventStatus(event.id, 'rejected')}
+                        >
+                          <X className="h-4 w-4 text-red-600" />
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
