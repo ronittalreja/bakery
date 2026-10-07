@@ -37,9 +37,10 @@ interface StockResponse {
 
 interface TodaysStockPageProps {
   onBack: () => void;
+  storeId?: number;
 }
 
-export function TodaysStockPage({ onBack }: TodaysStockPageProps) {
+export function TodaysStockPage({ onBack, storeId }: TodaysStockPageProps) {
   const { selectedDate } = useDateContext();
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [totalQuantity, setTotalQuantity] = useState<number>(0);

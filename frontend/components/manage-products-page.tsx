@@ -34,9 +34,10 @@ interface Product {
 
 interface ManageProductsPageProps {
   onBack: () => void;
+  storeId?: number;
 }
 
-export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
+export function ManageProductsPage({ onBack, storeId }: ManageProductsPageProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);

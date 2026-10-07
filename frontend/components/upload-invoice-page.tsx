@@ -78,11 +78,12 @@ interface CreditPreviewData {
 
 interface UploadInvoicePageProps {
   onBack: () => void;
+  storeId?: number;
 }
 
 type UploadTab = 'invoice' | 'ros-receipt' | 'credit-notes';
 
-export function UploadInvoicePage({ onBack }: UploadInvoicePageProps) {
+export function UploadInvoicePage({ onBack, storeId }: UploadInvoicePageProps) {
   const { user, loading } = useAuth();
   const { selectedDate } = useDateContext();
   const { refreshSales } = useSaleContext();

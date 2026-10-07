@@ -38,9 +38,10 @@ interface StockHistoryEntry {
 
 interface ManageDecorationsPageProps {
   onBack: () => void;
+  storeId?: number;
 }
 
-export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
+export function ManageDecorationsPage({ onBack, storeId }: ManageDecorationsPageProps) {
   const { user, loading: authLoading } = useAuth(); // Add useAuth
   const router = useRouter(); // Add useRouter
   const [decorations, setDecorations] = useState<Decoration[]>([]);

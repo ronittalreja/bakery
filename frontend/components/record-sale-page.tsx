@@ -60,9 +60,10 @@ interface CartItem {
 
 interface RecordSalePageProps {
   onBack: () => void;
+  storeId?: number;
 }
 
-export function RecordSalePage({ onBack }: RecordSalePageProps) {
+export function RecordSalePage({ onBack, storeId }: RecordSalePageProps) {
   const { user } = useAuth();
   const { selectedDate } = useDateContext();
   const { setRefreshSales } = useSaleContext();

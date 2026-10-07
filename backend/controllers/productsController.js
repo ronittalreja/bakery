@@ -33,6 +33,38 @@ const getAllProducts = async (req, res) => {
   }
 };
 
+const getMasterProducts = async (req, res) => {
+  try {
+    // Get all products from all stores (no store_id filter)
+    const connection = await db.getConnection();
+    
+    const [rows] = await connection.query(`
+      SELECT 
+        p.id,
+        p.item_code,
+        p.name,
+        p.hsn_code,
+        p.invoice_price,
+        p.sale_price,
+        p.grm_value,
+        p.is_active,
+        p.category,
+        p.shelf_life_days,
+        p.store_id,
+        s.store_name
+      FROM products p
+      LEFT JOIN stores s ON p.store_id = s.id
+      ORDER BY p.store_id, p.name
+    `);
+    
+    connection.release();
+    
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const getProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -150,6 +182,7 @@ const deleteProduct = async (req, res) => {
 
 module.exports = {
   getAllProducts,
+  getMasterProducts,
   getProduct,
   getProductByItemCode,
   createProduct,

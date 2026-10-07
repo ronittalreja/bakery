@@ -47,9 +47,10 @@ interface CartItem {
 
 interface AddSalesPageProps {
   onBack: () => void;
+  storeId?: number;
 }
 
-export function AddSalesPage({ onBack }: AddSalesPageProps) {
+export function AddSalesPage({ onBack, storeId }: AddSalesPageProps) {
   const { user } = useAuth();
   const { setRefreshSales } = useSaleContext();
   const [products, setProducts] = useState<Product[]>([]);

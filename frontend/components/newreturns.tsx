@@ -42,12 +42,13 @@ interface ApiResponse {
 
 interface ReturnsPageProps {
   onBack: () => void;
+  storeId?: number;
 }
 
 type ReturnsTab = 'returns' | 'view' | 'pending';
 type MobileView = 'products' | 'cart';
 
-export function ReturnsPage({ onBack }: ReturnsPageProps) {
+export function ReturnsPage({ onBack, storeId }: ReturnsPageProps) {
   const formatDDMMYYYY = (date?: string) => {
     if (!date) return "-";
     const d = new Date(date);

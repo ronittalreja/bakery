@@ -112,6 +112,7 @@ app.use('/api/tomorrow-ai/features', authMiddleware(['super_admin', 'admin', 'st
 app.use('/api/tomorrow-ai/model', authMiddleware(['super_admin', 'admin', 'store_manager', 'staff']), require('./routes/tomorrowAIModel'));
 app.use('/api/tomorrow-ai/events', authMiddleware(['super_admin', 'admin', 'store_manager', 'staff']), require('./routes/tomorrowAIEvents'));
 app.use('/api/products', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/products'));
+app.use('/api/analytics', authMiddleware(['super_admin', 'admin', 'store_manager']), require('./routes/analytics'));
 
 // Daily sync job - runs automatically
 // Uncomment to enable automatic daily sync

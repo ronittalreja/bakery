@@ -42,9 +42,10 @@ interface Product {
 
 interface AdminStockManagementPageProps {
   onBack: () => void;
+  storeId?: number;
 }
 
-export function AdminStockManagementPage({ onBack }: AdminStockManagementPageProps) {
+export function AdminStockManagementPage({ onBack, storeId }: AdminStockManagementPageProps) {
   const { user, loading: authLoading } = useAuth(); // Get auth state
   const router = useRouter();
   const [stockItems, setStockItems] = useState<StockItem[]>([]);

@@ -31,10 +31,11 @@ interface SaleTransaction {
 }
 
 interface SalesTimelinePageProps {
-  onBack: () => void
+  onBack: () => void;
+  storeId?: number;
 }
 
-export function TodaysSalesPage({ onBack }: SalesTimelinePageProps) {
+export function TodaysSalesPage({ onBack, storeId }: SalesTimelinePageProps) {
   const { user } = useAuth()
   const { selectedDate, setSelectedDate, setAdminMainDate } = useDateContext()
   const [transactions, setTransactions] = useState<SaleTransaction[]>([])
