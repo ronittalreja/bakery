@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, getAuthToken } from "@/hooks/use-auth";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,9 +37,9 @@ export function ExpensesTrackingPage({ onBack }: ExpensesTrackingPageProps) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [categoryFilter, setCategoryFilter] = usePersistedState('expenses_category_filter', "all");
+  const [selectedMonth, setSelectedMonth] = usePersistedState('expenses_month', new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = usePersistedState('expenses_year', new Date().getFullYear());
   const [formData, setFormData] = useState({
     date: "",
     category: "",

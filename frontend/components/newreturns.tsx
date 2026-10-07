@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RotateCcw, AlertTriangle, Check, ArrowLeft, FileText, Eye, Calendar, Clock, Plus, Minus } from "lucide-react";
 import { useDateContext } from "@/hooks/use-date-context";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { formatDisplayDate, formatDate } from "@/lib/dateUtils";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -59,14 +60,14 @@ export function ReturnsPage({ onBack }: ReturnsPageProps) {
   const { user } = useAuth();
   const { selectedDate, setSelectedDate } = useDateContext();
   
-  // Main tab state (returns vs view)
-  const [mainTab, setMainTab] = useState<ReturnsTab>('returns');
+  // Main tab state (returns vs view) - persisted
+  const [mainTab, setMainTab] = usePersistedState<ReturnsTab>('returns_main_tab', 'returns');
   
-  // Mobile view state
-  const [mobileView, setMobileView] = useState<MobileView>('products');
+  // Mobile view state - persisted
+  const [mobileView, setMobileView] = usePersistedState<MobileView>('returns_mobile_view', 'products');
   
   // Returns functionality states (existing)
-  const [activeTab, setActiveTab] = useState("grm");
+  const [activeTab, setActiveTab] = usePersistedState('returns_active_tab', "grm");
   const [stock, setStock] = useState<StockItem[]>([]);
   const [grmReturns, setGrmReturns] = useState<ReturnItem[]>([]);
   const [gvnReturns, setGvnReturns] = useState<ReturnItem[]>([]);

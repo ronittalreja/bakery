@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, Calendar, Search, Eye, FileText, ArrowLeft, AlertCircle } from "lucide-react";
 import { useAuth, getAuthToken } from "@/hooks/use-auth";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 
 interface CreditNoteItem {
   itemCode: string;
@@ -48,8 +49,8 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
   const { user, loading } = useAuth();
   const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
   const [filteredCreditNotes, setFilteredCreditNotes] = useState<CreditNote[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState(initialMonth || ""); // Empty string means show all months
-  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedMonth, setSelectedMonth] = usePersistedState('credit_notes_month', initialMonth || ""); // Empty string means show all months
+  const [searchTerm, setSearchTerm] = usePersistedState('credit_notes_search', "");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [missingDates, setMissingDates] = useState<string[]>([]);
@@ -313,25 +314,33 @@ export default function CreditNotesPage({ onBack, onViewCreditNote, initialMonth
         </div>
 
         {/* Missing Return Dates Card */}
-        {selectedMonth && missingDates.length > 0 && (
-          <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg border border-red-300 shadow-lg p-4 sm:p-6">
+        {selectedMonth && (
+          <div className={`bg-gradient-to-br ${missingDates.length > 0 ? 'from-red-50 to-red-100 border-red-300' : 'from-green-50 to-green-100 border-green-300'} rounded-lg border shadow-lg p-4 sm:p-6`}>
             <div className="flex items-center gap-3 mb-3">
-              <AlertCircle className="h-5 w-5 text-red-600" />
+              <AlertCircle className={`h-5 w-5 ${missingDates.length > 0 ? 'text-red-600' : 'text-green-600'}`} />
               <div>
-                <div className="text-lg font-bold text-red-900">Missing Credit Note Dates</div>
-                <div className="text-sm text-red-700">{missingDates.length} date(s) without credit notes</div>
+                <div className={`text-lg font-bold ${missingDates.length > 0 ? 'text-red-900' : 'text-green-900'}`}>
+                  {missingDates.length > 0 ? 'Missing Credit Note Dates' : 'All Clear'}
+                </div>
+                <div className={`text-sm ${missingDates.length > 0 ? 'text-red-700' : 'text-green-700'}`}>
+                  {missingDates.length > 0 
+                    ? `${missingDates.length} date(s) without credit notes` 
+                    : 'All dates have credit notes'}
+                </div>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {missingDates.map((date) => (
-                <span
-                  key={date}
-                  className="inline-flex items-center px-3 py-1 rounded-full bg-red-200 text-red-800 text-sm font-medium border border-red-300"
-                >
-                  {formatDate(date)}
-                </span>
-              ))}
-            </div>
+            {missingDates.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {missingDates.map((date) => (
+                  <span
+                    key={date}
+                    className="inline-flex items-center px-3 py-1 rounded-full bg-red-200 text-red-800 text-sm font-medium border border-red-300"
+                  >
+                    {formatDate(date)}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Check, X, RefreshCw, Calendar } from "lucide-react";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 
 interface Event {
   id: number;
@@ -23,7 +24,7 @@ interface Event {
 export function ManageEventsPage({ onBack }: { onBack: () => void }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [filter, setFilter] = usePersistedState<'all' | 'pending' | 'approved' | 'rejected'>('manage_events_filter', 'all');
 
   useEffect(() => {
     fetchEvents();
@@ -78,7 +79,7 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
     if (name.includes('valentine')) return '❤️';
     if (name.includes('holi')) return '🎨';
     if (name.includes('diwali')) return '🪔';
-    if (name.includes('christmas')) return '🎄';
+
     if (name.includes('new year')) return '🎉';
     if (name.includes('mother')) return '🌸';
     if (name.includes('father')) return '👨';

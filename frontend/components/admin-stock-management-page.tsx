@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, getAuthToken } from "@/hooks/use-auth"; // Import useAuth and getAuthToken
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -52,8 +53,8 @@ export function AdminStockManagementPage({ onBack }: AdminStockManagementPagePro
   const [isProductSelectionOpen, setIsProductSelectionOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<StockItem | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = usePersistedState('admin_stock_search', "");
+  const [categoryFilter, setCategoryFilter] = usePersistedState('admin_stock_category_filter', "all");
   const [formData, setFormData] = useState({
     productName: "",
     category: "",

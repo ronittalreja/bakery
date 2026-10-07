@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, getAuthToken } from "@/hooks/use-auth"; // Import useAuth and getAuthToken
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -46,7 +47,7 @@ export function ManageDecorationsPage({ onBack }: ManageDecorationsPageProps) {
   const [filteredDecorations, setFilteredDecorations] = useState<Decoration[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDecoration, setEditingDecoration] = useState<Decoration | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = usePersistedState('manage_decorations_search', "");
   const [formData, setFormData] = useState({
     sku: "",
     name: "",

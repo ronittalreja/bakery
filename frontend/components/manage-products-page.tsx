@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Settings, Plus, Edit, Trash2, Check, ArrowLeft, AlertTriangle, RefreshCw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { formatDate } from "@/lib/dateUtils";
 
 interface Product {
@@ -40,7 +41,7 @@ export function ManageProductsPage({ onBack }: ManageProductsPageProps) {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = usePersistedState('manage_products_search', "");
   const [formData, setFormData] = useState({
     item_code: "",
     name: "",

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, CreditCard, FileText, Calendar, Search, Filter, Eye, CheckCircle, Clock, X } from "lucide-react";
 import { useAuth, getAuthToken } from "@/hooks/use-auth";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { formatDisplayDate } from "@/lib/dateUtils";
 
 interface Invoice {
@@ -76,9 +77,9 @@ interface PaymentsPageProps {
 
 export function PaymentsPage({ onBack }: PaymentsPageProps) {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'invoices' | 'credit-notes' | 'ros-receipts'>('invoices');
-  const [invoicesSubTab, setInvoicesSubTab] = useState<'invoices' | 'others'>('invoices');
-  const [creditNotesSubTab, setCreditNotesSubTab] = useState<'credit-notes' | 'others'>('credit-notes');
+  const [activeTab, setActiveTab] = usePersistedState<'invoices' | 'credit-notes' | 'ros-receipts'>('payments_active_tab', 'invoices');
+  const [invoicesSubTab, setInvoicesSubTab] = usePersistedState<'invoices' | 'others'>('payments_invoices_subtab', 'invoices');
+  const [creditNotesSubTab, setCreditNotesSubTab] = usePersistedState<'credit-notes' | 'others'>('payments_credit_notes_subtab', 'credit-notes');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
   const [rosReceipts, setRosReceipts] = useState<RosReceipt[]>([]);

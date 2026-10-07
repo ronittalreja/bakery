@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ArrowLeft, Cake, Plus, Check, Percent } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { usePersistedState } from "@/hooks/use-persisted-state"
 import { formatDateTime } from "@/lib/dateUtils"
 
 interface SpecialCakesPageProps {
@@ -37,8 +38,8 @@ export function SpecialCakesPage({ onBack }: SpecialCakesPageProps) {
     grmLoss: "",
     mrp: "",
   })
-  const [discount, setDiscount] = useState<number>(0)
-  const [discountType, setDiscountType] = useState<"percentage" | "amount">("percentage")
+  const [discount, setDiscount] = usePersistedState('special_cakes_discount', 0)
+  const [discountType, setDiscountType] = usePersistedState<'percentage' | 'amount'>('special_cakes_discount_type', "percentage")
   const [paymentMethod, setPaymentMethod] = useState<string>("")
   const [specialCakes, setSpecialCakes] = useState<SpecialCake[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)

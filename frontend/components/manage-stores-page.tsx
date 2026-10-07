@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { ArrowLeft, Plus, Edit2, Trash2, Store } from "lucide-react"
 import { apiClient } from "@/lib/apiClient"
+import { usePersistedState } from "@/hooks/use-persisted-state"
 
 interface Store {
   id: number
@@ -33,7 +34,7 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
   const [stores, setStores] = useState<Store[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showCreateForm, setShowCreateForm] = usePersistedState('manage_stores_show_create', false)
   const [editingStore, setEditingStore] = useState<Store | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [storeToDelete, setStoreToDelete] = useState<number | null>(null)

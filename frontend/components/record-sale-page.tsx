@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { ShoppingCart, Plus, Minus, Check, Sparkles, Percent, AlertCircle, Search, Package, Menu, X, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDateContext } from "@/hooks/use-date-context";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useSaleContext } from "@/contexts/SaleContext";
 
 const iconMap = {
@@ -72,13 +73,13 @@ export function RecordSalePage({ onBack }: RecordSalePageProps) {
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [saleCompleted, setSaleCompleted] = useState(false);
-  const [showAddons, setShowAddons] = useState(true);
+  const [showAddons, setShowAddons] = usePersistedState('record_sale_show_addons', true);
   const [discount, setDiscount] = useState<number>(0);
   const [discountType, setDiscountType] = useState<"percentage" | "amount">("percentage");
   const [error, setError] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showCategoryMenu, setShowCategoryMenu] = useState<boolean>(false);
-  const [mobileView, setMobileView] = useState<'products' | 'cart'>('products');
+  const [mobileView, setMobileView] = usePersistedState('record_sale_mobile_view', 'products' as 'products' | 'cart');
 
   const fetchDecorations = useCallback(async () => {
     try {

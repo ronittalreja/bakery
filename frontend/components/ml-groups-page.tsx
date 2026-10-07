@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, RefreshCw, Search, Check, X, Layers, FileText, Package } from "lucide-react";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 
 interface Product {
   id: number;
@@ -45,7 +46,7 @@ interface MLGroupsPageProps {
 type TabType = "all" | "mapped" | "unmapped" | "notforuse";
 
 export function MLGroupsPage({ onBack }: MLGroupsPageProps) {
-  const [tab, setTab] = useState<TabType>("all");
+  const [tab, setTab] = usePersistedState<TabType>('ml_groups_tab', "all");
   const [products, setProducts] = useState<Product[]>([]);
   const [unmappedItems, setUnmappedItems] = useState<UnmappedItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);

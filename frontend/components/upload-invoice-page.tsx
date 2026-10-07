@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Upload, AlertTriangle, Check, ArrowLeft, Eye, FileText, Receipt, CreditCard } from "lucide-react";
 import { useAuth, getAuthToken } from "@/hooks/use-auth";
 import { useDateContext } from "@/hooks/use-date-context";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useSaleContext } from "@/contexts/SaleContext";
 import { apiClient } from "@/lib/apiClient";
 import { InvoiceDataSchema } from "@/lib/schemas";
@@ -87,8 +88,8 @@ export function UploadInvoicePage({ onBack }: UploadInvoicePageProps) {
   const { refreshSales } = useSaleContext();
   const router = useRouter();
   
-  // Tab state
-  const [activeTab, setActiveTab] = useState<UploadTab>('invoice');
+  // Tab state - persisted
+  const [activeTab, setActiveTab] = usePersistedState<UploadTab>('upload_invoice_tab', 'invoice');
   
   // Invoice upload states (existing functionality)
   const [file, setFile] = useState<File | null>(null);

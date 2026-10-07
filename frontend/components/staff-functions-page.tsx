@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth } from "@/hooks/use-auth"
 import { useDateContext } from "@/hooks/use-date-context"
+import { usePersistedState } from "@/hooks/use-persisted-state"
 import {
   Upload,
   ShoppingCart,
@@ -30,7 +31,7 @@ export function StaffDashboard() {
   const { user, logout } = useAuth()
   const { selectedDate, isToday, endDay, isDayEnded, staffCanEndDay } = useDateContext()
   const { toast } = useToast()
-  const [currentPage, setCurrentPage] = useState<StaffPage>("dashboard")
+  const [currentPage, setCurrentPage] = usePersistedState<StaffPage>('staff_current_page', "dashboard")
   const [hasInvoice, setHasInvoice] = useState(false)
 
   useEffect(() => {

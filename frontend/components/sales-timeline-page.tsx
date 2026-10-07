@@ -11,6 +11,7 @@ import { Clock, Filter, User, Receipt, TrendingUp, AlertCircle, RefreshCw, Check
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
 import { useDateContext } from "@/hooks/use-date-context";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { formatTime } from "@/lib/dateUtils";
 import { useSaleContext } from "@/contexts/SaleContext";
 
@@ -47,7 +48,7 @@ export function SalesTimelinePage({ onBack }: SalesTimelinePageProps) {
   const { setRefreshSales } = useSaleContext();
   const [transactions, setTransactions] = useState<SaleTransaction[]>([]);
   const [crdrStatus, setCrdrStatus] = useState<CrdrStatus | null>(null);
-  const [filterBy, setFilterBy] = useState<string>("all");
+  const [filterBy, setFilterBy] = usePersistedState('sales_timeline_filter', "all");
   const [sortBy, setSortBy] = useState<string>("time-desc");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
