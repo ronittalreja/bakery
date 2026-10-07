@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useDateContext } from "@/hooks/use-date-context";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import {
   Upload,
   ShoppingCart,
@@ -49,7 +50,7 @@ export function DeveloperDashboard({ onSwitchToUser }: DeveloperDashboardProps) 
   const { user, logout } = useAuth();
   const router = useRouter();
   const { selectedDate, isToday, isDayEnded } = useDateContext();
-  const [currentPage, setCurrentPage] = useState<StaffPage>("dashboard");
+  const [currentPage, setCurrentPage] = usePersistedState<StaffPage>('developer_current_page', "dashboard");
   const [selectedCreditNoteId, setSelectedCreditNoteId] = useState<number | null>(null);
   const [selectedCreditNoteMonth, setSelectedCreditNoteMonth] = useState<string>(new Date().toISOString().slice(0, 7));
 
