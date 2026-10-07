@@ -269,12 +269,12 @@ const getMonthlyInsights = async (req, res) => {
       }
     }
 
-    // Calculate total packing material costs from invoices for the month
+    // Calculate total packing material costs from invoices for the month - filter by store_id
     const [invoicesForPacking] = await db.execute(`
       SELECT id
       FROM invoices
-      WHERE DATE_FORMAT(invoice_date, '%Y-%m') = ?
-    `, [month]);
+      WHERE DATE_FORMAT(invoice_date, '%Y-%m') = ? AND store_id = ?
+    `, [month, storeId]);
 
     let totalPackingMaterialCost = 0;
     for (const invoice of invoicesForPacking) {

@@ -294,6 +294,11 @@ function getWeekNumber(date) {
 async function getFeatureData(req, res) {
   try {
     const { startDate, endDate, mlGroupId } = req.query;
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
 
     // Generate features on the fly for inspection
     const displayProducts = mlGroupId 
@@ -301,9 +306,9 @@ async function getFeatureData(req, res) {
       : await db.execute(`
           SELECT DISTINCT ml_group_id
           FROM tomorrow_ai_product_master
-          WHERE item_type = 'DISPLAY' AND active = TRUE
+          WHERE item_type = 'DISPLAY' AND active = TRUE AND store_id = ?
           LIMIT 10
-        `);
+        `, [storeId]);
 
     const dates = startDate && endDate 
       ? getDateRange(startDate, endDate)

@@ -1626,21 +1626,26 @@ const getCreditNotesNotInRos = async (req, res) => {
 const getTotalReturnCharges = async (req, res) => {
   try {
     const { month } = req.query;
+    const storeId = req.user?.store_id;
     
     if (!month) {
       return res.status(400).json({ success: false, error: 'Month parameter is required' });
     }
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
     
-    // Calculate total loss from credit note items
+    // Calculate total loss from credit note items - filter by store_id
     const query = `
       SELECT 
         id,
         items
       FROM credit_notes
-      WHERE DATE_FORMAT(COALESCE(return_date, date), '%Y-%m') = ?
+      WHERE DATE_FORMAT(COALESCE(return_date, date), '%Y-%m') = ? AND store_id = ?
     `;
     
-    const [creditNotes] = await db.execute(query, [month]);
+    const [creditNotes] = await db.execute(query, [month, storeId]);
     
     let totalLoss = 0;
     let creditNoteCount = 0;

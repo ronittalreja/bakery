@@ -1242,23 +1242,28 @@ const uploadMultipleInvoices = async (req, res) => {
 const getTotalPackingMaterialCosts = async (req, res) => {
   try {
     const { month, year } = req.query;
+    const storeId = req.user?.store_id;
     
     if (!month || !year) {
       return res.status(400).json({ success: false, error: 'Month and year parameters are required' });
     }
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
     
-    console.log(`Getting packing material costs for month=${month}, year=${year}`);
+    console.log(`Getting packing material costs for month=${month}, year=${year}, store_id=${storeId}`);
     
-    // Get all invoices for the month
+    // Get all invoices for the month - filter by store_id
     const query = `
       SELECT 
         id,
         invoice_number
       FROM invoices
-      WHERE MONTH(invoice_date) = ? AND YEAR(invoice_date) = ?
+      WHERE MONTH(invoice_date) = ? AND YEAR(invoice_date) = ? AND store_id = ?
     `;
     
-    const [invoices] = await db.execute(query, [month, year]);
+    const [invoices] = await db.execute(query, [month, year, storeId]);
     console.log(`Found ${invoices.length} invoices for the month`);
     
     let totalPackingCost = 0;

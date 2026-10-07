@@ -34,6 +34,11 @@ async function getProducts(req, res) {
     await ensureMappingStatusColumn();
 
     const { itemType, status } = req.query;
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
 
     let query = `
       SELECT
@@ -49,10 +54,10 @@ async function getProducts(req, res) {
         COUNT(DISTINCT pa.id) as alias_count
       FROM tomorrow_ai_product_master pm
       LEFT JOIN tomorrow_ai_product_aliases pa ON pm.product_id = pa.product_id
-      WHERE 1=1
+      WHERE pm.store_id = ?
     `;
 
-    const params = [];
+    const params = [storeId];
 
     if (itemType) {
       query += ` AND pm.item_type = ?`;
@@ -268,17 +273,23 @@ async function deleteProductAlias(req, res) {
  */
 async function getMLGroupSummary(req, res) {
   try {
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+
     const [summary] = await db.execute(`
       SELECT
         ml_group_id,
         COUNT(*) as product_count,
         GROUP_CONCAT(name ORDER BY name SEPARATOR ', ') as products
       FROM tomorrow_ai_product_master
-      WHERE active = TRUE
+      WHERE active = TRUE AND store_id = ?
       GROUP BY ml_group_id
       HAVING product_count > 1
       ORDER BY product_count DESC, ml_group_id ASC
-    `);
+    `, [storeId]);
 
     res.json({
       success: true,
@@ -299,23 +310,33 @@ async function getMLGroupSummary(req, res) {
  */
 async function getValidationReport(req, res) {
   try {
-    // Get all unique item names from invoices
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+
+    // Get all unique item names from invoices - filter by store_id
     const [invoiceItems] = await db.execute(`
       SELECT DISTINCT ii.item_name
       FROM invoice_items ii
       JOIN invoices i ON ii.invoice_id = i.id
-      WHERE i.invoice_date IS NOT NULL
+      WHERE i.invoice_date IS NOT NULL AND i.store_id = ?
       ORDER BY ii.item_name ASC
-    `);
+    `, [storeId]);
 
-    // Get all mapped items (product master + aliases)
+    // Get all mapped items (product master + aliases) - filter by store_id
     const [mappedItems] = await db.execute(`
-      SELECT name FROM tomorrow_ai_product_master
+      SELECT name FROM tomorrow_ai_product_master WHERE store_id = ?
       UNION
-      SELECT historical_item_code FROM tomorrow_ai_product_aliases
+      SELECT pa.historical_item_code FROM tomorrow_ai_product_aliases pa
+      JOIN tomorrow_ai_product_master pm ON pa.product_id = pm.product_id
+      WHERE pm.store_id = ?
       UNION
-      SELECT historical_name FROM tomorrow_ai_product_aliases
-    `);
+      SELECT pa.historical_name FROM tomorrow_ai_product_aliases pa
+      JOIN tomorrow_ai_product_master pm ON pa.product_id = pm.product_id
+      WHERE pm.store_id = ?
+    `, [storeId, storeId, storeId]);
 
     const mappedSet = new Set(mappedItems.map(m => m.name || m.historical_item_code || m.historical_name));
 
@@ -337,25 +358,27 @@ async function getValidationReport(req, res) {
           MAX(i.invoice_date) as last_seen
         FROM invoice_items ii
         JOIN invoices i ON ii.invoice_id = i.id
-        WHERE ii.item_name IN (${placeholders})
+        WHERE ii.item_name IN (${placeholders}) AND i.store_id = ?
         GROUP BY ii.item_name
         ORDER BY total_qty DESC
-      `, unmappedNames);
+      `, [...unmappedNames, storeId]);
     }
 
-    // Get potential duplicate/conflicting mappings
+    // Get potential duplicate/conflicting mappings - filter by store_id
     const [conflicts] = await db.execute(`
       SELECT
-        historical_item_code,
-        historical_name,
+        pa.historical_item_code,
+        pa.historical_name,
         COUNT(*) as mapping_count,
-        GROUP_CONCAT(product_id ORDER BY product_id SEPARATOR ', ') as mapped_to
-      FROM tomorrow_ai_product_aliases
-      GROUP BY historical_item_code, historical_name
+        GROUP_CONCAT(pm.product_id ORDER BY pm.product_id SEPARATOR ', ') as mapped_to
+      FROM tomorrow_ai_product_aliases pa
+      JOIN tomorrow_ai_product_master pm ON pa.product_id = pm.product_id
+      WHERE pm.store_id = ?
+      GROUP BY pa.historical_item_code, pa.historical_name
       HAVING mapping_count > 1
-    `);
+    `, [storeId]);
 
-    // Get ML group statistics
+    // Get ML group statistics - filter by store_id
     const [mlStats] = await db.execute(`
       SELECT
         COUNT(DISTINCT ml_group_id) as total_groups,
@@ -363,8 +386,8 @@ async function getValidationReport(req, res) {
         SUM(CASE WHEN ml_group_id IS NOT NULL THEN 1 ELSE 0 END) as with_ml_group,
         SUM(CASE WHEN ml_group_id IS NULL THEN 1 ELSE 0 END) as without_ml_group
       FROM tomorrow_ai_product_master
-      WHERE active = TRUE
-    `);
+      WHERE active = TRUE AND store_id = ?
+    `, [storeId]);
 
     res.json({
       success: true,

@@ -137,7 +137,12 @@ const getProductSalesReport = async (req, res) => {
 const getStockReport = async (req, res) => {
   try {
     const { includeExpired = false, lowStockThreshold = 10 } = req.query;
-    
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+
     let query = `
       SELECT 
         sb.id,
@@ -153,7 +158,7 @@ const getStockReport = async (req, res) => {
         sb.quantity as original_quantity
       FROM stock_batches sb
       JOIN products p ON sb.product_id = p.id
-      WHERE p.is_active = 1
+      WHERE p.is_active = 1 AND sb.store_id = ?
     `;
     
     if (includeExpired !== 'true') {
@@ -162,7 +167,7 @@ const getStockReport = async (req, res) => {
     
     query += ' HAVING available_quantity > 0 ORDER BY sb.expiry_date ASC, p.name ASC';
 
-    const [rows] = await db.execute(query);
+    const [rows] = await db.execute(query, [storeId]);
     
     const stockData = rows.map(row => ({
       ...row,
@@ -200,6 +205,12 @@ const getStockReport = async (req, res) => {
 const getExpiredStockReport = async (req, res) => {
   try {
     const { days = 7 } = req.query;
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + parseInt(days));
     const targetDateStr = targetDate.toISOString().split('T')[0];
@@ -218,12 +229,12 @@ const getExpiredStockReport = async (req, res) => {
         DATEDIFF(sb.expiry_date, CURDATE()) as days_to_expiry
       FROM stock_batches sb
       JOIN products p ON sb.product_id = p.id
-      WHERE p.is_active = 1 AND sb.expiry_date <= ?
+      WHERE p.is_active = 1 AND sb.store_id = ? AND sb.expiry_date <= ?
       HAVING available_quantity > 0 
       ORDER BY sb.expiry_date ASC
     `;
 
-    const [rows] = await db.execute(query, [targetDateStr]);
+    const [rows] = await db.execute(query, [storeId, targetDateStr]);
     
     const expiredStock = rows.map(row => ({
       ...row,
@@ -268,12 +279,17 @@ const getExpiredStockReport = async (req, res) => {
 const getReturnsReport = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
+    const storeId = req.user?.store_id;
+
     if (!startDate || !endDate) {
       return res.status(400).json({ success: false, error: 'Start date and end date are required' });
     }
 
-    // Get GRM returns
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+
+    // Get GRM returns - filter by store_id
     const [grmRows] = await db.execute(`
       SELECT 
         DATE(r.return_date) as return_date,
@@ -285,12 +301,12 @@ const getReturnsReport = async (req, res) => {
         r.product_id
       FROM returns r
       JOIN products p ON r.product_id = p.id
-      WHERE r.type = 'GRM' AND DATE(r.return_date) BETWEEN ? AND ?
+      WHERE r.type = 'GRM' AND DATE(r.return_date) BETWEEN ? AND ? AND r.store_id = ?
       GROUP BY DATE(r.return_date), r.product_id, p.name, p.item_code
       ORDER BY return_date DESC, total_loss DESC
-    `, [startDate, endDate]);
+    `, [startDate, endDate, storeId]);
 
-    // Get GVN damages
+    // Get GVN damages - filter by store_id
     const [gvnRows] = await db.execute(`
       SELECT 
         DATE(r.return_date) as damage_date,
@@ -301,10 +317,10 @@ const getReturnsReport = async (req, res) => {
         r.product_id
       FROM returns r
       JOIN products p ON r.product_id = p.id
-      WHERE r.type = 'GVN' AND DATE(r.return_date) BETWEEN ? AND ?
+      WHERE r.type = 'GVN' AND DATE(r.return_date) BETWEEN ? AND ? AND r.store_id = ?
       GROUP BY DATE(r.return_date), r.product_id, p.name, p.item_code
       ORDER BY damage_date DESC, total_quantity DESC
-    `, [startDate, endDate]);
+    `, [startDate, endDate, storeId]);
 
     const grmSummary = grmRows.reduce((acc, row) => ({
       totalReturns: acc.totalReturns + Number(row.total_returns),

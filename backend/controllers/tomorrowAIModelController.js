@@ -286,6 +286,11 @@ async function getPredictions(req, res) {
   try {
     const { predictionDate } = req.query;
     const targetDate = predictionDate || new Date().toISOString().split('T')[0];
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
 
     const [predictions] = await db.execute(`
       SELECT 
@@ -300,9 +305,9 @@ async function getPredictions(req, res) {
         p.actual_sales
       FROM tomorrow_ai_predictions p
       JOIN tomorrow_ai_product_master pm ON p.ml_group_id = pm.ml_group_id
-      WHERE p.prediction_date = ?
+      WHERE p.prediction_date = ? AND pm.store_id = ?
       ORDER BY p.recommended_order DESC
-    `, [targetDate]);
+    `, [targetDate, storeId]);
 
     res.json({
       success: true,

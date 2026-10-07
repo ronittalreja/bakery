@@ -15,11 +15,13 @@ CREATE TABLE IF NOT EXISTS tomorrow_ai_product_master (
   item_type ENUM('DISPLAY', 'SPECIAL_ORDER', 'PACKING_MATERIAL', 'OTHER') DEFAULT 'OTHER',
   ml_group_id VARCHAR(50) NOT NULL COMMENT 'ML group ID for forecasting - groups similar products across SKU changes',
   active BOOLEAN DEFAULT TRUE,
+  store_id INT NOT NULL DEFAULT 1 COMMENT 'Store ID for multi-tenancy',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_ml_group (ml_group_id),
   INDEX idx_item_type (item_type),
-  INDEX idx_active (active)
+  INDEX idx_active (active),
+  INDEX idx_store_id (store_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Product Aliases Table
@@ -46,11 +48,15 @@ CREATE TABLE IF NOT EXISTS tomorrow_ai_events (
   event_date DATE NOT NULL,
   year INT NOT NULL,
   description TEXT,
+  is_fixed_date BOOLEAN DEFAULT FALSE COMMENT 'True if event has same date every year (e.g., Christmas)',
+  status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+  store_id INT NOT NULL DEFAULT 1 COMMENT 'Store ID for multi-tenancy',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY unique_event_year (event_name, year),
+  UNIQUE KEY unique_event_year (event_name, year, store_id),
   INDEX idx_event_date (event_date),
-  INDEX idx_year (year)
+  INDEX idx_year (year),
+  INDEX idx_store_id (store_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Daily Sales Data Table
@@ -62,11 +68,13 @@ CREATE TABLE IF NOT EXISTS tomorrow_ai_daily_sales (
   ml_group_id VARCHAR(50) NOT NULL,
   actual_sales INT DEFAULT 0 COMMENT 'Actual quantity sold (excluding special orders)',
   is_shop_open BOOLEAN DEFAULT TRUE COMMENT 'Was the shop open on this day',
+  store_id INT NOT NULL DEFAULT 1 COMMENT 'Store ID for multi-tenancy',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY unique_date_group (sale_date, ml_group_id),
+  UNIQUE KEY unique_date_group (sale_date, ml_group_id, store_id),
   INDEX idx_sale_date (sale_date),
   INDEX idx_ml_group (ml_group_id),
+  INDEX idx_store_id (store_id),
   FOREIGN KEY (ml_group_id) REFERENCES tomorrow_ai_product_master(ml_group_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -82,10 +90,12 @@ CREATE TABLE IF NOT EXISTS tomorrow_ai_predictions (
   model_version VARCHAR(50) DEFAULT 'v1.0',
   prediction_generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   actual_sales INT DEFAULT NULL COMMENT 'Filled later when actual sales are known for comparison',
+  store_id INT NOT NULL DEFAULT 1 COMMENT 'Store ID for multi-tenancy',
   FOREIGN KEY (product_id) REFERENCES tomorrow_ai_product_master(product_id) ON DELETE CASCADE,
   INDEX idx_prediction_date (prediction_date),
   INDEX idx_ml_group (ml_group_id),
-  INDEX idx_generated_at (prediction_generated_at)
+  INDEX idx_generated_at (prediction_generated_at),
+  INDEX idx_store_id (store_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Data Sync Log Table
