@@ -49,7 +49,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan('combined')); // Logger for all requests
 
 // Auth middleware
-const authMiddleware = (roles = []) => (req, res, next) => {
+const authMiddleware = (roles = []) => async (req, res, next) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
   if (!token) {
     console.error('No token provided:', req.method, req.url);
@@ -64,6 +64,18 @@ const authMiddleware = (roles = []) => (req, res, next) => {
       'admin': 'super_admin'
     };
     const mappedRole = roleMapping[decoded.role] || decoded.role;
+    
+    // If store_id is missing from token, fetch it from database
+    if (!decoded.store_id && decoded.id) {
+      try {
+        const [users] = await db.execute('SELECT store_id FROM users WHERE id = ?', [decoded.id]);
+        if (users.length > 0) {
+          decoded.store_id = users[0].store_id;
+        }
+      } catch (err) {
+        console.error('Error fetching store_id from database:', err);
+      }
+    }
     
     // Check if user has required role (or is super_admin)
     if (roles.length && !roles.includes(mappedRole) && !roles.includes(decoded.role) && mappedRole !== 'super_admin' && !decoded.isDemo) {
@@ -95,8 +107,8 @@ app.use('/api/reports', authMiddleware(['super_admin', 'admin']), require('./rou
 app.use('/api/ros-receipts', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/rosReceipts'));
 app.use('/api/insights', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/insights'));
 app.use('/api/tomorrow-ai/products', require('./routes/tomorrowAIProducts'));
-app.use('/api/tomorrow-ai', authMiddleware(['super_admin', 'admin']), require('./routes/tomorrowAI'));
-app.use('/api/tomorrow-ai/features', authMiddleware(['super_admin', 'admin']), require('./routes/tomorrowAIFeatures'));
+app.use('/api/tomorrow-ai', authMiddleware(['super_admin', 'admin', 'store_manager', 'staff']), require('./routes/tomorrowAI'));
+app.use('/api/tomorrow-ai/features', authMiddleware(['super_admin', 'admin', 'store_manager', 'staff']), require('./routes/tomorrowAIFeatures'));
 app.use('/api/tomorrow-ai/model', authMiddleware(['super_admin', 'admin', 'store_manager', 'staff']), require('./routes/tomorrowAIModel'));
 app.use('/api/tomorrow-ai/events', authMiddleware(['super_admin', 'admin', 'store_manager', 'staff']), require('./routes/tomorrowAIEvents'));
 app.use('/api/products', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/products'));
