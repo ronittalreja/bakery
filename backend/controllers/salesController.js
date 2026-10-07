@@ -1077,6 +1077,11 @@ const getSalesByDate = async (req, res) => {
 const getMonthlySales = async (req, res) => {
   try {
     const { month } = req.params;
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
     
     // Handle "all" case for full year data
     if (month.includes('-all')) {
@@ -1134,23 +1139,24 @@ const getMonthlySales = async (req, res) => {
       });
       }
 
-      // Fetch invoices for the entire year
+      // Fetch invoices for the entire year - filter by store_id
       const [invoices] = await db.execute(
         `SELECT id, invoice_number, invoice_date, total_amount FROM invoices 
-         WHERE YEAR(invoice_date) = ?`,
-        [year]
+         WHERE YEAR(invoice_date) = ? AND store_id = ?`,
+        [year, storeId]
       );
 
-      // Fetch credit notes with return date in the year
+      // Fetch credit notes with return date in the year - filter by store_id
       const [creditNotes] = await db.execute(
         `SELECT id, credit_note_number, date, return_date, items FROM credit_notes 
-         WHERE YEAR(return_date) = ? OR YEAR(date) = ?`,
-        [year, year]
+         WHERE (YEAR(return_date) = ? OR YEAR(date) = ?) AND store_id = ?`,
+        [year, year, storeId]
       );
 
-      // Fetch all products to get categories and MRP (sale_price)
+      // Fetch all products to get categories and MRP (sale_price) - filter by store_id
       const [products] = await db.execute(
-        `SELECT id, item_code, name, category, sale_price FROM products WHERE is_active = 1`
+        `SELECT id, item_code, name, category, sale_price FROM products WHERE is_active = 1 AND store_id = ?`,
+        [storeId]
       );
 
       // Create a map of product name to product info (for category and MRP)
@@ -1331,23 +1337,24 @@ const getMonthlySales = async (req, res) => {
       });
     }
 
-    // Fetch invoices for the month
+    // Fetch invoices for the month - filter by store_id
     const [invoices] = await db.execute(
       `SELECT id, invoice_number, invoice_date, total_amount FROM invoices 
-       WHERE DATE_FORMAT(invoice_date, '%Y-%m') = ?`,
-      [month]
+       WHERE DATE_FORMAT(invoice_date, '%Y-%m') = ? AND store_id = ?`,
+      [month, storeId]
     );
 
-    // Fetch credit notes with return date in the month
+    // Fetch credit notes with return date in the month - filter by store_id
     const [creditNotes] = await db.execute(
       `SELECT id, credit_note_number, date, return_date, items FROM credit_notes 
-       WHERE DATE_FORMAT(return_date, '%Y-%m') = ? OR DATE_FORMAT(date, '%Y-%m') = ?`,
-      [month, month]
+       WHERE (DATE_FORMAT(return_date, '%Y-%m') = ? OR DATE_FORMAT(date, '%Y-%m') = ?) AND store_id = ?`,
+      [month, month, storeId]
     );
 
-    // Fetch all products to get categories and MRP (sale_price)
+    // Fetch all products to get categories and MRP (sale_price) - filter by store_id
     const [products] = await db.execute(
-      `SELECT id, item_code, name, category, sale_price FROM products WHERE is_active = 1`
+      `SELECT id, item_code, name, category, sale_price FROM products WHERE is_active = 1 AND store_id = ?`,
+      [storeId]
     );
 
     // Create a map of product name to product info (for category and MRP)
@@ -1514,6 +1521,11 @@ const getMonthlySales = async (req, res) => {
 const getMonthlySalesAnalytics = async (req, res) => {
   try {
     const { month, year } = req.params;
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
     
     // Handle "all" case for full year data
     if (month.includes('-all')) {
@@ -1556,15 +1568,15 @@ const getMonthlySalesAnalytics = async (req, res) => {
         });
       }
 
-      // Fetch analytics for full year
+      // Fetch analytics for full year - filter by store_id
       const [currentYearData] = await db.execute(
-        `SELECT COUNT(*) as total, COALESCE(SUM(total_amount), 0) as totalSales FROM invoices WHERE YEAR(invoice_date) = ?`,
-        [year]
+        `SELECT COUNT(*) as total, COALESCE(SUM(total_amount), 0) as totalSales FROM invoices WHERE YEAR(invoice_date) = ? AND store_id = ?`,
+        [year, storeId]
       );
       
       const [lastYearData] = await db.execute(
-        `SELECT COUNT(*) as total, COALESCE(SUM(total_amount), 0) as totalSales FROM invoices WHERE YEAR(invoice_date) = ?`,
-        [parseInt(year) - 1]
+        `SELECT COUNT(*) as total, COALESCE(SUM(total_amount), 0) as totalSales FROM invoices WHERE YEAR(invoice_date) = ? AND store_id = ?`,
+        [parseInt(year) - 1, storeId]
       );
 
       return res.json({
@@ -1722,7 +1734,7 @@ const getMonthlySalesAnalytics = async (req, res) => {
     
     const lastMonthStr2 = `${lastMonthYear2}-${lastMonthNum2.toString().padStart(2, '0')}`;
     
-    // Get current month sales summary from invoices (not sales table)
+    // Get current month sales summary from invoices (not sales table) - filter by store_id
     // Get current month invoice items to calculate MRP-based sales
     const [currentInvoiceItems] = await db.execute(`
       SELECT 
@@ -1731,8 +1743,8 @@ const getMonthlySalesAnalytics = async (req, res) => {
         ii.total
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
-      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
-    `, [month]);
+      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ? AND i.store_id = ?
+    `, [month, storeId]);
 
     // Calculate MRP from invoice rates (rate * 1.33 rounded to nearest 5)
     const roundUpToNearest5 = (value) => {
@@ -1750,12 +1762,12 @@ const getMonthlySalesAnalytics = async (req, res) => {
     let currentTotalItems = 0;
     let currentTotalTransactions = 0;
 
-    // Get transaction count
+    // Get transaction count - filter by store_id
     const [currentTransCount] = await db.execute(`
       SELECT COUNT(DISTINCT i.id) as totalTransactions
       FROM invoices i
-      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
-    `, [month]);
+      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ? AND i.store_id = ?
+    `, [month, storeId]);
     currentTotalTransactions = Number(currentTransCount[0].totalTransactions);
 
     // Calculate MRP totals from invoice items
@@ -1769,18 +1781,18 @@ const getMonthlySalesAnalytics = async (req, res) => {
       currentTotalItems += item.qty;
     });
 
-    // Get credit notes total for current month
+    // Get credit notes total for current month - filter by store_id
     const [currentCreditNotes] = await db.execute(`
       SELECT 
         COALESCE(SUM(gross_value), 0) as totalCreditNotes
       FROM credit_notes
-      WHERE DATE_FORMAT(date, '%Y-%m') = ?
-    `, [month]);
+      WHERE DATE_FORMAT(date, '%Y-%m') = ? AND store_id = ?
+    `, [month, storeId]);
 
     // Calculate net sales (MRP total - credit notes)
     const currentNetSales = currentMRPTotal - Number(currentCreditNotes[0].totalCreditNotes);
 
-    // Get previous year invoice items to calculate MRP-based sales
+    // Get previous year invoice items to calculate MRP-based sales - filter by store_id
     const [previousInvoiceItems] = await db.execute(`
       SELECT 
         ii.qty,
@@ -1788,20 +1800,20 @@ const getMonthlySalesAnalytics = async (req, res) => {
         ii.total
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
-      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
-    `, [previousYearMonth]);
+      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ? AND i.store_id = ?
+    `, [previousYearMonth, storeId]);
 
     let previousMRPTotal = 0;
     let previousCostTotal = 0;
     let previousTotalItems = 0;
     let previousTotalTransactions = 0;
 
-    // Get transaction count for previous year
+    // Get transaction count for previous year - filter by store_id
     const [previousTransCount] = await db.execute(`
       SELECT COUNT(DISTINCT i.id) as totalTransactions
       FROM invoices i
-      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
-    `, [previousYearMonth]);
+      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ? AND i.store_id = ?
+    `, [previousYearMonth, storeId]);
     previousTotalTransactions = Number(previousTransCount[0].totalTransactions);
 
     // Calculate MRP totals from invoice items for previous year
@@ -1815,18 +1827,18 @@ const getMonthlySalesAnalytics = async (req, res) => {
       previousTotalItems += item.qty;
     });
 
-    // Get credit notes total for previous year month
+    // Get credit notes total for previous year month - filter by store_id
     const [previousCreditNotes] = await db.execute(`
       SELECT 
         COALESCE(SUM(gross_value), 0) as totalCreditNotes
       FROM credit_notes
-      WHERE DATE_FORMAT(date, '%Y-%m') = ?
-    `, [previousYearMonth]);
+      WHERE DATE_FORMAT(date, '%Y-%m') = ? AND store_id = ?
+    `, [previousYearMonth, storeId]);
 
     // Calculate net sales for previous year (MRP total - credit notes)
     const previousNetSales = previousMRPTotal - Number(previousCreditNotes[0].totalCreditNotes);
 
-    // Get last month invoice items to calculate MRP-based sales
+    // Get last month invoice items to calculate MRP-based sales - filter by store_id
     const [lastMonthInvoiceItems] = await db.execute(`
       SELECT 
         ii.qty,
@@ -1834,20 +1846,20 @@ const getMonthlySalesAnalytics = async (req, res) => {
         ii.total
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
-      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
-    `, [lastMonthStr2]);
+      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ? AND i.store_id = ?
+    `, [lastMonthStr2, storeId]);
 
     let lastMonthMRPTotal = 0;
     let lastMonthCostTotal = 0;
     let lastMonthTotalItems = 0;
     let lastMonthTotalTransactions = 0;
 
-    // Get transaction count for last month
+    // Get transaction count for last month - filter by store_id
     const [lastMonthTransCount] = await db.execute(`
       SELECT COUNT(DISTINCT i.id) as totalTransactions
       FROM invoices i
-      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
-    `, [lastMonthStr2]);
+      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ? AND i.store_id = ?
+    `, [lastMonthStr2, storeId]);
     lastMonthTotalTransactions = Number(lastMonthTransCount[0].totalTransactions);
 
     // Calculate MRP totals from invoice items for last month
@@ -1861,13 +1873,13 @@ const getMonthlySalesAnalytics = async (req, res) => {
       lastMonthTotalItems += item.qty;
     });
 
-    // Get credit notes total for last month
+    // Get credit notes total for last month - filter by store_id
     const [lastMonthCreditNotes] = await db.execute(`
       SELECT 
         COALESCE(SUM(gross_value), 0) as totalCreditNotes
       FROM credit_notes
-      WHERE DATE_FORMAT(date, '%Y-%m') = ?
-    `, [lastMonthStr2]);
+      WHERE DATE_FORMAT(date, '%Y-%m') = ? AND store_id = ?
+    `, [lastMonthStr2, storeId]);
 
     // Calculate net sales for last month (MRP total - credit notes)
     const lastMonthNetSales = lastMonthMRPTotal - Number(lastMonthCreditNotes[0].totalCreditNotes);
@@ -1880,7 +1892,7 @@ const getMonthlySalesAnalytics = async (req, res) => {
       LIMIT 12
     `);
 
-    // Get most sold items for current month from invoices
+    // Get most sold items for current month from invoices - filter by store_id
     const [mostSoldItems] = await db.execute(`
       SELECT 
         ii.item_name as productName,
@@ -1890,11 +1902,11 @@ const getMonthlySalesAnalytics = async (req, res) => {
         COUNT(DISTINCT i.id) as transactionCount
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
-      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ?
+      WHERE DATE_FORMAT(i.invoice_date, '%Y-%m') = ? AND i.store_id = ?
       GROUP BY ii.item_name, ii.item_code
       ORDER BY totalQuantity DESC
       LIMIT 10
-    `, [month]);
+    `, [month, storeId]);
 
     // Calculate growth percentages using net sales
     const revenueGrowth = previousNetSales > 0 
@@ -1971,6 +1983,12 @@ const getMonthlySalesAnalytics = async (req, res) => {
 const getSalesAnalytics = async (req, res) => {
   try {
     const { date } = req.params;
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return res.status(400).json({ success: false, error: 'Invalid date format. Use YYYY-MM-DD' });
     }
@@ -1979,7 +1997,7 @@ const getSalesAnalytics = async (req, res) => {
     const previousYear = new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), currentDate.getDate());
     const previousYearStr = previousYear.toISOString().split('T')[0];
 
-    // Get current year sales summary
+    // Get current year sales summary - filter by store_id
     const [currentSummary] = await db.execute(`
       SELECT 
         COUNT(DISTINCT s.id) as totalTransactions,
@@ -1987,10 +2005,10 @@ const getSalesAnalytics = async (req, res) => {
         COALESCE(SUM(si.quantity), 0) as totalItems
       FROM sales s
       LEFT JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE(s.sale_date) = ?
-    `, [date]);
+      WHERE DATE(s.sale_date) = ? AND s.store_id = ?
+    `, [date, storeId]);
 
-    // Get previous year sales summary
+    // Get previous year sales summary - filter by store_id
     const [previousSummary] = await db.execute(`
       SELECT 
         COUNT(DISTINCT s.id) as totalTransactions,
@@ -1998,10 +2016,10 @@ const getSalesAnalytics = async (req, res) => {
         COALESCE(SUM(si.quantity), 0) as totalItems
       FROM sales s
       LEFT JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE(s.sale_date) = ?
-    `, [previousYearStr]);
+      WHERE DATE(s.sale_date) = ? AND s.store_id = ?
+    `, [previousYearStr, storeId]);
 
-    // Get most sold items for current month
+    // Get most sold items for current month - filter by store_id
     const currentMonth = currentDate.toISOString().slice(0, 7); // YYYY-MM format
     const [mostSoldItems] = await db.execute(`
       SELECT 
@@ -2013,11 +2031,11 @@ const getSalesAnalytics = async (req, res) => {
       FROM sales s
       JOIN sale_items si ON s.id = si.sale_id
       LEFT JOIN products p ON si.item_id = p.id AND si.item_type = 'product'
-      WHERE DATE_FORMAT(s.sale_date, '%Y-%m') = ?
+      WHERE DATE_FORMAT(s.sale_date, '%Y-%m') = ? AND s.store_id = ?
       GROUP BY si.name, p.item_code
       ORDER BY totalQuantity DESC
       LIMIT 10
-    `, [currentMonth]);
+    `, [currentMonth, storeId]);
 
     // Calculate growth percentages
     const current = currentSummary[0];
@@ -2074,6 +2092,12 @@ const getSalesAnalytics = async (req, res) => {
 const getYTDMTDComparison = async (req, res) => {
   try {
     const { year } = req.params;
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+
     const currentYear = year ? parseInt(year) : new Date().getFullYear();
     const previousYear = currentYear - 1;
     
@@ -2098,7 +2122,7 @@ const getYTDMTDComparison = async (req, res) => {
     const prevMtdStartDate = `${previousYear}-${currentMonth.toString().padStart(2, '0')}-01`;
     const prevMtdEndDate = `${previousYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
 
-    // YTD from invoices - calculate MRP-based sales
+    // YTD from invoices - calculate MRP-based sales - filter by store_id
     const [ytdInvoiceItems] = await db.execute(`
       SELECT 
         ii.qty,
@@ -2106,8 +2130,8 @@ const getYTDMTDComparison = async (req, res) => {
         ii.total
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
-      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
-    `, [ytdStartDate, ytdEndDate, currentYear]);
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ? AND i.store_id = ?
+    `, [ytdStartDate, ytdEndDate, currentYear, storeId]);
 
     // Calculate MRP from invoice rates (rate * 1.33 rounded to nearest 5)
     const roundUpToNearest5 = (value) => {
@@ -2124,12 +2148,12 @@ const getYTDMTDComparison = async (req, res) => {
     let ytdTotalTransactions = 0;
     let ytdTotalItems = 0;
 
-    // Get transaction count for YTD
+    // Get transaction count for YTD - filter by store_id
     const [ytdTransCount] = await db.execute(`
       SELECT COUNT(DISTINCT i.id) as totalTransactions
       FROM invoices i
-      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
-    `, [ytdStartDate, ytdEndDate, currentYear]);
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ? AND i.store_id = ?
+    `, [ytdStartDate, ytdEndDate, currentYear, storeId]);
     ytdTotalTransactions = Number(ytdTransCount[0].totalTransactions);
 
     // Calculate MRP totals from invoice items for YTD
@@ -2140,16 +2164,16 @@ const getYTDMTDComparison = async (req, res) => {
       ytdTotalItems += item.qty;
     });
     
-    // Get credit notes for YTD
+    // Get credit notes for YTD - filter by store_id
     const [creditNotesYTD] = await db.execute(`
       SELECT COALESCE(SUM(gross_value), 0) as totalCreditNotes
       FROM credit_notes
-      WHERE DATE(date) BETWEEN ? AND ? AND YEAR(date) = ?
-    `, [ytdStartDate, ytdEndDate, currentYear]);
+      WHERE DATE(date) BETWEEN ? AND ? AND YEAR(date) = ? AND store_id = ?
+    `, [ytdStartDate, ytdEndDate, currentYear, storeId]);
     
     const currentYTDNetSales = ytdMRPTotal - Number(creditNotesYTD[0].totalCreditNotes);
     
-    // MTD - calculate MRP-based sales
+    // MTD - calculate MRP-based sales - filter by store_id
     const [mtdInvoiceItems] = await db.execute(`
       SELECT 
         ii.qty,
@@ -2157,19 +2181,19 @@ const getYTDMTDComparison = async (req, res) => {
         ii.total
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
-      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
-    `, [mtdStartDate, mtdEndDate, currentYear]);
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ? AND i.store_id = ?
+    `, [mtdStartDate, mtdEndDate, currentYear, storeId]);
 
     let mtdMRPTotal = 0;
     let mtdTotalTransactions = 0;
     let mtdTotalItems = 0;
 
-    // Get transaction count for MTD
+    // Get transaction count for MTD - filter by store_id
     const [mtdTransCount] = await db.execute(`
       SELECT COUNT(DISTINCT i.id) as totalTransactions
       FROM invoices i
-      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
-    `, [mtdStartDate, mtdEndDate, currentYear]);
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ? AND i.store_id = ?
+    `, [mtdStartDate, mtdEndDate, currentYear, storeId]);
     mtdTotalTransactions = Number(mtdTransCount[0].totalTransactions);
 
     // Calculate MRP totals from invoice items for MTD
@@ -2180,16 +2204,16 @@ const getYTDMTDComparison = async (req, res) => {
       mtdTotalItems += item.qty;
     });
     
-    // Get credit notes for MTD
+    // Get credit notes for MTD - filter by store_id
     const [creditNotesMTD] = await db.execute(`
       SELECT COALESCE(SUM(gross_value), 0) as totalCreditNotes
       FROM credit_notes
-      WHERE DATE(date) BETWEEN ? AND ? AND YEAR(date) = ?
-    `, [mtdStartDate, mtdEndDate, currentYear]);
+      WHERE DATE(date) BETWEEN ? AND ? AND YEAR(date) = ? AND store_id = ?
+    `, [mtdStartDate, mtdEndDate, currentYear, storeId]);
     
     const currentMTDNetSales = mtdMRPTotal - Number(creditNotesMTD[0].totalCreditNotes);
 
-    // Previous year YTD - calculate MRP-based sales
+    // Previous year YTD - calculate MRP-based sales - filter by store_id
     const [prevYtdInvoiceItems] = await db.execute(`
       SELECT 
         ii.qty,
@@ -2197,19 +2221,19 @@ const getYTDMTDComparison = async (req, res) => {
         ii.total
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
-      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
-    `, [prevYtdStartDate, prevYtdEndDate, previousYear]);
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ? AND i.store_id = ?
+    `, [prevYtdStartDate, prevYtdEndDate, previousYear, storeId]);
 
     let prevYtdMRPTotal = 0;
     let prevYtdTotalTransactions = 0;
     let prevYtdTotalItems = 0;
 
-    // Get transaction count for previous year YTD
+    // Get transaction count for previous year YTD - filter by store_id
     const [prevYtdTransCount] = await db.execute(`
       SELECT COUNT(DISTINCT i.id) as totalTransactions
       FROM invoices i
-      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
-    `, [prevYtdStartDate, prevYtdEndDate, previousYear]);
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ? AND i.store_id = ?
+    `, [prevYtdStartDate, prevYtdEndDate, previousYear, storeId]);
     prevYtdTotalTransactions = Number(prevYtdTransCount[0].totalTransactions);
 
     // Calculate MRP totals from invoice items for previous year YTD
@@ -2220,16 +2244,16 @@ const getYTDMTDComparison = async (req, res) => {
       prevYtdTotalItems += item.qty;
     });
     
-    // Get credit notes for previous year YTD
-    const [creditNotesPrevYTD] = await db.execute(`
+    // Get credit notes for previous year YTD - filter by store_id
+    const [prevCreditNotesYTD] = await db.execute(`
       SELECT COALESCE(SUM(gross_value), 0) as totalCreditNotes
       FROM credit_notes
-      WHERE DATE(date) BETWEEN ? AND ? AND YEAR(date) = ?
-    `, [prevYtdStartDate, prevYtdEndDate, previousYear]);
+      WHERE DATE(date) BETWEEN ? AND ? AND YEAR(date) = ? AND store_id = ?
+    `, [prevYtdStartDate, prevYtdEndDate, previousYear, storeId]);
     
-    const previousYTDNetSales = prevYtdMRPTotal - Number(creditNotesPrevYTD[0].totalCreditNotes);
+    const previousYTDNetSales = prevYtdMRPTotal - Number(prevCreditNotesYTD[0].totalCreditNotes);
 
-    // Previous year MTD - calculate MRP-based sales
+    // Previous year MTD - calculate MRP-based sales - filter by store_id
     const [prevMtdInvoiceItems] = await db.execute(`
       SELECT 
         ii.qty,
@@ -2237,19 +2261,19 @@ const getYTDMTDComparison = async (req, res) => {
         ii.total
       FROM invoices i
       JOIN invoice_items ii ON i.id = ii.invoice_id
-      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
-    `, [prevMtdStartDate, prevMtdEndDate, previousYear]);
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ? AND i.store_id = ?
+    `, [prevMtdStartDate, prevMtdEndDate, previousYear, storeId]);
 
     let prevMtdMRPTotal = 0;
     let prevMtdTotalTransactions = 0;
     let prevMtdTotalItems = 0;
 
-    // Get transaction count for previous year MTD
+    // Get transaction count for previous year MTD - filter by store_id
     const [prevMtdTransCount] = await db.execute(`
       SELECT COUNT(DISTINCT i.id) as totalTransactions
       FROM invoices i
-      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ?
-    `, [prevMtdStartDate, prevMtdEndDate, previousYear]);
+      WHERE DATE(i.invoice_date) BETWEEN ? AND ? AND YEAR(i.invoice_date) = ? AND i.store_id = ?
+    `, [prevMtdStartDate, prevMtdEndDate, previousYear, storeId]);
     prevMtdTotalTransactions = Number(prevMtdTransCount[0].totalTransactions);
 
     // Calculate MRP totals from invoice items for previous year MTD
@@ -2260,12 +2284,12 @@ const getYTDMTDComparison = async (req, res) => {
       prevMtdTotalItems += item.qty;
     });
     
-    // Get credit notes for previous year MTD
+    // Get credit notes for previous year MTD - filter by store_id
     const [creditNotesPrevMTD] = await db.execute(`
       SELECT COALESCE(SUM(gross_value), 0) as totalCreditNotes
       FROM credit_notes
-      WHERE DATE(date) BETWEEN ? AND ? AND YEAR(date) = ?
-    `, [prevMtdStartDate, prevMtdEndDate, previousYear]);
+      WHERE DATE(date) BETWEEN ? AND ? AND YEAR(date) = ? AND store_id = ?
+    `, [prevMtdStartDate, prevMtdEndDate, previousYear, storeId]);
     
     const previousMTDNetSales = prevMtdMRPTotal - Number(creditNotesPrevMTD[0].totalCreditNotes);
 
