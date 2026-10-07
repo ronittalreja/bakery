@@ -116,23 +116,26 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
           <p className="text-muted-foreground">Store Code: {selectedStore.store_code}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {storeFunctionItems.map((item) => {
             const Icon = item.icon
             return (
-              <Card
+              <div
                 key={item.title}
-                className={`hover:shadow-lg transition-shadow cursor-pointer ${item.disabled ? "opacity-50" : ""}`}
                 onClick={() => !item.disabled && setCurrentPage(item.page)}
+                className={`group cursor-pointer ${item.disabled ? "opacity-50" : ""}`}
               >
-                <CardHeader>
-                  <div className={`w-12 h-12 rounded-lg ${item.color} flex items-center justify-center mb-4`}>
-                    <Icon className="h-6 w-6" />
+                <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className={`w-12 h-12 rounded-lg ${item.color} flex items-center justify-center`}>
+                      <Icon className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                      {item.title}
+                    </h3>
                   </div>
-                  <CardTitle className="text-xl">{item.title}</CardTitle>
-                  <CardDescription>{item.description}</CardDescription>
-                </CardHeader>
-              </Card>
+                </div>
+              </div>
             )
           })}
         </div>
@@ -281,24 +284,26 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
             <div className="space-y-8">
               {/* 4 Main Cards */}
               <div>
-                <h2 className="text-2xl font-bold mb-4">Developer Dashboard</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
                   {mainDashboardItems.map((item) => {
                     const Icon = item.icon
                     return (
-                      <Card
+                      <div
                         key={item.title}
-                        className={`hover:shadow-lg transition-shadow cursor-pointer ${item.disabled ? "opacity-50" : ""}`}
                         onClick={() => !item.disabled && setCurrentPage(item.page)}
+                        className={`group cursor-pointer ${item.disabled ? "opacity-50" : ""}`}
                       >
-                        <CardHeader>
-                          <div className={`w-12 h-12 rounded-lg ${item.color} flex items-center justify-center mb-4`}>
-                            <Icon className="h-6 w-6" />
+                        <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
+                          <div className="flex flex-col items-center text-center space-y-4">
+                            <div className={`w-12 h-12 rounded-lg ${item.color} flex items-center justify-center`}>
+                              <Icon className="h-6 w-6 text-white" />
+                            </div>
+                            <h3 className="text-sm font-medium text-slate-900 leading-tight">
+                              {item.title}
+                            </h3>
                           </div>
-                          <CardTitle className="text-xl">{item.title}</CardTitle>
-                          <CardDescription>{item.description}</CardDescription>
-                        </CardHeader>
-                      </Card>
+                        </div>
+                      </div>
                     )
                   })}
                 </div>
@@ -306,8 +311,8 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
 
               {/* Manage Stores Section */}
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold">Manage Stores</h2>
+                <div className="flex items-center justify-between mb-4 max-w-4xl mx-auto">
+                  <h2 className="text-2xl font-bold">Manage Stores ({stores.length})</h2>
                   <Button
                     onClick={() => setShowManageStores(true)}
                     className="flex items-center gap-2"
@@ -316,7 +321,7 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
                     Create Store
                   </Button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 max-w-4xl mx-auto">
                   {stores.map((store) => (
                     <Card
                       key={store.id}
@@ -368,7 +373,6 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
               </Button>
             )}
             <div>
-              <h1 className="text-2xl font-bold text-primary">Developer Dashboard</h1>
               <p className="text-muted-foreground">Welcome back, {user?.username}</p>
             </div>
           </div>
