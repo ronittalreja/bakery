@@ -97,8 +97,8 @@ app.use('/api/insights', authMiddleware(['store_manager', 'staff', 'admin', 'sup
 app.use('/api/tomorrow-ai/products', require('./routes/tomorrowAIProducts'));
 app.use('/api/tomorrow-ai', authMiddleware(['super_admin', 'admin']), require('./routes/tomorrowAI'));
 app.use('/api/tomorrow-ai/features', authMiddleware(['super_admin', 'admin']), require('./routes/tomorrowAIFeatures'));
-app.use('/api/tomorrow-ai/model', authMiddleware(['super_admin', 'admin']), require('./routes/tomorrowAIModel'));
-app.use('/api/tomorrow-ai/events', authMiddleware(['super_admin', 'admin']), require('./routes/tomorrowAIEvents'));
+app.use('/api/tomorrow-ai/model', authMiddleware(['super_admin', 'admin', 'store_manager', 'staff']), require('./routes/tomorrowAIModel'));
+app.use('/api/tomorrow-ai/events', authMiddleware(['super_admin', 'admin', 'store_manager', 'staff']), require('./routes/tomorrowAIEvents'));
 app.use('/api/products', authMiddleware(['store_manager', 'staff', 'admin', 'super_admin']), require('./routes/products'));
 
 // Daily sync job - runs automatically

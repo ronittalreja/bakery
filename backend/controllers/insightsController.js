@@ -9,6 +9,12 @@ const getMonthlyInsights = async (req, res) => {
   try {
     const { month } = req.params;
     const storeId = req.user?.store_id;
+
+    // If store_id is not found, return error
+    if (!storeId) {
+      console.error('User store_id not found for user:', req.user?.username);
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
     
     // Handle "all" case for full year data
     if (month.includes('-all')) {
