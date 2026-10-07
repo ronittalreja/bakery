@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { DateProvider } from "@/hooks/use-date-context"
 import { LoginForm } from "@/components/login-form"
-import { DeveloperDashboard } from "@/components/developer-dashboard"
+import { StaffDashboard } from "@/components/developer-page"
 import { UserDashboard } from "@/components/user-dashboard"
 
 export default function HomePage() {
@@ -35,7 +35,7 @@ export default function HomePage() {
       {shouldShowUserDashboard ? (
         <UserDashboard onBackToDeveloper={() => setShowUserDashboard(false)} />
       ) : (
-        <DeveloperDashboard onSwitchToUser={() => setShowUserDashboard(true)} />
+        <StaffDashboard onSwitchToUser={() => setShowUserDashboard(true)} />
       )}
     </DateProvider>
   )

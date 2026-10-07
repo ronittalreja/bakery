@@ -49,7 +49,11 @@ interface Store {
   status: string
 }
 
-export function StaffDashboard() {
+interface StaffDashboardProps {
+  onSwitchToUser?: () => void;
+}
+
+export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
   const { user, logout } = useAuth()
   const { selectedDate, isToday, endDay, isDayEnded, staffCanEndDay } = useDateContext()
   const { toast } = useToast()
