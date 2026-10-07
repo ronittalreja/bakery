@@ -9,6 +9,7 @@ const db = require('../config/database');
 async function generateFeatures(req, res) {
   try {
     const { startDate, endDate } = req.body;
+    const storeId = req.user?.store_id;
 
     if (!startDate || !endDate) {
       return res.status(400).json({
@@ -17,14 +18,18 @@ async function generateFeatures(req, res) {
       });
     }
 
-    console.log(`Generating features from ${startDate} to ${endDate}`);
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+
+    console.log(`Generating features from ${startDate} to ${endDate}, store_id: ${storeId}`);
 
     // Get all DISPLAY items
     const [displayProducts] = await db.execute(`
       SELECT DISTINCT ml_group_id, name
       FROM tomorrow_ai_product_master
-      WHERE item_type = 'DISPLAY' AND active = TRUE
-    `);
+      WHERE item_type = 'DISPLAY' AND active = TRUE AND store_id = ?
+    `, [storeId]);
 
     console.log(`Found ${displayProducts.length} DISPLAY products`);
 

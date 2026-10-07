@@ -7,9 +7,14 @@ const db = require('../config/database');
 const getSalesReport = async (req, res) => {
   try {
     const { startDate, endDate, groupBy = 'date' } = req.query;
-    
+    const storeId = req.user?.store_id;
+
     if (!startDate || !endDate) {
       return res.status(400).json({ success: false, error: 'Start date and end date are required' });
+    }
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
     }
 
     let query = `
@@ -22,7 +27,7 @@ const getSalesReport = async (req, res) => {
         SUM(si.quantity) as total_items
       FROM sales s
       JOIN sale_items si ON s.id = si.sale_id
-      WHERE DATE(s.sale_date) BETWEEN ? AND ?
+      WHERE DATE(s.sale_date) BETWEEN ? AND ? AND s.store_id = ?
     `;
 
     if (groupBy === 'date') {
@@ -32,7 +37,7 @@ const getSalesReport = async (req, res) => {
               ' GROUP BY s.payment_type ORDER BY total_sales DESC';
     }
 
-    const [rows] = await db.execute(query, [startDate, endDate]);
+    const [rows] = await db.execute(query, [startDate, endDate, storeId]);
     
     // Calculate totals
     const totals = rows.reduce((acc, row) => ({
@@ -65,9 +70,14 @@ const getSalesReport = async (req, res) => {
 const getProductSalesReport = async (req, res) => {
   try {
     const { startDate, endDate, productId } = req.query;
-    
+    const storeId = req.user?.store_id;
+
     if (!startDate || !endDate) {
       return res.status(400).json({ success: false, error: 'Start date and end date are required' });
+    }
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
     }
 
     let query = `
@@ -83,10 +93,10 @@ const getProductSalesReport = async (req, res) => {
       FROM sale_items si
       JOIN products p ON si.item_id = p.id AND si.item_type = 'product'
       JOIN sales s ON si.sale_id = s.id
-      WHERE DATE(s.sale_date) BETWEEN ? AND ?
+      WHERE DATE(s.sale_date) BETWEEN ? AND ? AND s.store_id = ?
     `;
     
-    let params = [startDate, endDate];
+    let params = [startDate, endDate, storeId];
     
     if (productId) {
       query += ' AND p.id = ?';

@@ -2364,9 +2364,13 @@ router.get('/summary-accurate/:month', async (req, res) => {
     if (!/^\d{4}-\d{2}$/.test(month)) {
       return res.status(400).json({ success: false, error: 'Invalid month format' });
     }
+    const storeId = req.user?.store_id;
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
     const [rows] = await db.execute(
-      `SELECT COUNT(*) as totalTransactions, COALESCE(SUM(total_amount), 0) as totalSales FROM sales WHERE YEAR(sale_date) = ? AND MONTH(sale_date) = ?`,
-      [month.slice(0, 4), month.slice(5, 7)]
+      `SELECT COUNT(*) as totalTransactions, COALESCE(SUM(total_amount), 0) as totalSales FROM sales WHERE YEAR(sale_date) = ? AND MONTH(sale_date) = ? AND store_id = ?`,
+      [month.slice(0, 4), month.slice(5, 7), storeId]
     );
     res.json({ success: true, ...rows[0] });
   } catch (err) {

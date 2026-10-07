@@ -6,6 +6,11 @@ const { getDemoData } = require('../middleware/demoMode');
 const getAllRosReceipts = async (req, res) => {
   try {
     const { month } = req.query;
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
     
     // Return demo data if demo user
     if (req.isDemo) {
@@ -48,12 +53,13 @@ const getAllRosReceipts = async (req, res) => {
         original_name,
         created_at
       FROM ros_receipts
+      WHERE store_id = ?
     `;
     
-    const params = [];
+    const params = [storeId];
     
     if (month) {
-      query += ` WHERE DATE_FORMAT(receipt_date, '%Y-%m') = ?`;
+      query += ` AND DATE_FORMAT(receipt_date, '%Y-%m') = ?`;
       params.push(month);
     }
     

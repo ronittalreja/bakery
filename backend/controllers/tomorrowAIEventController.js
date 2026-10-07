@@ -9,6 +9,11 @@ const db = require('../config/database');
 async function getNextEvent(req, res) {
   try {
     const today = new Date().toISOString().split('T')[0];
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
 
     const [events] = await db.execute(`
       SELECT
@@ -19,10 +24,10 @@ async function getNextEvent(req, res) {
         year,
         description
       FROM tomorrow_ai_events
-      WHERE event_date >= ? AND status = 'approved'
+      WHERE event_date >= ? AND status = 'approved' AND store_id = ?
       ORDER BY event_date ASC
       LIMIT 1
-    `, [today]);
+    `, [today, storeId]);
     
     if (events.length === 0) {
       return res.json({ success: true, data: null });
@@ -55,17 +60,22 @@ async function getUpcomingEvents(req, res) {
     const today = new Date().toISOString().split('T')[0];
     const limit = req.query.limit ? parseInt(req.query.limit) : 10;
     const safeLimit = isNaN(limit) ? 10 : limit;
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
 
     if (!today) {
       return res.status(400).json({ success: false, error: 'Invalid date' });
     }
 
-    console.log('getUpcomingEvents - today:', today, 'limit:', safeLimit);
+    console.log('getUpcomingEvents - today:', today, 'limit:', safeLimit, 'store_id:', storeId);
 
     // Use hardcoded LIMIT to avoid parameter binding issues
     const safeLimitInt = Math.min(Math.max(safeLimit, 1), 100); // Clamp between 1 and 100
-    const query = `SELECT id, event_name, event_type, event_date, year, description FROM tomorrow_ai_events WHERE event_date >= ? AND status = 'approved' ORDER BY event_date ASC LIMIT ${safeLimitInt}`;
-    const [events] = await db.execute(query, [String(today)]);
+    const query = `SELECT id, event_name, event_type, event_date, year, description FROM tomorrow_ai_events WHERE event_date >= ? AND status = 'approved' AND store_id = ? ORDER BY event_date ASC LIMIT ${safeLimitInt}`;
+    const [events] = await db.execute(query, [String(today), storeId]);
 
     const eventsWithDays = events.map(event => {
       const eventDate = new Date(event.event_date);

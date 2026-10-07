@@ -10,6 +10,7 @@ const db = require('../config/database');
 async function trainModel(req, res) {
   try {
     const { startDate, endDate } = req.body;
+    const storeId = req.user?.store_id;
 
     if (!startDate || !endDate) {
       return res.status(400).json({
@@ -18,14 +19,18 @@ async function trainModel(req, res) {
       });
     }
 
-    console.log(`Training model with data from ${startDate} to ${endDate}`);
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+
+    console.log(`Training model with data from ${startDate} to ${endDate}, store_id: ${storeId}`);
 
     // Get all DISPLAY products
     const [displayProducts] = await db.execute(`
       SELECT DISTINCT ml_group_id, name
       FROM tomorrow_ai_product_master
-      WHERE item_type = 'DISPLAY' AND active = TRUE
-    `);
+      WHERE item_type = 'DISPLAY' AND active = TRUE AND store_id = ?
+    `, [storeId]);
 
     console.log(`Training models for ${displayProducts.length} products`);
 
@@ -165,15 +170,20 @@ async function generatePrediction(req, res) {
   try {
     const { predictionDate } = req.body;
     const targetDate = predictionDate || new Date().toISOString().split('T')[0];
+    const storeId = req.user?.store_id;
 
-    console.log(`Generating predictions for ${targetDate}`);
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+
+    console.log(`Generating predictions for ${targetDate}, store_id: ${storeId}`);
 
     // Get all DISPLAY products
     const [displayProducts] = await db.execute(`
       SELECT DISTINCT ml_group_id, product_id, name
       FROM tomorrow_ai_product_master
-      WHERE item_type = 'DISPLAY' AND active = TRUE
-    `);
+      WHERE item_type = 'DISPLAY' AND active = TRUE AND store_id = ?
+    `, [storeId]);
 
     const predictions = [];
 

@@ -675,9 +675,14 @@ const getInvoicesByMonth = async (req, res) => {
         });
       }
       
+      const storeId = req.user?.store_id;
+      if (!storeId) {
+        return res.status(400).json({ success: false, error: 'User store_id not found' });
+      }
+
       const [invoices] = await db.execute(
-        'SELECT * FROM invoices WHERE YEAR(invoice_date) = ? ORDER BY invoice_date DESC',
-        [parseInt(yearToUse)]
+        'SELECT * FROM invoices WHERE YEAR(invoice_date) = ? AND store_id = ? ORDER BY invoice_date DESC',
+        [parseInt(yearToUse), storeId]
       );
       
       res.json({ 
@@ -702,15 +707,20 @@ const getInvoicesByMonth = async (req, res) => {
     }
     
     if (!month || !year) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Month and year are required' 
+      return res.status(400).json({
+        success: false,
+        error: 'Month and year are required'
       });
     }
 
+    const storeId = req.user?.store_id;
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+
     const [invoices] = await db.execute(
-      'SELECT * FROM invoices WHERE MONTH(invoice_date) = ? AND YEAR(invoice_date) = ? ORDER BY invoice_date DESC',
-      [parseInt(month), parseInt(year)]
+      'SELECT * FROM invoices WHERE MONTH(invoice_date) = ? AND YEAR(invoice_date) = ? AND store_id = ? ORDER BY invoice_date DESC',
+      [parseInt(month), parseInt(year), storeId]
     );
     
     res.json({ 
