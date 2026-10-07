@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Check, X, RefreshCw, Calendar } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ArrowLeft, Check, X, RefreshCw, Calendar, Edit, Trash2 } from "lucide-react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 
 interface Event {
@@ -25,6 +26,12 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = usePersistedState<'all' | 'pending' | 'approved' | 'rejected'>('manage_events_filter', 'all');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+
+  // Generate years from current year - 2 to current year + 1
+  const years = Array.from({ length: 4 }, (_, i) => new Date().getFullYear() - 2 + i);
 
   useEffect(() => {
     fetchEvents();
@@ -48,7 +55,7 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
     }
   };
 
-  const updateEventStatus = async (eventId: number, status: 'approved' | 'rejected') => {
+  const updateEventStatus = async (eventId: number, status: 'approved' | 'rejected' | 'pending') => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/${eventId}/status`, {
@@ -69,10 +76,73 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
     }
   };
 
+  const updateEventDates = async (eventId: number, dates: string[]) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/${eventId}/dates`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ dates })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setEditingEvent(null);
+        setSelectedDates([]);
+        fetchEvents();
+      }
+    } catch (error) {
+      console.error('Error updating event dates:', error);
+    }
+  };
+
+  const deleteEvent = async (eventId: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/${eventId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setEvents(events.filter(e => e.id !== eventId));
+      }
+    } catch (error) {
+      console.error('Error deleting event:', error);
+    }
+  };
+
+  const handleDateToggle = (date: string) => {
+    if (selectedDates.includes(date)) {
+      setSelectedDates(selectedDates.filter(d => d !== date));
+    } else {
+      setSelectedDates([...selectedDates, date]);
+    }
+  };
+
+  const handleSaveDates = () => {
+    if (editingEvent && selectedDates.length > 0) {
+      updateEventDates(editingEvent.id, selectedDates);
+    }
+  };
+
+  const getDatesForYear = (year: number) => {
+    const dates = [];
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year, 11, 31);
+    
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      dates.push(new Date(d).toISOString().split('T')[0]);
+    }
+    return dates;
+  };
+
   const filteredEvents = events.filter(event => {
     if (filter === 'all') return true;
     return event.status === filter;
-  });
+  }).filter(event => event.year === selectedYear);
 
   const getEventEmoji = (eventName: string) => {
     const name = eventName.toLowerCase();
@@ -107,12 +177,12 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl mx-auto px-4 py-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={onBack}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Admin
+          Back to Dashboard
         </Button>
         <Button onClick={fetchEvents} disabled={isLoading} variant="outline">
           <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -132,6 +202,24 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Year Slider */}
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm font-medium">Year:</span>
+            </div>
+            <div className="flex gap-2">
+              {years.map((year) => (
+                <Button
+                  key={year}
+                  variant={selectedYear === year ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedYear(year)}
+                >
+                  {year}
+                </Button>
+              ))}
+            </div>
+          </div>
           {/* Filter Buttons */}
           <div className="flex gap-2 mb-4">
             <Button
@@ -139,28 +227,28 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
               size="sm"
               onClick={() => setFilter('all')}
             >
-              All ({events.length})
+              All ({events.filter(e => e.year === selectedYear).length})
             </Button>
             <Button
               variant={filter === 'pending' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setFilter('pending')}
             >
-              Pending ({events.filter(e => e.status === 'pending').length})
+              Pending ({events.filter(e => e.status === 'pending' && e.year === selectedYear).length})
             </Button>
             <Button
               variant={filter === 'approved' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setFilter('approved')}
             >
-              Approved ({events.filter(e => e.status === 'approved').length})
+              Approved ({events.filter(e => e.status === 'approved' && e.year === selectedYear).length})
             </Button>
             <Button
               variant={filter === 'rejected' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setFilter('rejected')}
             >
-              Rejected ({events.filter(e => e.status === 'rejected').length})
+              Rejected ({events.filter(e => e.status === 'rejected' && e.year === selectedYear).length})
             </Button>
           </div>
         </CardContent>
@@ -202,29 +290,101 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-green-500 text-green-600 hover:bg-green-50"
                           onClick={() => updateEventStatus(event.id, 'approved')}
                         >
-                          <Check className="h-4 w-4" />
+                          <Check className="h-4 w-4 text-green-600" />
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-red-500 text-red-600 hover:bg-red-50"
-                          onClick={() => updateEventStatus(event.id, 'rejected')}
+                          onClick={() => deleteEvent(event.id)}
                         >
-                          <X className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>
                       </div>
                     )}
-                    {event.status !== 'pending' && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => updateEventStatus(event.id, 'pending')}
-                      >
-                        Reset
-                      </Button>
+                    {event.status === 'approved' && (
+                      <div className="flex justify-end gap-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setEditingEvent(event);
+                                setSelectedDates([event.event_date]);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Edit Event Dates - {event.event_name}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <p className="text-sm text-muted-foreground">
+                                Select multiple dates for forecast calculation. Invoices from these dates will be used for real-time forecast API.
+                              </p>
+                              <div className="grid grid-cols-7 gap-2">
+                                {getDatesForYear(event.year).map((date) => {
+                                  const dateObj = new Date(date);
+                                  const isSelected = selectedDates.includes(date);
+                                  return (
+                                    <button
+                                      key={date}
+                                      onClick={() => handleDateToggle(date)}
+                                      className={`p-2 text-sm rounded border ${
+                                        isSelected
+                                          ? 'bg-purple-600 text-white border-purple-600'
+                                          : 'bg-white hover:bg-gray-100'
+                                      }`}
+                                    >
+                                      {dateObj.getDate()}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              <div className="flex justify-end gap-2 pt-4">
+                                <Button variant="outline" onClick={() => {
+                                  setEditingEvent(null);
+                                  setSelectedDates([]);
+                                }}>
+                                  Cancel
+                                </Button>
+                                <Button onClick={handleSaveDates} disabled={selectedDates.length === 0}>
+                                  Save Dates ({selectedDates.length})
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => deleteEvent(event.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    )}
+                    {event.status === 'rejected' && (
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateEventStatus(event.id, 'approved')}
+                        >
+                          <Check className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => deleteEvent(event.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
                     )}
                   </TableCell>
                 </TableRow>

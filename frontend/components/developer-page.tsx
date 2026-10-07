@@ -62,6 +62,7 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
   const [stores, setStores] = useState<Store[]>([])
   const [selectedStore, setSelectedStore] = useState<Store | null>(null)
   const [showManageStores, setShowManageStores] = useState(false)
+  const [storeHasInvoice, setStoreHasInvoice] = useState(false)
 
   useEffect(() => {
     const checkInvoice = async () => {
@@ -73,6 +74,22 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
     }
     if (isToday) checkInvoice()
   }, [selectedDate, isToday])
+
+  useEffect(() => {
+    const checkStoreInvoice = async () => {
+      if (!selectedStore) {
+        setStoreHasInvoice(false)
+        return
+      }
+      try {
+        const response = await apiClient(`/api/invoices?date=${selectedDate}&store_id=${selectedStore.id}`) as any[]
+        setStoreHasInvoice(!!response.length)
+      } catch (err) {
+        setStoreHasInvoice(false)
+      }
+    }
+    if (isToday) checkStoreInvoice()
+  }, [selectedDate, isToday, selectedStore])
 
   const handleEndDay = () => {
     endDay()
@@ -116,7 +133,7 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
           <p className="text-muted-foreground">Store Code: {selectedStore.store_code}</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto p-6">
           {storeFunctionItems.map((item) => {
             const Icon = item.icon
             return (
@@ -193,7 +210,7 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
       icon: ShoppingCart,
       page: "record-sale" as StaffPage,
       color: "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-200",
-      disabled: !isToday || isDayEnded || !hasInvoice,
+      disabled: !isToday || isDayEnded || !storeHasInvoice,
     },
     {
       title: "Today's Stock",
@@ -209,7 +226,7 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
       icon: RotateCcw,
       page: "returns" as StaffPage,
       color: "bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-amber-200",
-      disabled: !isToday || isDayEnded || !hasInvoice,
+      disabled: !isToday || isDayEnded || !storeHasInvoice,
     },
     {
       title: "Manage Products",
@@ -284,7 +301,7 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
             <div className="space-y-8">
               {/* 4 Main Cards */}
               <div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto p-6">
                   {mainDashboardItems.map((item) => {
                     const Icon = item.icon
                     return (
