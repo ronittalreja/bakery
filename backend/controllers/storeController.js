@@ -15,18 +15,18 @@ const getAllStores = async (req, res) => {
     const user = req.user;
     
     // Try with status filter first, fall back to simple query
-    let query = 'SELECT * FROM stores';
-    const params = [];
+    let query = 'SELECT * FROM stores WHERE status = ?';
+    const params = ['active'];
 
     // Filter based on user role
     if (user.role === 'store_manager') {
-      query += ' WHERE id = ?';
+      query += ' AND id = ?';
       params.push(user.store_id);
     } else if (user.role === 'area_manager') {
-      query += ' WHERE area_manager_id = ?';
+      query += ' AND area_manager_id = ?';
       params.push(user.id);
     } else if (user.role === 'regional_manager') {
-      query += ' WHERE regional_manager_id = ?';
+      query += ' AND regional_manager_id = ?';
       params.push(user.id);
     }
 
