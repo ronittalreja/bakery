@@ -14,6 +14,14 @@ const getAllStores = async (req, res) => {
   try {
     const user = req.user;
     
+    // If no user (unauthenticated), return only active stores
+    if (!user) {
+      const connection = await db.getConnection();
+      const [rows] = await connection.query('SELECT * FROM stores WHERE status = ?', ['active']);
+      connection.release();
+      return res.json(rows);
+    }
+    
     // Try with status filter first, fall back to simple query
     let query = 'SELECT * FROM stores WHERE status = ?';
     const params = ['active'];
