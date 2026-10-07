@@ -109,8 +109,9 @@ const deleteExpense = async (req, res) => {
 const getExpenseSummary = async (req, res) => {
   try {
     const { month, year } = req.query;
+    const storeId = req.user?.store_id;
     
-    const summary = await Expense.getSummary(month, year);
+    const summary = await Expense.getSummary(month, year, storeId);
     res.json({ success: true, summary });
   } catch (error) {
     res.status(500).json({ error: error.message });

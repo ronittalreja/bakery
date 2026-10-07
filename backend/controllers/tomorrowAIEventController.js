@@ -101,29 +101,34 @@ async function getUpcomingEvents(req, res) {
  */
 async function getEventForecast(req, res) {
   try {
-    const { eventId, eventName, year } = req.query;
+    const { eventId, eventName, year } = req.params;
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
 
     if (!eventId && !eventName) {
       return res.status(400).json({ success: false, error: 'eventId or eventName required' });
     }
 
-    // Get event details - handle undefined parameters
+    // Get event details - handle undefined parameters with store_id filtering
     let query, params;
     if (eventId && eventName && year) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ?`;
-      params = [eventName, year];
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ? AND store_id = ?`;
+      params = [eventName, year, storeId];
     } else if (eventId && eventName) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE id = ? OR event_name = ?`;
-      params = [eventId, eventName];
+      query = `SELECT * FROM tomorrow_ai_events WHERE (id = ? OR event_name = ?) AND store_id = ?`;
+      params = [eventId, eventName, storeId];
     } else if (eventId) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE id = ?`;
-      params = [eventId];
+      query = `SELECT * FROM tomorrow_ai_events WHERE id = ? AND store_id = ?`;
+      params = [eventId, storeId];
     } else if (eventName && year) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ?`;
-      params = [eventName, year];
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ? AND store_id = ?`;
+      params = [eventName, year, storeId];
     } else {
-      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ?`;
-      params = [eventName];
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND store_id = ?`;
+      params = [eventName, storeId];
     }
 
     const [events] = await db.execute(query, params);
@@ -216,10 +221,10 @@ async function getEventForecast(req, res) {
           ds.actual_sales,
           YEAR(ds.sale_date) as event_year
         FROM tomorrow_ai_daily_sales ds
-        WHERE ds.ml_group_id IN (${placeholders})
+        WHERE ds.ml_group_id IN (${placeholders}) AND ds.store_id = ?
           AND (${dateConditions})
         ORDER BY ds.sale_date ASC
-      `, [...mlGroupIds]);
+      `, [...mlGroupIds, storeId]);
     }
 
     console.log(`Found ${historicalSales.length} historical sales records`);
@@ -299,6 +304,11 @@ async function getEventForecast(req, res) {
 async function getEventPattern(req, res) {
   try {
     const { eventId, eventName, year, mlGroupId } = req.query;
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
 
     if (!eventId && !eventName) {
       return res.status(400).json({ success: false, error: 'eventId or eventName required' });
@@ -308,23 +318,23 @@ async function getEventPattern(req, res) {
       return res.status(400).json({ success: false, error: 'mlGroupId required' });
     }
 
-    // Get event - handle undefined parameters
+    // Get event - handle undefined parameters with store_id filtering
     let query, params;
     if (eventId && eventName && year) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ?`;
-      params = [eventName, year];
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ? AND store_id = ?`;
+      params = [eventName, year, storeId];
     } else if (eventId && eventName) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE id = ? OR event_name = ?`;
-      params = [eventId, eventName];
+      query = `SELECT * FROM tomorrow_ai_events WHERE (id = ? OR event_name = ?) AND store_id = ?`;
+      params = [eventId, eventName, storeId];
     } else if (eventId) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE id = ?`;
-      params = [eventId];
+      query = `SELECT * FROM tomorrow_ai_events WHERE id = ? AND store_id = ?`;
+      params = [eventId, storeId];
     } else if (eventName && year) {
-      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ?`;
-      params = [eventName, year];
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND year = ? AND store_id = ?`;
+      params = [eventName, year, storeId];
     } else {
-      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ?`;
-      params = [eventName];
+      query = `SELECT * FROM tomorrow_ai_events WHERE event_name = ? AND store_id = ?`;
+      params = [eventName, storeId];
     }
 
     const [events] = await db.execute(query, params);
@@ -335,7 +345,7 @@ async function getEventPattern(req, res) {
     
     const event = events[0];
     
-    // Get sales pattern around the event (7 days before to event day)
+    // Get sales pattern around the event (7 days before to event day) - filter by store_id
     const [patternData] = await db.execute(`
       SELECT 
         ds.sale_date,
@@ -344,11 +354,12 @@ async function getEventPattern(req, res) {
       FROM tomorrow_ai_daily_sales ds
       CROSS JOIN tomorrow_ai_events e
       WHERE ds.ml_group_id = ?
+          AND ds.store_id = ?
           AND e.event_name = ?
           AND e.year = ?
           AND ds.sale_date BETWEEN DATE_SUB(e.event_date, INTERVAL 7 DAY) AND e.event_date
       ORDER BY e.year ASC, days_to_event ASC
-    `, [mlGroupId, event.event_name, event.year]);
+    `, [mlGroupId, storeId, event.event_name, event.year]);
     
     // Group by days_to_event and average across years
     const patternByDay = {};
@@ -392,11 +403,18 @@ async function getEventPattern(req, res) {
  */
 async function getAllEvents(req, res) {
   try {
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+
     const [events] = await db.execute(`
       SELECT id, event_name, event_type, event_date, year, description, status
       FROM tomorrow_ai_events
+      WHERE store_id = ?
       ORDER BY event_date ASC
-    `);
+    `, [storeId]);
 
     res.json({ success: true, data: events });
   } catch (error) {

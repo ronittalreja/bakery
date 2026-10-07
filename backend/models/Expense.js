@@ -38,12 +38,16 @@ class Expense {
     return result.affectedRows > 0;
   }
 
-  static async getSummary(month, year) {
+  static async getSummary(month, year, storeId) {
     let query = 'SELECT category, SUM(amount) as total FROM expenses';
     const params = [];
     if (month && year) {
       query += ' WHERE MONTH(expense_date) = ? AND YEAR(expense_date) = ?';
       params.push(parseInt(month), parseInt(year));
+    }
+    if (storeId) {
+      query += (params.length > 0 ? ' AND' : ' WHERE') + ' store_id = ?';
+      params.push(storeId);
     }
     query += ' GROUP BY category';
     const [rows] = await db.execute(query, params);

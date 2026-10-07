@@ -128,15 +128,15 @@ async function syncSalesToTomorrowAI(req, res) {
         continue;
       }
 
-      // Insert or update daily_sales
+      // Insert or update daily_sales with store_id
       await connection.execute(
         `INSERT INTO tomorrow_ai_daily_sales 
-         (sale_date, ml_group_id, actual_sales, is_shop_open)
-         VALUES (?, ?, ?, TRUE)
+         (sale_date, ml_group_id, actual_sales, is_shop_open, store_id)
+         VALUES (?, ?, ?, TRUE, ?)
          ON DUPLICATE KEY UPDATE
          actual_sales = VALUES(actual_sales),
          updated_at = CURRENT_TIMESTAMP`,
-        [syncDate, mlGroupId, netQty]
+        [syncDate, mlGroupId, netQty, storeId]
       );
       recordsInserted++;
     }
@@ -203,22 +203,28 @@ async function fullHistoricalSync(req, res) {
 
     console.log('Starting full historical sync (bulk mode)...');
 
-    // Get all invoice dates
+    const storeId = req.user?.store_id;
+    console.log(`Syncing for store_id: ${storeId}`);
+
+    // Get all invoice dates - filter by store_id
     const [dates] = await connection.execute(
       `SELECT DISTINCT DATE(invoice_date) as sale_date
        FROM invoices
-       WHERE invoice_date IS NOT NULL
-       ORDER BY sale_date DESC`
+       WHERE invoice_date IS NOT NULL AND store_id = ?
+       ORDER BY sale_date DESC`,
+      [storeId]
     );
 
     console.log(`Found ${dates.length} unique dates to sync`);
 
-    // Get count of total synced dates
+    // Get count of total synced dates for this store
     const [countResult] = await connection.execute(
       `SELECT COUNT(DISTINCT sale_date) as count
-       FROM tomorrow_ai_daily_sales`
+       FROM tomorrow_ai_daily_sales
+       WHERE store_id = ?`,
+      [storeId]
     );
-    console.log('Total synced dates count:', countResult[0].count);
+    console.log('Total synced dates count for store:', countResult[0].count);
 
     let datesToSync;
     let fullSyncedDateSet = new Set();
@@ -228,9 +234,10 @@ async function fullHistoricalSync(req, res) {
       console.log('tomorrow_ai_daily_sales table is empty, syncing all dates');
       datesToSync = dates;
     } else {
-      // Get ALL synced dates for proper comparison
+      // Get ALL synced dates for this store for proper comparison
       const [allSyncedDates] = await connection.execute(
-        `SELECT DISTINCT sale_date FROM tomorrow_ai_daily_sales`
+        `SELECT DISTINCT sale_date FROM tomorrow_ai_daily_sales WHERE store_id = ?`,
+        [storeId]
       );
 
       allSyncedDates.forEach(d => {
@@ -293,19 +300,19 @@ async function fullHistoricalSync(req, res) {
         ii.qty
        FROM invoices i
        JOIN invoice_items ii ON i.id = ii.invoice_id
-       WHERE DATE(i.invoice_date) IN (${placeholders})`,
-      dateStrings
+       WHERE DATE(i.invoice_date) IN (${placeholders}) AND i.store_id = ?`,
+      [...dateStrings, storeId]
     );
 
     console.log(`Fetched ${invoiceItems.length} invoice items`);
 
-    // Fetch all credit notes for these dates
+    // Fetch all credit notes for these dates - filter by store_id
     console.log('Fetching all credit notes in bulk...');
     const [creditNotes] = await connection.execute(
       `SELECT id, items, DATE(return_date) as return_date, DATE(date) as cn_date
        FROM credit_notes
-       WHERE DATE(return_date) IN (${placeholders}) OR DATE(date) IN (${placeholders})`,
-      [...dateStrings, ...dateStrings]
+       WHERE (DATE(return_date) IN (${placeholders}) OR DATE(date) IN (${placeholders})) AND store_id = ?`,
+      [...dateStrings, ...dateStrings, storeId]
     );
 
     console.log(`Fetched ${creditNotes.length} credit notes`);
@@ -400,7 +407,7 @@ async function fullHistoricalSync(req, res) {
         }
 
         if (mlGroupId) {
-          bulkInserts.push([dateStr, mlGroupId, netQty, 1]); // 1 for is_shop_open
+          bulkInserts.push([dateStr, mlGroupId, netQty, 1, storeId]); // 1 for is_shop_open, add storeId
         } else {
           skippedProducts++;
         }
@@ -415,11 +422,11 @@ async function fullHistoricalSync(req, res) {
 
     for (let i = 0; i < bulkInserts.length; i += batchSize) {
       const batch = bulkInserts.slice(i, i + batchSize);
-      const values = batch.map(() => '(?, ?, ?, ?)').join(',');
+      const values = batch.map(() => '(?, ?, ?, ?, ?)').join(',');
       const flatParams = batch.flat();
 
       await connection.execute(
-        `INSERT INTO tomorrow_ai_daily_sales (sale_date, ml_group_id, actual_sales, is_shop_open)
+        `INSERT INTO tomorrow_ai_daily_sales (sale_date, ml_group_id, actual_sales, is_shop_open, store_id)
          VALUES ${values}
          ON DUPLICATE KEY UPDATE
          actual_sales = VALUES(actual_sales)`,

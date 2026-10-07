@@ -737,6 +737,7 @@ const getCreditNoteHistory = async (req, res) => {
 const getMissingReturnDates = async (req, res) => {
   try {
     const { month } = req.query;
+    const storeId = req.user?.store_id;
     
     if (!month || !/^\d{4}-\d{2}$/.test(month)) {
       return res.status(400).json({ 
@@ -747,13 +748,22 @@ const getMissingReturnDates = async (req, res) => {
     
     const [year, monthNum] = month.split('-').map(Number);
     
-    // Get all dates in the month that have credit notes
-    const [creditNoteDates] = await db.execute(`
+    // Get all dates in the month that have credit notes - filter by store_id
+    let query = `
       SELECT DISTINCT DATE(COALESCE(return_date, date)) as return_date
       FROM credit_notes
       WHERE DATE_FORMAT(COALESCE(return_date, date), '%Y-%m') = ?
-      ORDER BY return_date ASC
-    `, [month]);
+    `;
+    const params = [month];
+    
+    if (storeId) {
+      query += ` AND store_id = ?`;
+      params.push(storeId);
+    }
+    
+    query += ` ORDER BY return_date ASC`;
+    
+    const [creditNoteDates] = await db.execute(query, params);
     
     const creditNoteDateSet = new Set(
       creditNoteDates.map(d => d.return_date.toISOString().split('T')[0])
