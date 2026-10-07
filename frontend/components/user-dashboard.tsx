@@ -1,10 +1,11 @@
 // File: app/admin/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useDateContext } from "@/hooks/use-date-context";
 import { DateSelector } from "@/components/date-selector";
 import {
@@ -69,7 +70,7 @@ interface UserDashboardProps {
 export function UserDashboard({ onBackToDeveloper }: UserDashboardProps) {
   const { user, logout } = useAuth();
   const { adminMainDate, setAdminMainDate, isToday } = useDateContext();
-  const [currentPage, setCurrentPage] = useState<AdminPage>("dashboard");
+  const [currentPage, setCurrentPage] = usePersistedState<AdminPage>('dashboard_currentPage', "dashboard");
   const [selectedCreditNoteId, setSelectedCreditNoteId] = useState<number | null>(null);
   const [selectedCreditNoteMonth, setSelectedCreditNoteMonth] = useState<string>(new Date().toISOString().slice(0, 7));
 

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileText, Calendar, TrendingDown, ArrowLeft, BarChart3, TrendingUp, Activity, AlertTriangle, DollarSign } from "lucide-react";
 import { useDateContext } from "@/hooks/use-date-context";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { formatDisplayDate, formatDate } from "@/lib/dateUtils";
 
 interface ReturnItem {
@@ -43,8 +44,8 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
   };
 
   const { selectedDate } = useDateContext();
-  // Main tab state
-  const [mainTab, setMainTab] = useState<'summary' | 'insider'>('summary');
+  // Main tab state - persisted
+  const [mainTab, setMainTab] = usePersistedState<'summary' | 'insider'>('returns_main_tab', 'summary');
   
   // Summary tab states (existing)
   const [returns, setReturns] = useState<ReturnItem[]>([]);

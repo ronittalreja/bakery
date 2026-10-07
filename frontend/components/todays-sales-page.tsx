@@ -10,6 +10,7 @@ import { Clock, Filter, User, Receipt, TrendingUp, Calendar, AlertCircle, ArrowL
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAuth } from "@/hooks/use-auth"
 import { useDateContext } from "@/hooks/use-date-context"
+import { usePersistedState } from "@/hooks/use-persisted-state"
 import { formatTime } from "@/lib/dateUtils"
 
 interface SaleTransaction {
@@ -42,8 +43,8 @@ export function TodaysSalesPage({ onBack }: SalesTimelinePageProps) {
     totalItems: 0,
     totalSales: 0,
   })
-  const [filterBy, setFilterBy] = useState<string>("all")
-  const [sortBy, setSortBy] = useState<string>("time-desc")
+  const [filterBy, setFilterBy] = usePersistedState('todays_sales_filter', "all")
+  const [sortBy, setSortBy] = usePersistedState('todays_sales_sort', "time-desc")
   const [error, setError] = useState("")
 
   useEffect(() => {

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart3, Clock, DollarSign, TrendingUp, Package, TrendingDown, Calendar, Star } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useDateContext } from "@/hooks/use-date-context";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { formatDisplayDate, formatTime } from "@/lib/dateUtils";
 import { Alert, AlertDescription } from "./ui/alert";
 
@@ -113,8 +114,8 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
   const [analytics, setAnalytics] = useState<SalesAnalytics | null>(null);
   const [ytdMtdData, setYtdMtdData] = useState<YTDMTDData | null>(null);
   const [error, setError] = useState("");
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonthOnly, setSelectedMonthOnly] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = usePersistedState('admin_sales_year', new Date().getFullYear());
+  const [selectedMonthOnly, setSelectedMonthOnly] = usePersistedState('admin_sales_month', new Date().getMonth() + 1);
   const [comparisonYear, setComparisonYear] = useState(new Date().getFullYear() - 1); // Previous year
   const [summaryAccurate, setSummaryAccurate] = useState<{ totalTransactions: number, totalSales: number } | null>(null);
 

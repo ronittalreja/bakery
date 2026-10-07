@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Brain, Calendar, RefreshCw, AlertCircle, CheckCircle, ArrowRight, TrendingUp } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 
 interface Event {
   id: number;
@@ -38,7 +39,7 @@ interface EventPattern {
 
 export default function TomorrowAIPage() {
   const { user } = useAuth();
-  const [view, setView] = useState<"events" | "forecast">("events");
+  const [view, setView] = usePersistedState<"events" | "forecast">('tomorrow_ai_view', "events");
   const [nextEvent, setNextEvent] = useState<Event | null>(null);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);

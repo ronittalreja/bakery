@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Package, Search, AlertTriangle, ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useDateContext } from "@/hooks/use-date-context";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { formatDate, formatDisplayDate } from "@/lib/dateUtils";
 
 interface StockItem {
@@ -44,7 +45,7 @@ export function TodaysStockPage({ onBack }: TodaysStockPageProps) {
   const [totalQuantity, setTotalQuantity] = useState<number>(0);
   const [mrpValue, setMrpValue] = useState<number>(0);
   const [invoiceValue, setInvoiceValue] = useState<number>(0);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = usePersistedState('todays_stock_search', "");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 

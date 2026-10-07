@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -44,9 +45,9 @@ interface InsightsPageProps {
 }
 
 export function InsightsPage({ onBack }: InsightsPageProps) {
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonthOnly, setSelectedMonthOnly] = useState(new Date().getMonth() + 1);
+  const [selectedMonth, setSelectedMonth] = usePersistedState('insights_month', new Date().toISOString().slice(0, 7)); // YYYY-MM format
+  const [selectedYear, setSelectedYear] = usePersistedState('insights_year', new Date().getFullYear());
+  const [selectedMonthOnly, setSelectedMonthOnly] = usePersistedState('insights_month_only', new Date().getMonth() + 1);
   const [insights, setInsights] = useState<InsightsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
