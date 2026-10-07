@@ -2,11 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const creditNoteController = require('../controllers/creditNoteController');
-const { auth } = require('../middleware/auth');
 const multer = require('multer');
-
-// Apply authentication middleware to all routes
-router.use(auth);
 
 // Upload credit note file
 router.post('/upload', creditNoteController.uploadCreditNote);

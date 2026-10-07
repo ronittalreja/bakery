@@ -3,7 +3,6 @@ const express = require('express');
 const router = express.Router();
 const { getStock, updateStockQuantity, addStockBatch, deleteStockBatch } = require('../controllers/stockController');
 const Product = require('../models/Product');
-const { auth } = require('../middleware/auth');
 const StockBatch = require('../models/StockBatch');
 const { v4: uuidv4 } = require('uuid');
 const { getDemoData } = require('../middleware/demoMode');
@@ -85,9 +84,9 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.put('/update', auth, updateStockQuantity);
-router.post('/add-batch', auth, addStockBatch);
-router.delete('/batch/:batchId', auth, deleteStockBatch);
+router.put('/update', updateStockQuantity);
+router.post('/add-batch', addStockBatch);
+router.delete('/batch/:batchId', deleteStockBatch);
 
 // Aggregated available stock per product for Record Sale page
 router.get('/aggregated', async (req, res) => {

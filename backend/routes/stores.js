@@ -2,28 +2,27 @@
 const express = require('express');
 const router = express.Router();
 const storeController = require('../controllers/storeController');
-const { auth } = require('../middleware/auth');
 const { requireRole } = require('../middleware/storeAccess');
 
 // Get all stores (filtered by user role)
-router.get('/', auth, storeController.getAllStores);
+router.get('/', storeController.getAllStores);
 
 // Get store by ID
-router.get('/:id', auth, storeController.getStoreById);
+router.get('/:id', storeController.getStoreById);
 
 // Create new store (Super admin only)
-router.post('/', auth, storeController.createStore);
+router.post('/', storeController.createStore);
 
 // Update store (Super admin only)
-router.put('/:id', auth, storeController.updateStore);
+router.put('/:id', storeController.updateStore);
 
 // Delete store (Super admin only)
-router.delete('/:id', auth, storeController.deleteStore);
+router.delete('/:id', storeController.deleteStore);
 
 // Get users for a store
-router.get('/:storeId/users', auth, storeController.getStoreUsers);
+router.get('/:storeId/users', storeController.getStoreUsers);
 
-// Assign user to store (Super admin only)
-router.post('/assign-user', auth, requireRole('super_admin'), storeController.assignUserToStore);
+// Assign user to store
+router.post('/assign-user', storeController.assignUserToStore);
 
 module.exports = router;
