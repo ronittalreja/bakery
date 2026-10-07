@@ -91,7 +91,7 @@ async function getUpcomingEvents(req, res) {
  */
 async function getEventForecast(req, res) {
   try {
-    const { eventId, eventName, year } = req.params;
+    const { eventId, eventName, year } = req.query;
     if (!eventId && !eventName) {
       return res.status(400).json({ success: false, error: 'eventId or eventName required' });
     }
