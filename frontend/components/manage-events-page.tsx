@@ -38,7 +38,7 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
   const [newEventType, setNewEventType] = useState<'fixed' | 'dynamic'>('fixed');
   const [dynamicYearDates, setDynamicYearDates] = useState<Record<number, string[]>>({});
   const [newEventSelectedDates, setNewEventSelectedDates] = useState<string[]>([]);
-  const [showCalendar, setShowCalendar] = useState(false);
+  const [showCalendar, setShowCalendar] = useState<Record<number, boolean>>({});
 
   // Generate years from current year - 2 to current year
   const years = Array.from({ length: 3 }, (_, i) => new Date().getFullYear() - 2 + i);
@@ -504,19 +504,21 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
                 <p className="text-sm text-muted-foreground mt-1">
                   This will create the event on different dates for each year
                 </p>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowCalendar(!showCalendar)}
-                  className="mt-2"
-                >
-                  {showCalendar ? 'Hide Calendar' : 'Show Calendar'}
-                </Button>
-                {showCalendar && (
-                  <div className="space-y-4 mt-2 max-h-60 overflow-y-auto">
-                    {years.map((year) => (
-                      <div key={year}>
-                        <h4 className="font-medium text-sm mb-2">{year}</h4>
-                        <div className="space-y-2">
+                <div className="space-y-4 mt-2">
+                  {years.map((year) => (
+                    <div key={year}>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium text-sm">{year}</h4>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowCalendar(prev => ({ ...prev, [year]: !prev[year] }))}
+                        >
+                          {showCalendar[year] ? 'Hide Calendar' : 'Show Calendar'}
+                        </Button>
+                      </div>
+                      {showCalendar[year] && (
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
                           {getDatesForYear(year).map((month) => (
                             <div key={month.monthName}>
                               <h5 className="text-xs font-medium mb-1">{month.monthName}</h5>
@@ -556,12 +558,15 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
                             </div>
                           ))}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Selected: {(dynamicYearDates[year] || []).length} dates
+                      </p>
+                    </div>
+                  ))}
+                </div>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Selected: {Object.values(dynamicYearDates).flat().length} dates
+                  Total Selected: {Object.values(dynamicYearDates).flat().length} dates
                 </p>
               </div>
             )}
