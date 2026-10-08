@@ -176,37 +176,34 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
       const token = localStorage.getItem('token');
       
       if (newEventType === 'fixed' && newEventSelectedDates.length > 0) {
-        // Create event for all years for each selected date (multi-date selection for fixed events)
+        // Create event only for selected dates in the selected year
         for (const date of newEventSelectedDates) {
           const dateObj = new Date(date);
           const month = String(dateObj.getMonth() + 1).padStart(2, '0');
           const day = String(dateObj.getDate()).padStart(2, '0');
+          const year = dateObj.getFullYear();
+          const eventDate = `${year}-${month}-${day}`;
           
-          const eventsToCreate = years.map(year => {
-            const eventDate = `${year}-${month}-${day}`;
-            return {
-              event_name: newEventName,
-              event_type: 'fixed',
-              event_date: eventDate,
-              year: year,
-              description: `${newEventName} (Fixed event)`,
-              status: 'approved'
-            };
-          });
+          const eventData = {
+            event_name: newEventName,
+            event_type: 'fixed',
+            event_date: eventDate,
+            year: year,
+            description: `${newEventName} (Fixed event)`,
+            status: 'approved'
+          };
 
-          for (const eventData of eventsToCreate) {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(eventData)
-            });
-            const data = await response.json();
-            if (!data.success) {
-              console.error('Error creating event:', data.error);
-            }
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(eventData)
+          });
+          const data = await response.json();
+          if (!data.success) {
+            console.error('Error creating event:', data.error);
           }
         }
       } else if (newEventType === 'dynamic') {
