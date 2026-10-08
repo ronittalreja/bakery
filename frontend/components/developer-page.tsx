@@ -3,6 +3,16 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { useAuth } from "@/hooks/use-auth"
 import { useDateContext } from "@/hooks/use-date-context"
 import { usePersistedState } from "@/hooks/use-persisted-state"
@@ -23,6 +33,8 @@ import {
   Plus,
   TrendingUp,
   Play,
+  Edit2,
+  Trash2,
 } from "lucide-react"
 import { UploadInvoicePage } from "@/components/upload-invoice-page"
 import { RecordSalePage } from "@/components/record-sale-page"
@@ -48,6 +60,7 @@ interface Store {
   store_code: string
   store_name: string
   status: string
+  created_at: string
 }
 
 interface StaffDashboardProps {
@@ -64,6 +77,9 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null)
   const [showManageStores, setShowManageStores] = useState(false)
   const [storeHasInvoice, setStoreHasInvoice] = useState(false)
+  const [editingStore, setEditingStore] = useState<Store | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [storeToDelete, setStoreToDelete] = useState<number | null>(null)
 
   const handleDemoLogin = async () => {
     const success = await login("demo", "demo123")
@@ -124,6 +140,48 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
     }
   }
 
+  const handleDeleteStore = async (storeId: number) => {
+    setStoreToDelete(storeId)
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteStore = async () => {
+    if (!storeToDelete) return
+
+    try {
+      const token = localStorage.getItem("token")
+      const data = await apiClient<{ success: boolean }>(
+        `/api/stores/${storeToDelete}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      )
+
+      if (data.success) {
+        setDeleteDialogOpen(false)
+        setStoreToDelete(null)
+        fetchStores()
+        toast({
+          title: "Store Deleted",
+          description: "Store has been deleted successfully",
+        })
+      }
+    } catch (err: any) {
+      toast({
+        title: "Delete Failed",
+        description: err.message || "Failed to delete store",
+        variant: "destructive"
+      })
+      setDeleteDialogOpen(false)
+    }
+  }
+
+  const openEditForm = (store: Store) => {
+    setEditingStore(store)
+    setShowManageStores(true)
+  }
+
   const renderStoreView = () => {
     if (!selectedStore) return null
 
@@ -151,7 +209,12 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
             return (
               <div
                 key={item.title}
-                onClick={() => !item.disabled && setCurrentPage(item.page)}
+                onClick={() => {
+                  if (!item.disabled) {
+                    localStorage.setItem('selectedStoreId', selectedStore.id.toString());
+                    setCurrentPage(item.page);
+                  }
+                }}
                 className={`group cursor-pointer ${item.disabled ? "opacity-50" : ""}`}
               >
                 <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-lg border border-slate-200 shadow-lg transition-all duration-200 p-6 h-full">
@@ -174,14 +237,6 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
 
   const mainDashboardItems = [
     {
-      title: "Master Products",
-      description: "Master table of all products from all stores",
-      icon: Settings,
-      page: "master-products" as StaffPage,
-      color: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-200",
-      disabled: false,
-    },
-    {
       title: "Manage Events",
       description: "Manage events across all stores",
       icon: Sparkles,
@@ -198,11 +253,11 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
       disabled: false,
     },
     {
-      title: "Overall Analytics",
-      description: "Analytics across all stores",
-      icon: TrendingUp,
-      page: "overall-analytics" as StaffPage,
-      color: "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-200",
+      title: "Manage Stores",
+      description: "Manage all stores and their credentials",
+      icon: Store,
+      page: "manage-stores" as StaffPage,
+      color: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-200",
       disabled: false,
     },
     {
@@ -325,7 +380,7 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
             <div className="space-y-8">
               {/* 5 Main Cards */}
               <div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl mx-auto p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-6xl mx-auto p-6">
                   {mainDashboardItems.map((item) => {
                     const Icon = item.icon
                     return (
@@ -366,20 +421,41 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
                   {stores.map((store) => (
                     <Card
                       key={store.id}
-                      className="hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => {
-                        setSelectedStore(store)
-                        setCurrentPage("store-view")
-                      }}
+                      className="hover:shadow-lg transition-shadow"
                     >
                       <CardHeader>
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 text-white flex items-center justify-center">
-                            <Store className="h-5 w-5" />
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 cursor-pointer" onClick={() => {
+                            setSelectedStore(store)
+                            setCurrentPage("store-view")
+                          }}>
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 text-white flex items-center justify-center">
+                              <Store className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <CardTitle className="text-lg">{store.store_name}</CardTitle>
+                              <CardDescription>{store.store_code}</CardDescription>
+                            </div>
                           </div>
-                          <div>
-                            <CardTitle className="text-lg">{store.store_name}</CardTitle>
-                            <CardDescription>{store.store_code}</CardDescription>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditForm(store)}
+                              className="flex items-center gap-2"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteStore(store.id)}
+                              className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:border-red-300"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </Button>
                           </div>
                         </div>
                       </CardHeader>
@@ -390,8 +466,29 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
             </div>
 
             {showManageStores && (
-              <ManageStoresPage onBack={() => setShowManageStores(false)} />
+              <ManageStoresPage onBack={() => {
+                setShowManageStores(false)
+                setEditingStore(null)
+              }} editingStore={editingStore} />
             )}
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure you want to delete this store?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. Deleting this store will permanently remove all associated data including users, products, invoices, and sales records.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setStoreToDelete(null)}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={confirmDeleteStore} className="bg-red-600 hover:bg-red-700">
+                    Delete Store
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </main>
         )
     }

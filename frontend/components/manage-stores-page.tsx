@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { ArrowLeft, Plus, Edit2, Trash2, Store, ShoppingCart, Package } from "lucide-react"
+import { ArrowLeft, Plus, Edit2, Trash2, Store, ShoppingCart, Package, Upload, BarChart3, Settings, Layers } from "lucide-react"
 import { apiClient } from "@/lib/apiClient"
 import { usePersistedState } from "@/hooks/use-persisted-state"
 
@@ -16,7 +16,7 @@ interface Store {
   store_code: string
   store_name: string
   status: string
-  created_at: string
+  created_at?: string
 }
 
 interface StoreUser {
@@ -28,14 +28,15 @@ interface StoreUser {
 
 interface ManageStoresPageProps {
   onBack: () => void
+  editingStore?: Store | null
 }
 
-export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
+export function ManageStoresPage({ onBack, editingStore: propEditingStore }: ManageStoresPageProps) {
   const [stores, setStores] = useState<Store[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [showCreateForm, setShowCreateForm] = usePersistedState('manage_stores_show_create', false)
-  const [editingStore, setEditingStore] = useState<Store | null>(null)
+  const [editingStore, setEditingStore] = useState<Store | null>(propEditingStore || null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [storeToDelete, setStoreToDelete] = useState<number | null>(null)
   
@@ -367,7 +368,18 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
                     </div>
                   </div>
                   {/* Store-specific cards */}
-                  <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t">
+                  <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
+                      onClick={() => {
+                        localStorage.setItem('selectedStoreId', store.id.toString());
+                        window.location.href = '/upload-invoice';
+                      }}
+                    >
+                      <Upload className="h-5 w-5 text-blue-600" />
+                      <span className="text-sm font-medium">Upload</span>
+                    </Button>
                     <Button
                       variant="outline"
                       className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
@@ -384,11 +396,55 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
                       className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
                       onClick={() => {
                         localStorage.setItem('selectedStoreId', store.id.toString());
+                        window.location.href = '/stock';
+                      }}
+                    >
+                      <Package className="h-5 w-5 text-violet-600" />
+                      <span className="text-sm font-medium">Today's Stock</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
+                      onClick={() => {
+                        localStorage.setItem('selectedStoreId', store.id.toString());
                         window.location.href = '/returns';
                       }}
                     >
-                      <Package className="h-5 w-5 text-green-600" />
+                      <Package className="h-5 w-5 text-amber-600" />
                       <span className="text-sm font-medium">Returns</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
+                      onClick={() => {
+                        localStorage.setItem('selectedStoreId', store.id.toString());
+                        window.location.href = '/manage-products';
+                      }}
+                    >
+                      <Settings className="h-5 w-5 text-violet-600" />
+                      <span className="text-sm font-medium">Manage Products</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
+                      onClick={() => {
+                        localStorage.setItem('selectedStoreId', store.id.toString());
+                        window.location.href = '/manage-stock';
+                      }}
+                    >
+                      <Layers className="h-5 w-5 text-indigo-600" />
+                      <span className="text-sm font-medium">Stock Mgmt</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
+                      onClick={() => {
+                        localStorage.setItem('selectedStoreId', store.id.toString());
+                        window.location.href = '/edit-sales';
+                      }}
+                    >
+                      <BarChart3 className="h-5 w-5 text-orange-600" />
+                      <span className="text-sm font-medium">Add Sales</span>
                     </Button>
                   </div>
                 </CardContent>

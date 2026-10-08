@@ -230,8 +230,8 @@ const deleteStore = async (req, res) => {
     // Delete associated user
     await connection.execute('DELETE FROM users WHERE store_id = ?', [id]);
 
-    // Deactivate store
-    await connection.execute('UPDATE stores SET status = ? WHERE id = ?', ['inactive', id]);
+    // Delete the store completely
+    await connection.execute('DELETE FROM stores WHERE id = ?', [id]);
 
     await connection.commit();
     res.json({ success: true, message: 'Store deactivated and user deleted successfully' });
