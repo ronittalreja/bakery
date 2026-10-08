@@ -175,34 +175,8 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
             }
           }
         }
-      } else if (newEventType === 'dynamic' && newEventSelectedDates.length > 0) {
-        // Create events for selected dates (multi-date selection)
-        for (const date of newEventSelectedDates) {
-          const eventDate = new Date(date);
-          const year = eventDate.getFullYear();
-          
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              event_name: newEventName,
-              event_type: 'dynamic',
-              event_date: date,
-              year: year,
-              description: `${newEventName} (Dynamic event)`,
-              status: 'approved'
-            })
-          });
-          const data = await response.json();
-          if (!data.success) {
-            console.error('Error creating event:', data.error);
-          }
-        }
-      } else {
-        // Dynamic event - create with specific dates for each year (old behavior)
+      } else if (newEventType === 'dynamic') {
+        // Dynamic event - create with specific dates for each year
         for (const [year, date] of Object.entries(dynamicYearDates)) {
           if (date) {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
@@ -487,55 +461,39 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
             )}
             {newEventType === 'dynamic' && (
               <div>
-                <Label>Select Multiple Dates (Click to toggle)</Label>
+                <Label>Select Date for Each Year</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  This will create the event on selected dates for the selected year only
+                  This will create the event on different dates for each year
                 </p>
-                <div className="space-y-4 mt-2 max-h-60 overflow-y-auto">
-                  {getDatesForYear(selectedYear).map((month) => (
-                    <div key={month.monthName}>
-                      <h4 className="font-medium text-sm mb-2">{month.monthName}</h4>
-                      <div className="grid grid-cols-7 gap-2">
-                        {month.dates.map((date) => {
-                          const isSelected = newEventSelectedDates.includes(date.date);
-                          return (
-                            <button
-                              key={date.date}
-                              onClick={() => {
-                                if (isSelected) {
-                                  setNewEventSelectedDates(newEventSelectedDates.filter(d => d !== date.date));
-                                } else {
-                                  setNewEventSelectedDates([...newEventSelectedDates, date.date]);
-                                }
-                              }}
-                              title={`${date.month} ${date.day}`}
-                              className={`p-2 text-sm rounded border ${
-                                isSelected
-                                  ? 'bg-purple-600 text-white border-purple-600'
-                                  : 'bg-white hover:bg-gray-100'
-                              }`}
-                            >
-                              {date.day}
-                            </button>
-                          );
-                        })}
-                      </div>
+                <div className="space-y-4 mt-2">
+                  {years.map((year) => (
+                    <div key={year}>
+                      <h4 className="font-medium text-sm mb-2">{year}</h4>
+                      <Input
+                        type="date"
+                        value={dynamicYearDates[year] || ''}
+                        onChange={(e) => {
+                          setDynamicYearDates({
+                            ...dynamicYearDates,
+                            [year]: e.target.value
+                          });
+                        }}
+                        className="w-fit"
+                      />
                     </div>
                   ))}
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Selected: {newEventSelectedDates.length} dates
-                </p>
               </div>
             )}
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => {
                 setShowAddEvent(false);
                 setNewEventSelectedDates([]);
+                setDynamicYearDates({});
               }}>
                 Cancel
               </Button>
-              <Button onClick={createEvent} disabled={!newEventName || newEventSelectedDates.length === 0}>
+              <Button onClick={createEvent} disabled={!newEventName || (newEventType === 'fixed' && newEventSelectedDates.length === 0) || (newEventType === 'dynamic' && Object.values(dynamicYearDates).filter(d => d).length === 0)}>
                 Create Event
               </Button>
             </div>
