@@ -38,6 +38,7 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
   const [newEventType, setNewEventType] = useState<'fixed' | 'dynamic'>('fixed');
   const [dynamicYearDates, setDynamicYearDates] = useState<Record<number, string[]>>({});
   const [newEventSelectedDates, setNewEventSelectedDates] = useState<string[]>([]);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   // Generate years from current year - 2 to current year
   const years = Array.from({ length: 3 }, (_, i) => new Date().getFullYear() - 2 + i);
@@ -119,22 +120,52 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
   const updateEventDates = async (eventId: number, dates: string[]) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/${eventId}/dates`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ dates })
-      });
-      const data = await response.json();
-      if (data.success) {
-        setEditingEvent(null);
-        setSelectedDates([]);
-        fetchEvents();
-      } else {
-        console.error('Error updating event dates:', data.error);
+      // Delete existing events with same name, year, and store_id for that year only
+      const eventToUpdate = events.find(e => e.id === eventId);
+      if (eventToUpdate) {
+        // Delete events with same name, year, and store_id for the specific year only
+        for (const event of events) {
+          if (event.event_name === eventToUpdate.event_name && 
+              event.year === eventToUpdate.year && 
+              event.store_id === eventToUpdate.store_id) {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/${event.id}`, {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${token}` }
+            });
+          }
+        }
+        
+        // Create new events for selected dates for that year only
+        for (const date of dates) {
+          const dateObj = new Date(date);
+          const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const day = String(dateObj.getDate()).padStart(2, '0');
+          const year = eventToUpdate.year; // Use the year of the event being edited
+          const eventDate = `${year}-${month}-${day}`;
+          
+          const eventData = {
+            event_name: eventToUpdate.event_name,
+            event_type: eventToUpdate.event_type,
+            event_date: eventDate,
+            year: year,
+            description: eventToUpdate.description || `${eventToUpdate.event_name} event`,
+            status: eventToUpdate.status || 'approved'
+          };
+
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(eventData)
+          });
+        }
       }
+      
+      setEditingEvent(null);
+      setSelectedDates([]);
+      fetchEvents();
     } catch (error) {
       console.error('Error updating event dates:', error);
     }
@@ -476,56 +507,65 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
                 <p className="text-sm text-muted-foreground mt-1">
                   This will create the event on different dates for each year
                 </p>
-                <div className="space-y-4 mt-2">
-                  {years.map((year) => (
-                    <div key={year}>
-                      <h4 className="font-medium text-sm mb-2">{year}</h4>
-                      <div className="space-y-2">
-                        {getDatesForYear(year).map((month) => (
-                          <div key={month.monthName}>
-                            <h5 className="text-xs font-medium mb-1">{month.monthName}</h5>
-                            <div className="grid grid-cols-7 gap-1">
-                              {month.dates.map((date) => {
-                                const yearDates = dynamicYearDates[year] || [];
-                                const isSelected = yearDates.includes(date.date);
-                                return (
-                                  <button
-                                    key={date.date}
-                                    onClick={() => {
-                                      const currentDates = dynamicYearDates[year] || [];
-                                      if (isSelected) {
-                                        setDynamicYearDates({
-                                          ...dynamicYearDates,
-                                          [year]: currentDates.filter(d => d !== date.date)
-                                        });
-                                      } else {
-                                        setDynamicYearDates({
-                                          ...dynamicYearDates,
-                                          [year]: [...currentDates, date.date]
-                                        });
-                                      }
-                                    }}
-                                    title={`${date.month} ${date.day}`}
-                                    className={`p-1 text-xs rounded border ${
-                                      isSelected
-                                        ? 'bg-purple-600 text-white border-purple-600'
-                                        : 'bg-white hover:bg-gray-100'
-                                    }`}
-                                  >
-                                    {date.day}
-                                  </button>
-                                );
-                              })}
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCalendar(!showCalendar)}
+                  className="mt-2"
+                >
+                  {showCalendar ? 'Hide Calendar' : 'Show Calendar'}
+                </Button>
+                {showCalendar && (
+                  <div className="space-y-4 mt-2 max-h-60 overflow-y-auto">
+                    {years.map((year) => (
+                      <div key={year}>
+                        <h4 className="font-medium text-sm mb-2">{year}</h4>
+                        <div className="space-y-2">
+                          {getDatesForYear(year).map((month) => (
+                            <div key={month.monthName}>
+                              <h5 className="text-xs font-medium mb-1">{month.monthName}</h5>
+                              <div className="grid grid-cols-7 gap-1">
+                                {month.dates.map((date) => {
+                                  const yearDates = dynamicYearDates[year] || [];
+                                  const isSelected = yearDates.includes(date.date);
+                                  return (
+                                    <button
+                                      key={date.date}
+                                      onClick={() => {
+                                        const currentDates = dynamicYearDates[year] || [];
+                                        if (isSelected) {
+                                          setDynamicYearDates({
+                                            ...dynamicYearDates,
+                                            [year]: currentDates.filter(d => d !== date.date)
+                                          });
+                                        } else {
+                                          setDynamicYearDates({
+                                            ...dynamicYearDates,
+                                            [year]: [...currentDates, date.date]
+                                          });
+                                        }
+                                      }}
+                                      title={`${date.month} ${date.day}`}
+                                      className={`p-1 text-xs rounded border ${
+                                        isSelected
+                                          ? 'bg-purple-600 text-white border-purple-600'
+                                          : 'bg-white hover:bg-gray-100'
+                                      }`}
+                                    >
+                                      {date.day}
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Selected: {(dynamicYearDates[year] || []).length} dates
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground mt-2">
+                  Selected: {Object.values(dynamicYearDates).flat().length} dates
+                </p>
               </div>
             )}
             <div className="flex justify-end gap-2">
