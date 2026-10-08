@@ -99,6 +99,8 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
         setEditingEvent(null);
         setSelectedDates([]);
         fetchEvents();
+      } else {
+        console.error('Error updating event dates:', data.error);
       }
     } catch (error) {
       console.error('Error updating event dates:', error);
@@ -125,7 +127,7 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
         });
 
         for (const eventData of eventsToCreate) {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,
@@ -133,12 +135,16 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
             },
             body: JSON.stringify(eventData)
           });
+          const data = await response.json();
+          if (!data.success) {
+            console.error('Error creating event:', data.error);
+          }
         }
       } else {
         // Dynamic event - create with specific dates for each year
         for (const [year, date] of Object.entries(dynamicYearDates)) {
           if (date) {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
               method: 'POST',
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -153,6 +159,10 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
                 status: 'approved'
               })
             });
+            const data = await response.json();
+            if (!data.success) {
+              console.error('Error creating event:', data.error);
+            }
           }
         }
       }
@@ -406,6 +416,57 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Event Dialog */}
+      <Dialog open={!!editingEvent} onOpenChange={(open) => !open && setEditingEvent(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Event Dates - {editingEvent?.event_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Select multiple dates for forecast calculation. Invoices from these dates will be used for real-time forecast API.
+            </p>
+            <div className="space-y-4">
+              {editingEvent && getDatesForYear(editingEvent.year).map((month) => (
+                <div key={month.monthName}>
+                  <h4 className="font-medium text-sm mb-2">{month.monthName}</h4>
+                  <div className="grid grid-cols-7 gap-2">
+                    {month.dates.map((date) => {
+                      const isSelected = selectedDates.includes(date.date);
+                      return (
+                        <button
+                          key={date.date}
+                          onClick={() => handleDateToggle(date.date)}
+                          title={`${date.month} ${date.day}`}
+                          className={`p-2 text-sm rounded border ${
+                            isSelected
+                              ? 'bg-purple-600 text-white border-purple-600'
+                              : 'bg-white hover:bg-gray-100'
+                          }`}
+                        >
+                          {date.day}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => {
+                setEditingEvent(null);
+                setSelectedDates([]);
+              }}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveDates} disabled={selectedDates.length === 0}>
+                Save Dates ({selectedDates.length})
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Events Table */}
       <Card>
         <CardContent className="p-0">
@@ -439,67 +500,16 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
                   <TableCell className="text-right">
                     {event.status === 'approved' && (
                       <div className="flex justify-end gap-2">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setEditingEvent(event);
-                                setSelectedDates([event.event_date]);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>Edit Event Dates - {event.event_name}</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <p className="text-sm text-muted-foreground">
-                                Select multiple dates for forecast calculation. Invoices from these dates will be used for real-time forecast API.
-                              </p>
-                              <div className="space-y-4">
-                                {getDatesForYear(event.year).map((month) => (
-                                  <div key={month.monthName}>
-                                    <h4 className="font-medium text-sm mb-2">{month.monthName}</h4>
-                                    <div className="grid grid-cols-7 gap-2">
-                                      {month.dates.map((date) => {
-                                        const isSelected = selectedDates.includes(date.date);
-                                        return (
-                                          <button
-                                            key={date.date}
-                                            onClick={() => handleDateToggle(date.date)}
-                                            title={`${date.month} ${date.day}`}
-                                            className={`p-2 text-sm rounded border ${
-                                              isSelected
-                                                ? 'bg-purple-600 text-white border-purple-600'
-                                                : 'bg-white hover:bg-gray-100'
-                                            }`}
-                                          >
-                                            {date.day}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                              <div className="flex justify-end gap-2 pt-4">
-                                <Button variant="outline" onClick={() => {
-                                  setEditingEvent(null);
-                                  setSelectedDates([]);
-                                }}>
-                                  Cancel
-                                </Button>
-                                <Button onClick={handleSaveDates} disabled={selectedDates.length === 0}>
-                                  Save Dates ({selectedDates.length})
-                                </Button>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingEvent(event);
+                            setSelectedDates([event.event_date]);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"

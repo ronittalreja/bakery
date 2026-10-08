@@ -9,7 +9,10 @@ const {
   getEventForecast,
   getEventPattern,
   getAllEvents,
-  updateEventStatus
+  updateEventStatus,
+  createEvent,
+  deleteEvent,
+  updateEventDates
 } = require('../controllers/tomorrowAIEventController');
 
 // Get next upcoming event
@@ -32,8 +35,20 @@ router.get('/pattern', getEventPattern);
 // GET /api/tomorrow-ai/events/all
 router.get('/all', getAllEvents);
 
+// Create a new event
+// POST /api/tomorrow-ai/events
+router.post('/', createEvent);
+
+// Delete an event
+// DELETE /api/tomorrow-ai/events/:eventId
+router.delete('/:eventId', deleteEvent);
+
 // Update event status (approve/reject)
 // PUT /api/tomorrow-ai/events/:eventId/status
 router.put('/:eventId/status', updateEventStatus);
+
+// Update event dates (multi-date selection)
+// PUT /api/tomorrow-ai/events/:eventId/dates
+router.put('/:eventId/dates', updateEventDates);
 
 module.exports = router;

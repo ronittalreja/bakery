@@ -430,11 +430,102 @@ async function updateEventStatus(req, res) {
   }
 }
 
+/**
+ * Create a new event
+ */
+async function createEvent(req, res) {
+  try {
+    const { event_name, event_type, event_date, year, description, status } = req.body;
+
+    if (!event_name || !event_type || !event_date || !year) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+
+    const [result] = await db.execute(`
+      INSERT INTO tomorrow_ai_events (event_name, event_type, event_date, year, description, status, is_fixed_date, store_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+    `, [event_name, event_type, event_date, year, description, status || 'approved', event_type === 'fixed']);
+
+    res.json({ success: true, data: { id: result.insertId } });
+  } catch (error) {
+    console.error('Error creating event:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Delete an event
+ */
+async function deleteEvent(req, res) {
+  try {
+    const { eventId } = req.params;
+
+    await db.execute(`
+      DELETE FROM tomorrow_ai_events
+      WHERE id = ?
+    `, [eventId]);
+
+    res.json({ success: true, message: 'Event deleted' });
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * Update event dates (for multi-date selection)
+ */
+async function updateEventDates(req, res) {
+  try {
+    const { eventId } = req.params;
+    const { dates } = req.body;
+
+    if (!dates || !Array.isArray(dates) || dates.length === 0) {
+      return res.status(400).json({ success: false, error: 'Invalid dates array' });
+    }
+
+    // Get the event details first
+    const [events] = await db.execute(`
+      SELECT event_name, event_type, year, description, status, is_fixed_date, store_id
+      FROM tomorrow_ai_events
+      WHERE id = ?
+    `, [eventId]);
+
+    if (events.length === 0) {
+      return res.status(404).json({ success: false, error: 'Event not found' });
+    }
+
+    const event = events[0];
+
+    // Delete the existing event
+    await db.execute(`
+      DELETE FROM tomorrow_ai_events
+      WHERE id = ?
+    `, [eventId]);
+
+    // Create new events for each selected date
+    for (const date of dates) {
+      await db.execute(`
+        INSERT INTO tomorrow_ai_events (event_name, event_type, event_date, year, description, status, is_fixed_date, store_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `, [event.event_name, event.event_type, date, event.year, event.description, event.status, false, event.store_id]);
+    }
+
+    res.json({ success: true, message: 'Event dates updated' });
+  } catch (error) {
+    console.error('Error updating event dates:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
 module.exports = {
   getNextEvent,
   getUpcomingEvents,
   getEventForecast,
   getEventPattern,
   getAllEvents,
-  updateEventStatus
+  updateEventStatus,
+  createEvent,
+  deleteEvent,
+  updateEventDates
 };
