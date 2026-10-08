@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS tomorrow_ai_product_aliases (
 CREATE TABLE IF NOT EXISTS tomorrow_ai_events (
   id INT AUTO_INCREMENT PRIMARY KEY,
   event_name VARCHAR(100) NOT NULL,
-  event_type ENUM('FESTIVAL', 'HOLIDAY', 'SPECIAL_DAY', 'OTHER') DEFAULT 'OTHER',
+  event_type ENUM('FESTIVAL', 'HOLIDAY', 'SPECIAL_DAY', 'OTHER', 'fixed', 'dynamic') DEFAULT 'OTHER',
   event_date DATE NOT NULL,
   year INT NOT NULL,
   description TEXT,

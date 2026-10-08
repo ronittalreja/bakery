@@ -36,6 +36,7 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
   const [newEventDate, setNewEventDate] = useState('');
   const [newEventType, setNewEventType] = useState<'fixed' | 'dynamic'>('fixed');
   const [dynamicYearDates, setDynamicYearDates] = useState<Record<number, string>>({});
+  const [newEventSelectedDates, setNewEventSelectedDates] = useState<string[]>([]);
 
   // Generate years from current year - 2 to current year
   const years = Array.from({ length: 3 }, (_, i) => new Date().getFullYear() - 2 + i);
@@ -140,8 +141,34 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
             console.error('Error creating event:', data.error);
           }
         }
+      } else if (newEventType === 'dynamic' && newEventSelectedDates.length > 0) {
+        // Create events for selected dates (multi-date selection)
+        for (const date of newEventSelectedDates) {
+          const eventDate = new Date(date);
+          const year = eventDate.getFullYear();
+          
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              event_name: newEventName,
+              event_type: 'dynamic',
+              event_date: date,
+              year: year,
+              description: `${newEventName} (Dynamic event)`,
+              status: 'approved'
+            })
+          });
+          const data = await response.json();
+          if (!data.success) {
+            console.error('Error creating event:', data.error);
+          }
+        }
       } else {
-        // Dynamic event - create with specific dates for each year
+        // Dynamic event - create with specific dates for each year (old behavior)
         for (const [year, date] of Object.entries(dynamicYearDates)) {
           if (date) {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
@@ -171,6 +198,7 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
       setNewEventName('');
       setNewEventDate('');
       setDynamicYearDates({});
+      setNewEventSelectedDates([]);
       fetchEvents();
     } catch (error) {
       console.error('Error creating event:', error);
@@ -388,27 +416,52 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
             )}
             {newEventType === 'dynamic' && (
               <div>
-                <Label>Select Date for Each Year</Label>
-                <div className="space-y-2 mt-2">
-                  {years.map((year) => (
-                    <div key={year}>
-                      <Label htmlFor={`date-${year}`}>{year}</Label>
-                      <Input
-                        id={`date-${year}`}
-                        type="date"
-                        value={dynamicYearDates[year] || ''}
-                        onChange={(e) => setDynamicYearDates({ ...dynamicYearDates, [year]: e.target.value })}
-                      />
+                <Label>Select Multiple Dates (Click to toggle)</Label>
+                <div className="space-y-4 mt-2 max-h-60 overflow-y-auto">
+                  {getDatesForYear(selectedYear).map((month) => (
+                    <div key={month.monthName}>
+                      <h4 className="font-medium text-sm mb-2">{month.monthName}</h4>
+                      <div className="grid grid-cols-7 gap-2">
+                        {month.dates.map((date) => {
+                          const isSelected = newEventSelectedDates.includes(date.date);
+                          return (
+                            <button
+                              key={date.date}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setNewEventSelectedDates(newEventSelectedDates.filter(d => d !== date.date));
+                                } else {
+                                  setNewEventSelectedDates([...newEventSelectedDates, date.date]);
+                                }
+                              }}
+                              title={`${date.month} ${date.day}`}
+                              className={`p-2 text-sm rounded border ${
+                                isSelected
+                                  ? 'bg-purple-600 text-white border-purple-600'
+                                  : 'bg-white hover:bg-gray-100'
+                              }`}
+                            >
+                              {date.day}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   ))}
                 </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Selected: {newEventSelectedDates.length} dates
+                </p>
               </div>
             )}
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowAddEvent(false)}>
+              <Button variant="outline" onClick={() => {
+                setShowAddEvent(false);
+                setNewEventSelectedDates([]);
+              }}>
                 Cancel
               </Button>
-              <Button onClick={createEvent} disabled={!newEventName || (newEventType === 'fixed' && !newEventDate) || (newEventType === 'dynamic' && Object.values(dynamicYearDates).filter(d => d).length === 0)}>
+              <Button onClick={createEvent} disabled={!newEventName || (newEventType === 'fixed' && !newEventDate) || (newEventType === 'dynamic' && newEventSelectedDates.length === 0)}>
                 Create Event
               </Button>
             </div>

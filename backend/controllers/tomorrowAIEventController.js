@@ -441,10 +441,13 @@ async function createEvent(req, res) {
       return res.status(400).json({ success: false, error: 'Missing required fields' });
     }
 
+    // Convert ISO date string to YYYY-MM-DD format if needed
+    const formattedDate = event_date.includes('T') ? event_date.split('T')[0] : event_date;
+
     const [result] = await db.execute(`
       INSERT INTO tomorrow_ai_events (event_name, event_type, event_date, year, description, status, is_fixed_date, store_id)
       VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-    `, [event_name, event_type, event_date, year, description, status || 'approved', event_type === 'fixed']);
+    `, [event_name, event_type, formattedDate, year, description, status || 'approved', event_type === 'fixed']);
 
     res.json({ success: true, data: { id: result.insertId } });
   } catch (error) {
@@ -505,10 +508,13 @@ async function updateEventDates(req, res) {
 
     // Create new events for each selected date
     for (const date of dates) {
+      // Convert ISO date string to YYYY-MM-DD format if needed
+      const formattedDate = date.includes('T') ? date.split('T')[0] : date;
+      
       await db.execute(`
         INSERT INTO tomorrow_ai_events (event_name, event_type, event_date, year, description, status, is_fixed_date, store_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, [event.event_name, event.event_type, date, event.year, event.description, event.status, false, event.store_id]);
+      `, [event.event_name, event.event_type, formattedDate, event.year, event.description, event.status, false, event.store_id]);
     }
 
     res.json({ success: true, message: 'Event dates updated' });

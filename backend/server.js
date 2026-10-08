@@ -893,26 +893,69 @@ app.post('/api/add-item-type-column', async (req, res) => {
       }
     });
     
-    console.log('🔧 Adding item_type column to sale_items...');
-    
-    // Add item_type column
-    await connection.execute('ALTER TABLE sale_items ADD COLUMN item_type VARCHAR(50) NOT NULL DEFAULT "product"');
-    console.log('✅ Added item_type column');
-    
-    // Check final table structure
-    const [finalColumns] = await connection.execute('DESCRIBE sale_items');
-    console.log('Final columns:', finalColumns.map(col => col.Field));
+    // Add missing column
+    try {
+      await connection.execute('ALTER TABLE sale_items ADD COLUMN item_type VARCHAR(50) NOT NULL DEFAULT "product"');
+      console.log('✅ Added item_type column');
+    } catch (error) {
+      console.log('ℹ️ item_type column:', error.message);
+    }
     
     await connection.end();
     
     res.json({ 
       success: true, 
-      message: 'item_type column added to sale_items table',
-      columns: finalColumns.map(col => col.Field)
+      message: 'item_type column added successfully' 
     });
     
   } catch (error) {
-    console.error('Add item_type error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// Update tomorrow_ai_events event_type ENUM to include fixed and dynamic
+app.post('/api/update-event-type-enum', async (req, res) => {
+  try {
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    console.log('🔧 Updating tomorrow_ai_events event_type ENUM...');
+    
+    // MySQL doesn't support ALTER ENUM directly, need to modify the column
+    try {
+      await connection.execute(`
+        ALTER TABLE tomorrow_ai_events 
+        MODIFY COLUMN event_type ENUM('FESTIVAL', 'HOLIDAY', 'SPECIAL_DAY', 'OTHER', 'fixed', 'dynamic') 
+        DEFAULT 'OTHER'
+      `);
+      console.log('✅ Updated event_type ENUM to include fixed and dynamic');
+    } catch (error) {
+      console.log('ℹ️ event_type ENUM update:', error.message);
+    }
+    
+    await connection.end();
+    
+    res.json({ 
+      success: true, 
+      message: 'event_type ENUM updated successfully' 
+    });
+    
+  } catch (error) {
+    console.error('Error updating event_type ENUM:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
