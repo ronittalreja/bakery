@@ -241,8 +241,6 @@ const uploadCreditNoteHandler = async (req, res) => {
           actualPublicId: actualPublicId || 'NOT_DEFINED'
         });
 
-        const storeId = req.user?.store_id || 1;
-
         const [result] = await db.execute(`
           INSERT INTO credit_notes (
             credit_note_number, date, return_date, receiver_name, receiver_gstin, 
@@ -264,7 +262,7 @@ const uploadCreditNoteHandler = async (req, res) => {
           cloudinaryUrl,
           actualPublicId,
           JSON.stringify(creditNote.items || []),
-          storeId
+          req.user?.store_id || 1
         ]);
 
         console.log('✅ Credit note inserted successfully with ID:', result.insertId);
