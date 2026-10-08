@@ -80,9 +80,9 @@ export function LoginForm() {
                   <AlertDescription className="text-red-800">{error}</AlertDescription>
                 </Alert>
               )}
-              <Button 
-                type="submit" 
-                className="w-full h-11 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl" 
+              <Button
+                type="submit"
+                className="w-full h-11 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
                 disabled={loading}
               >
                 {loading ? (
@@ -92,21 +92,6 @@ export function LoginForm() {
                   </>
                 ) : (
                   "Login"
-                )}
-              </Button>
-              <Button 
-                type="button" 
-                onClick={handleDemoLogin}
-                className="w-full h-11 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl" 
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Loading Demo...
-                  </>
-                ) : (
-                  "🎯 Try Demo Mode"
                 )}
               </Button>
             </form>
