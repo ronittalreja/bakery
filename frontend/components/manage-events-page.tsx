@@ -22,6 +22,7 @@ interface Event {
   year: number;
   description: string;
   status: 'pending' | 'approved' | 'rejected';
+  store_id: number;
 }
 
 export function ManageEventsPage({ onBack }: { onBack: () => void }) {
@@ -557,8 +558,14 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
                           size="sm"
                           variant="outline"
                           onClick={() => {
+                            // Find all events with the same name, year, and store_id
+                            const allRelatedEvents = events.filter(e => 
+                              e.event_name === event.event_name && 
+                              e.year === event.year &&
+                              e.store_id === event.store_id
+                            );
                             setEditingEvent(event);
-                            setSelectedDates([event.event_date]);
+                            setSelectedDates(allRelatedEvents.map(e => e.event_date));
                           }}
                         >
                           <Edit className="h-4 w-4" />

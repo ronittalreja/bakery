@@ -500,11 +500,11 @@ async function updateEventDates(req, res) {
 
     const event = events[0];
 
-    // Delete the existing event
+    // Delete ALL events with the same name, year, and store_id (to avoid duplicate key error)
     await db.execute(`
       DELETE FROM tomorrow_ai_events
-      WHERE id = ?
-    `, [eventId]);
+      WHERE event_name = ? AND year = ? AND store_id = ?
+    `, [event.event_name, event.year, event.store_id]);
 
     // Create new events for each selected date
     for (const date of dates) {
