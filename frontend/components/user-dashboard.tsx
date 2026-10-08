@@ -83,20 +83,6 @@ export function UserDashboard({ onBackToDeveloper }: UserDashboardProps) {
       color: "bg-gradient-to-br from-cyan-500 to-cyan-600 text-white shadow-cyan-200",
     },
     {
-      title: "Record Sale",
-      description: "Record a new sale",
-      icon: BarChart3,
-      page: "record-sale" as AdminPage,
-      color: "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-200",
-    },
-    {
-      title: "Returns",
-      description: "Process returns",
-      icon: FileText,
-      page: "grm" as AdminPage,
-      color: "bg-gradient-to-br from-green-500 to-green-600 text-white shadow-green-200",
-    },
-    {
       title: "Sales Summary",
       description: "View detailed sales with totals",
       icon: BarChart3,

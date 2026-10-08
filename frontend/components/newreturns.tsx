@@ -61,6 +61,9 @@ export function ReturnsPage({ onBack, storeId }: ReturnsPageProps) {
   const { user } = useAuth();
   const { selectedDate, setSelectedDate } = useDateContext();
   
+  // Get storeId from localStorage if not provided as prop
+  const effectiveStoreId = storeId || (typeof window !== 'undefined' ? parseInt(localStorage.getItem('selectedStoreId') || '0') : 0);
+  
   // Main tab state (returns vs view) - persisted
   const [mainTab, setMainTab] = usePersistedState<ReturnsTab>('returns_main_tab', 'returns');
   

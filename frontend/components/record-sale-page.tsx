@@ -81,6 +81,9 @@ export function RecordSalePage({ onBack, storeId }: RecordSalePageProps) {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showCategoryMenu, setShowCategoryMenu] = useState<boolean>(false);
   const [mobileView, setMobileView] = usePersistedState('record_sale_mobile_view', 'products' as 'products' | 'cart');
+  
+  // Get storeId from localStorage if not provided as prop
+  const effectiveStoreId = storeId || (typeof window !== 'undefined' ? parseInt(localStorage.getItem('selectedStoreId') || '0') : 0);
 
   const fetchDecorations = useCallback(async () => {
     try {
