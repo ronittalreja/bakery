@@ -14,6 +14,7 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import { formatDisplayDate, formatTime } from "@/lib/dateUtils";
 import { Alert, AlertDescription } from "./ui/alert";
 import { DateRangePicker } from "./date-range-picker";
+import { DateRange } from "react-day-picker";
 
 interface SaleItem {
   id: string;
@@ -123,8 +124,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
   
   // Date range state
   const [useDateRange, setUseDateRange] = useState(false);
-  const [rangeStartDate, setRangeStartDate] = useState<Date | undefined>(undefined);
-  const [rangeEndDate, setRangeEndDate] = useState<Date | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   useEffect(() => {
     const fetchSales = async () => {
@@ -135,10 +135,10 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
         }
         
         let url;
-        if (useDateRange && rangeStartDate && rangeEndDate) {
+        if (useDateRange && dateRange?.from && dateRange?.to) {
           // Use date range
-          const startDateStr = rangeStartDate.toISOString().split('T')[0];
-          const endDateStr = rangeEndDate.toISOString().split('T')[0];
+          const startDateStr = dateRange.from.toISOString().split('T')[0];
+          const endDateStr = dateRange.to.toISOString().split('T')[0];
           url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/range/${startDateStr}/${endDateStr}`;
         } else {
           // Use month/year selection
@@ -246,10 +246,10 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
         if (!token) throw new Error('No authentication token found');
         
         let url;
-        if (useDateRange && rangeStartDate && rangeEndDate) {
+        if (useDateRange && dateRange?.from && dateRange?.to) {
           // Use date range
-          const startDateStr = rangeStartDate.toISOString().split('T')[0];
-          const endDateStr = rangeEndDate.toISOString().split('T')[0];
+          const startDateStr = dateRange.from.toISOString().split('T')[0];
+          const endDateStr = dateRange.to.toISOString().split('T')[0];
           url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/summary-accurate-range/${startDateStr}/${endDateStr}`;
         } else {
           // Use month/year selection
@@ -279,7 +279,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
     fetchAnalytics();
     fetchYTDMTD();
     fetchSummaryAccurate();
-  }, [selectedMonthOnly, selectedYear, comparisonYear, useDateRange, rangeStartDate, rangeEndDate]);
+  }, [selectedMonthOnly, selectedYear, comparisonYear, useDateRange, dateRange]);
 
   // Reset admin date back to today when leaving Admin Sales page
   useEffect(() => {
@@ -417,10 +417,8 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
               </Button>
               {useDateRange && (
                 <DateRangePicker
-                  startDate={rangeStartDate}
-                  endDate={rangeEndDate}
-                  onStartDateChange={setRangeStartDate}
-                  onEndDateChange={setRangeEndDate}
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
                   onApply={() => {}}
                 />
               )}

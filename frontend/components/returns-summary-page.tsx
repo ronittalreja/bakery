@@ -14,6 +14,7 @@ import { useDateContext } from "@/hooks/use-date-context";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { formatDisplayDate, formatDate } from "@/lib/dateUtils";
 import { DateRangePicker } from "./date-range-picker";
+import { DateRange } from "react-day-picker";
 
 interface ReturnItem {
   id: string;
@@ -62,8 +63,7 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
   
   // Date range state
   const [useDateRange, setUseDateRange] = useState(false);
-  const [rangeStartDate, setRangeStartDate] = useState<Date | undefined>(undefined);
-  const [rangeEndDate, setRangeEndDate] = useState<Date | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   // Insider tab states
   const [insiderDate, setInsiderDate] = useState(new Date().toISOString().split('T')[0]);
@@ -626,10 +626,8 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
               </Button>
               {useDateRange && (
                 <DateRangePicker
-                  startDate={rangeStartDate}
-                  endDate={rangeEndDate}
-                  onStartDateChange={setRangeStartDate}
-                  onEndDateChange={setRangeEndDate}
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
                   onApply={() => {}}
                 />
               )}

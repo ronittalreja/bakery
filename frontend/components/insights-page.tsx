@@ -24,6 +24,7 @@ import {
   Calculator
 } from "lucide-react";
 import { DateRangePicker } from "./date-range-picker";
+import { DateRange } from "react-day-picker";
 
 interface InsightsData {
   month: string;
@@ -56,8 +57,7 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
   
   // Date range state
   const [useDateRange, setUseDateRange] = useState(false);
-  const [rangeStartDate, setRangeStartDate] = useState<Date | undefined>(undefined);
-  const [rangeEndDate, setRangeEndDate] = useState<Date | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   const getAvailableYears = () => {
     const currentYear = new Date().getFullYear();
@@ -110,10 +110,10 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
         }
 
         let url;
-        if (useDateRange && rangeStartDate && rangeEndDate) {
+        if (useDateRange && dateRange?.from && dateRange?.to) {
           // Use date range - for now, we'll use the start date's month
           // TODO: Update API to support date range for insights
-          const startDateStr = rangeStartDate.toISOString().split('T')[0];
+          const startDateStr = dateRange.from.toISOString().split('T')[0];
           url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/insights/monthly/${startDateStr.slice(0, 7)}`;
         } else {
           // Use month/year selection
@@ -144,7 +144,7 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
     };
 
     fetchInsights();
-  }, [selectedMonthOnly, selectedYear, useDateRange, rangeStartDate, rangeEndDate]);
+  }, [selectedMonthOnly, selectedYear, useDateRange, dateRange]);
 
   const formatCurrency = (amount: number | undefined) => `₹${(amount || 0).toLocaleString()}`;
   const formatPercentage = (value: number | undefined) => `${(value || 0).toFixed(1)}%`;
@@ -193,10 +193,8 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
               </Button>
               {useDateRange && (
                 <DateRangePicker
-                  startDate={rangeStartDate}
-                  endDate={rangeEndDate}
-                  onStartDateChange={setRangeStartDate}
-                  onEndDateChange={setRangeEndDate}
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
                   onApply={() => {}}
                 />
               )}

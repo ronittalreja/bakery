@@ -1076,6 +1076,284 @@ const getSalesByDate = async (req, res) => {
   }
 };
 
+// Get Sales by Date Range
+const getSalesByRange = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.params;
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+
+    // Validate date format
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+      return res.status(400).json({ success: false, error: 'Invalid date format. Use YYYY-MM-DD' });
+    }
+
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoSales = getDemoData('sales');
+      const demoProducts = getDemoData('products');
+      
+      const filteredSales = demoSales.filter(sale => {
+        const saleDate = sale.sale_date.split('T')[0];
+        return saleDate >= startDate && saleDate <= endDate;
+      });
+      
+      const salesMap = new Map();
+      filteredSales.forEach(sale => {
+        if (!salesMap.has(sale.id)) {
+          salesMap.set(sale.id, {
+            sale_id: sale.id,
+            sale_date: sale.sale_date,
+            total_amount: sale.total_amount,
+            payment_type: sale.payment_type,
+            items: []
+          });
+        }
+        sale.items.forEach(item => {
+          const product = demoProducts.find(p => p.id === item.item_id);
+          salesMap.get(sale.id).items.push({
+            item_id: item.item_id,
+            product_id: item.item_id,
+            batch_id: item.batch_id,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total_price: item.total_price,
+            name: item.name,
+            item_type: 'product',
+            item_code: product?.item_code || 'DEMO',
+            hsn_code: product?.hsn_code || '19059010'
+          });
+        });
+      });
+      
+      return res.json({ 
+        success: true, 
+        data: Array.from(salesMap.values()),
+        summary: {
+          totalQuantity: filteredSales.reduce((sum, s) => sum + s.items.reduce((is, i) => is + i.quantity, 0), 0),
+          totalValue: filteredSales.reduce((sum, s) => sum + s.total_amount, 0),
+          totalTransactions: filteredSales.length
+        }
+      });
+    }
+
+    // Fetch invoices for the date range - filter by store_id
+    const [invoices] = await db.execute(
+      `SELECT id, invoice_number, invoice_date, total_amount FROM invoices 
+         WHERE invoice_date BETWEEN ? AND ? AND store_id = ?`,
+      [startDate, endDate, storeId]
+    );
+
+    // Fetch credit notes with return date in the range - filter by store_id
+    const [creditNotes] = await db.execute(
+      `SELECT id, credit_note_number, date, return_date, items FROM credit_notes 
+         WHERE (return_date BETWEEN ? AND ? OR date BETWEEN ? AND ?) AND store_id = ?`,
+      [startDate, endDate, startDate, endDate, storeId]
+    );
+
+    // Fetch all products to get categories and MRP (sale_price) - filter by store_id
+    const [products] = await db.execute(
+      `SELECT id, item_code, name, category, sale_price FROM products WHERE is_active = 1 AND store_id = ?`,
+      [storeId]
+    );
+
+    // Create a map of product name to product info (for category and MRP)
+    const productMap = new Map();
+    products.forEach(p => {
+      productMap.set(p.name, {
+        category: p.category,
+        mrp: p.sale_price,
+        item_code: p.item_code
+      });
+    });
+
+    if (invoices.length === 0 && creditNotes.length === 0) {
+      return res.json({ 
+        success: true, 
+        data: [],
+        summary: {
+          totalQuantity: 0,
+          totalValue: 0,
+          totalTransactions: 0
+        }
+      });
+    }
+
+    // Process invoices
+    const salesMap = new Map();
+    
+    for (const invoice of invoices) {
+      const invoiceId = invoice.id;
+      const invoiceDate = invoice.invoice_date;
+      const invoiceNumber = invoice.invoice_number;
+      const totalAmount = invoice.total_amount;
+      
+      // Fetch items for this invoice
+      const [items] = await db.execute(
+        `SELECT item_id, product_id, batch_id, quantity, unit_price, total_price, item_type 
+         FROM invoice_items WHERE invoice_id = ?`,
+        [invoiceId]
+      );
+      
+      for (const item of items) {
+        const product = productMap.get(item.product_id);
+        const productName = await getProductName(item.product_id, storeId);
+        
+        if (!salesMap.has(invoiceId)) {
+          salesMap.set(invoiceId, {
+            sale_id: invoiceId,
+            sale_date: invoiceDate,
+            total_amount: totalAmount,
+            payment_type: 'invoice',
+            items: []
+          });
+        }
+        
+        salesMap.get(invoiceId).items.push({
+          item_id: item.item_id,
+          product_id: item.product_id,
+          batch_id: item.batch_id,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+          name: productName,
+          item_type: item.item_type,
+          item_code: product?.item_code || '',
+          hsn_code: product?.hsn_code || ''
+        });
+      }
+    }
+
+    // Process credit notes (returns)
+    for (const creditNote of creditNotes) {
+      const creditNoteId = creditNote.id;
+      const creditNoteNumber = creditNote.credit_note_number;
+      const returnDate = creditNote.return_date || creditNote.date;
+      const items = JSON.parse(creditNote.items || '[]');
+      
+      for (const item of items) {
+        const product = productMap.get(item.description);
+        
+        if (!salesMap.has(creditNoteId)) {
+          salesMap.set(creditNoteId, {
+            sale_id: creditNoteId,
+            sale_date: returnDate,
+            total_amount: item.amount || 0,
+            payment_type: 'credit_note',
+            items: []
+          });
+        }
+        
+        salesMap.get(creditNoteId).items.push({
+          item_id: creditNoteId,
+          product_id: creditNoteId,
+          batch_id: '',
+          quantity: item.quantity,
+          unit_price: item.rate || 0,
+          total_price: item.amount || 0,
+          name: item.description,
+          item_type: 'return',
+          item_code: product?.item_code || '',
+          hsn_code: product?.hsn_code || ''
+        });
+      }
+    }
+
+    const salesData = Array.from(salesMap.values());
+    const totalQuantity = salesData.reduce((sum, s) => sum + s.items.reduce((is, i) => is + i.quantity, 0), 0);
+    const totalValue = salesData.reduce((sum, s) => sum + s.total_amount, 0);
+
+    return res.json({ 
+      success: true, 
+      data: salesData,
+      summary: {
+        totalQuantity,
+        totalValue,
+        totalTransactions: salesData.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching sales by range:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get Sales Summary Accurate by Date Range
+const getSalesSummaryAccurateByRange = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.params;
+    const storeId = req.user?.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'User store_id not found' });
+    }
+
+    // Validate date format
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+      return res.status(400).json({ success: false, error: 'Invalid date format. Use YYYY-MM-DD' });
+    }
+
+    // Return demo data if demo user
+    if (req.isDemo) {
+      const demoSales = getDemoData('sales');
+      
+      const filteredSales = demoSales.filter(sale => {
+        const saleDate = sale.sale_date.split('T')[0];
+        return saleDate >= startDate && saleDate <= endDate;
+      });
+      
+      return res.json({ 
+        success: true, 
+        data: {
+          current: {
+            totalTransactions: filteredSales.length,
+            totalSales: filteredSales.reduce((sum, s) => sum + s.total_amount, 0)
+          }
+        }
+      });
+    }
+
+    // Fetch sales summary for the date range - filter by store_id
+    const [rows] = await db.execute(
+      `SELECT COUNT(*) as totalTransactions, COALESCE(SUM(total_amount), 0) as totalSales 
+       FROM sales 
+       WHERE sale_date BETWEEN ? AND ? AND store_id = ?`,
+      [startDate, endDate, storeId]
+    );
+
+    return res.json({ 
+      success: true, 
+      data: {
+        current: {
+          totalTransactions: rows[0].totalTransactions,
+          totalSales: Number(rows[0].totalSales)
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching sales summary accurate by range:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Helper function to get product name
+async function getProductName(productId, storeId) {
+  try {
+    const [products] = await db.execute(
+      'SELECT name FROM products WHERE id = ? AND store_id = ?',
+      [productId, storeId]
+    );
+    return products[0]?.name || 'Unknown Product';
+  } catch (error) {
+    return 'Unknown Product';
+  }
+}
+
 // Get Monthly Sales Data - calculated from invoices and credit notes
 const getMonthlySales = async (req, res) => {
   try {
@@ -2406,4 +2684,4 @@ router.get('/summary-accurate/:month', async (req, res) => {
 });
 router.get('/:date', getSalesByDate);
 
-module.exports = { router, recordSale, getSalesSummary, getSalesByDate, getSalesAnalytics, getMonthlySales, getMonthlySalesAnalytics, getYTDMTDComparison };
+module.exports = { router, recordSale, getSalesSummary, getSalesByDate, getSalesAnalytics, getMonthlySales, getMonthlySalesAnalytics, getYTDMTDComparison, getSalesByRange, getSalesSummaryAccurateByRange };

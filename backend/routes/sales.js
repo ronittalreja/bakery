@@ -4,7 +4,7 @@ const router = express.Router();
 const Sale = require('../models/Sale');
 const StockBatch = require('../models/StockBatch');
 const db = require('../config/database');
-const { recordSale, getSalesSummary, getSalesByDate, getSalesAnalytics, getMonthlySales, getMonthlySalesAnalytics, getYTDMTDComparison } = require('../controllers/salesController');
+const { recordSale, getSalesSummary, getSalesByDate, getSalesAnalytics, getMonthlySales, getMonthlySalesAnalytics, getYTDMTDComparison, getSalesByRange, getSalesSummaryAccurateByRange } = require('../controllers/salesController');
 
 // Delegate POST to FEFO-enabled controller implementation
 router.post('/', recordSale);
@@ -22,6 +22,10 @@ router.get('/analytics/monthly/:month/:year?', getMonthlySalesAnalytics);
 router.get('/ytd-mtd/:year', getYTDMTDComparison);
 
 router.get('/summary-accurate/:month', getMonthlySalesAnalytics);
+
+router.get('/range/:startDate/:endDate', getSalesByRange);
+
+router.get('/summary-accurate-range/:startDate/:endDate', getSalesSummaryAccurateByRange);
 
 // The controller already provides a richer GET /:date; avoid duplicate definitions
 module.exports = router;

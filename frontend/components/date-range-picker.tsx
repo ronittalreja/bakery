@@ -6,20 +6,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Calendar } from "@/components/ui/calendar";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
+import { DateRange } from "react-day-picker";
 
 interface DateRangePickerProps {
-  startDate: Date | undefined;
-  endDate: Date | undefined;
-  onStartDateChange: (date: Date | undefined) => void;
-  onEndDateChange: (date: Date | undefined) => void;
+  dateRange: DateRange | undefined;
+  onDateRangeChange: (range: DateRange | undefined) => void;
   onApply: () => void;
 }
 
 export function DateRangePicker({
-  startDate,
-  endDate,
-  onStartDateChange,
-  onEndDateChange,
+  dateRange,
+  onDateRangeChange,
   onApply
 }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
@@ -34,8 +31,8 @@ export function DateRangePicker({
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full sm:w-auto">
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {startDate && endDate ? (
-            `${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd, yyyy")}`
+          {dateRange?.from && dateRange?.to ? (
+            `${format(dateRange.from, "MMM dd")} - ${format(dateRange.to, "MMM dd, yyyy")}`
           ) : (
             "Select Date Range"
           )}
@@ -47,30 +44,19 @@ export function DateRangePicker({
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium mb-2 block">Start Date</label>
             <Calendar
-              mode="single"
-              selected={startDate}
-              onSelect={onStartDateChange}
-              initialFocus
+              mode="range"
+              selected={dateRange}
+              onSelect={onDateRangeChange}
+              numberOfMonths={2}
               className="rounded-md border"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-2 block">End Date</label>
-            <Calendar
-              mode="single"
-              selected={endDate}
-              onSelect={onEndDateChange}
-              className="rounded-md border"
-              disabled={(date) => startDate ? date < startDate : false}
             />
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleApply} disabled={!startDate || !endDate}>
+            <Button onClick={handleApply} disabled={!dateRange?.from || !dateRange?.to}>
               Apply Range
             </Button>
           </div>
