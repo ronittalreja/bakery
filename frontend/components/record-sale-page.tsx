@@ -93,7 +93,7 @@ export function RecordSalePage({ onBack, storeId }: RecordSalePageProps) {
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/decorations`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/decorations?store_id=${effectiveStoreId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -137,7 +137,7 @@ export function RecordSalePage({ onBack, storeId }: RecordSalePageProps) {
         throw new Error("No authentication token found");
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?group=product&date=${selectedDate}&t=${Date.now()}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?group=product&date=${selectedDate}&store_id=${effectiveStoreId}&t=${Date.now()}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,

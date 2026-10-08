@@ -4,7 +4,8 @@ const { getDemoData, demoData } = require('../middleware/demoMode');
 
 const getAllDecorations = async (req, res) => {
   try {
-    const storeId = req.user?.store_id;
+    const { store_id: queryStoreId } = req.query;
+    const storeId = queryStoreId || req.user?.store_id;
     
     // Return demo data if demo user
     if (req.isDemo) {

@@ -112,8 +112,8 @@ export function ReturnsPage({ onBack, storeId }: ReturnsPageProps) {
       }
 
       const url = activeTab === "grm" 
-        ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/grm?date=${selectedDate}&t=${Date.now()}`
-        : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/gvn?date=${selectedDate}&t=${Date.now()}`;
+        ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/grm?date=${selectedDate}&store_id=${effectiveStoreId}&t=${Date.now()}`
+        : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/returns/gvn?date=${selectedDate}&store_id=${effectiveStoreId}&t=${Date.now()}`;
 
       const response = await fetch(url, {
         headers: {

@@ -6,7 +6,8 @@ const { getDemoData } = require('../middleware/demoMode');
 
 const getGrmReturns = async (req, res) => {
   try {
-    const storeId = req.store_id || req.user?.store_id;
+    const { date, store_id: queryStoreId } = req.query;
+    const storeId = queryStoreId || req.store_id || req.user?.store_id;
     
     // Return demo data if demo user
     if (req.isDemo) {
@@ -223,9 +224,9 @@ const processGrmReturn = async (req, res) => {
 
 const getGvnDamages = async (req, res) => {
   try {
-    const { date } = req.query;
+    const { date, store_id: queryStoreId } = req.query;
     const targetDate = date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-    const storeId = req.user?.store_id;
+    const storeId = queryStoreId || req.user?.store_id;
 
     if (!storeId) {
       return res.status(400).json({ success: false, error: 'User store_id not found' });

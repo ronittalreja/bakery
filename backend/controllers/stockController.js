@@ -5,8 +5,8 @@ const { demoData } = require('../middleware/demoMode');
 
 const getStock = async (req, res) => {
   try {
-    const { date } = req.query;
-    const storeId = req.store_id || req.user?.store_id;
+    const { date, store_id: queryStoreId } = req.query;
+    const storeId = queryStoreId || req.store_id || req.user?.store_id;
     const targetDate = date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
 
     // Return demo data if demo user
