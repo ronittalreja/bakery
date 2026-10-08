@@ -75,7 +75,6 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
   const [hasInvoice, setHasInvoice] = useState(false)
   const [stores, setStores] = useState<Store[]>([])
   const [selectedStore, setSelectedStore] = useState<Store | null>(null)
-  const [showManageStores, setShowManageStores] = useState(false)
   const [storeHasInvoice, setStoreHasInvoice] = useState(false)
   const [editingStore, setEditingStore] = useState<Store | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -179,7 +178,12 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
 
   const openEditForm = (store: Store) => {
     setEditingStore(store)
-    setShowManageStores(true)
+    setCurrentPage("manage-stores")
+  }
+
+  const handleNavigateToStore = (storeId: number, page: StaffPage) => {
+    setSelectedStore(stores.find(s => s.id === storeId) || null)
+    setCurrentPage(page)
   }
 
   const renderStoreView = () => {
@@ -250,14 +254,6 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
       icon: Layers,
       page: "ml-groups" as StaffPage,
       color: "bg-gradient-to-br from-cyan-500 to-cyan-600 text-white shadow-cyan-200",
-      disabled: false,
-    },
-    {
-      title: "Manage Stores",
-      description: "Manage all stores and their credentials",
-      icon: Store,
-      page: "manage-stores" as StaffPage,
-      color: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-200",
       disabled: false,
     },
     {
@@ -364,7 +360,7 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
       case "manage-events":
         return <ManageEventsPage onBack={() => setCurrentPage("dashboard")} />
       case "manage-stores":
-        return <ManageStoresPage onBack={() => setCurrentPage("dashboard")} />
+        return <ManageStoresPage onBack={() => setCurrentPage("dashboard")} onNavigateToStore={handleNavigateToStore} />
       case "overall-analytics":
         return <OverallAnalyticsPage onBack={() => setCurrentPage("dashboard")} />
       case "master-products":
@@ -410,7 +406,10 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
                 <div className="flex items-center justify-between mb-4 max-w-4xl mx-auto">
                   <h2 className="text-2xl font-bold">Manage Stores ({stores.length})</h2>
                   <Button
-                    onClick={() => setShowManageStores(true)}
+                    onClick={() => {
+                      setEditingStore(null);
+                      setCurrentPage("manage-stores");
+                    }}
                     className="flex items-center gap-2"
                   >
                     <Plus className="h-4 w-4" />
@@ -464,13 +463,6 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
                 </div>
               </div>
             </div>
-
-            {showManageStores && (
-              <ManageStoresPage onBack={() => {
-                setShowManageStores(false)
-                setEditingStore(null)
-              }} editingStore={editingStore} />
-            )}
 
             {/* Delete Confirmation Dialog */}
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

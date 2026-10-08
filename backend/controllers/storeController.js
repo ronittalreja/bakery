@@ -86,6 +86,30 @@ const createStore = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Store code is required' });
     }
 
+    // Check if store_code already exists (even in deleted stores)
+    const [existingStores] = await connection.execute(
+      'SELECT id FROM stores WHERE store_code = ?',
+      [store_code]
+    );
+    
+    if (existingStores.length > 0) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, error: `Store code ${store_code} already exists` });
+    }
+
+    // Check if username already exists
+    if (username) {
+      const [existingUsers] = await connection.execute(
+        'SELECT id FROM users WHERE username = ?',
+        [username]
+      );
+      
+      if (existingUsers.length > 0) {
+        await connection.rollback();
+        return res.status(400).json({ success: false, error: `Username ${username} already exists` });
+      }
+    }
+
     // Insert store (store_name will be same as store_code)
     const [result] = await connection.execute(
       `INSERT INTO stores (store_code, store_name, status)

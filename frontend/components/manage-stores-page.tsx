@@ -29,9 +29,10 @@ interface StoreUser {
 interface ManageStoresPageProps {
   onBack: () => void
   editingStore?: Store | null
+  onNavigateToStore?: (storeId: number, page: string) => void
 }
 
-export function ManageStoresPage({ onBack, editingStore: propEditingStore }: ManageStoresPageProps) {
+export function ManageStoresPage({ onBack, editingStore: propEditingStore, onNavigateToStore }: ManageStoresPageProps) {
   const [stores, setStores] = useState<Store[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -374,7 +375,11 @@ export function ManageStoresPage({ onBack, editingStore: propEditingStore }: Man
                       className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
                       onClick={() => {
                         localStorage.setItem('selectedStoreId', store.id.toString());
-                        window.location.href = '/upload-invoice';
+                        if (onNavigateToStore) {
+                          onNavigateToStore(store.id, 'upload-invoice');
+                        } else {
+                          window.location.href = '/upload-invoice';
+                        }
                       }}
                     >
                       <Upload className="h-5 w-5 text-blue-600" />
@@ -385,7 +390,11 @@ export function ManageStoresPage({ onBack, editingStore: propEditingStore }: Man
                       className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
                       onClick={() => {
                         localStorage.setItem('selectedStoreId', store.id.toString());
-                        window.location.href = '/record-sale';
+                        if (onNavigateToStore) {
+                          onNavigateToStore(store.id, 'record-sale');
+                        } else {
+                          window.location.href = '/record-sale';
+                        }
                       }}
                     >
                       <ShoppingCart className="h-5 w-5 text-emerald-600" />
@@ -396,7 +405,11 @@ export function ManageStoresPage({ onBack, editingStore: propEditingStore }: Man
                       className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
                       onClick={() => {
                         localStorage.setItem('selectedStoreId', store.id.toString());
-                        window.location.href = '/stock';
+                        if (onNavigateToStore) {
+                          onNavigateToStore(store.id, 'stock');
+                        } else {
+                          window.location.href = '/stock';
+                        }
                       }}
                     >
                       <Package className="h-5 w-5 text-violet-600" />
@@ -407,7 +420,11 @@ export function ManageStoresPage({ onBack, editingStore: propEditingStore }: Man
                       className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
                       onClick={() => {
                         localStorage.setItem('selectedStoreId', store.id.toString());
-                        window.location.href = '/returns';
+                        if (onNavigateToStore) {
+                          onNavigateToStore(store.id, 'returns');
+                        } else {
+                          window.location.href = '/returns';
+                        }
                       }}
                     >
                       <Package className="h-5 w-5 text-amber-600" />
@@ -418,7 +435,11 @@ export function ManageStoresPage({ onBack, editingStore: propEditingStore }: Man
                       className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
                       onClick={() => {
                         localStorage.setItem('selectedStoreId', store.id.toString());
-                        window.location.href = '/manage-products';
+                        if (onNavigateToStore) {
+                          onNavigateToStore(store.id, 'manage-products');
+                        } else {
+                          window.location.href = '/manage-products';
+                        }
                       }}
                     >
                       <Settings className="h-5 w-5 text-violet-600" />
@@ -429,7 +450,11 @@ export function ManageStoresPage({ onBack, editingStore: propEditingStore }: Man
                       className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
                       onClick={() => {
                         localStorage.setItem('selectedStoreId', store.id.toString());
-                        window.location.href = '/manage-stock';
+                        if (onNavigateToStore) {
+                          onNavigateToStore(store.id, 'manage-stock');
+                        } else {
+                          window.location.href = '/manage-stock';
+                        }
                       }}
                     >
                       <Layers className="h-5 w-5 text-indigo-600" />
@@ -440,7 +465,11 @@ export function ManageStoresPage({ onBack, editingStore: propEditingStore }: Man
                       className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
                       onClick={() => {
                         localStorage.setItem('selectedStoreId', store.id.toString());
-                        window.location.href = '/edit-sales';
+                        if (onNavigateToStore) {
+                          onNavigateToStore(store.id, 'edit-sales');
+                        } else {
+                          window.location.href = '/edit-sales';
+                        }
                       }}
                     >
                       <BarChart3 className="h-5 w-5 text-orange-600" />
