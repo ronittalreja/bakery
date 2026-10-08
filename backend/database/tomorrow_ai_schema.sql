@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS tomorrow_ai_events (
   store_id INT NOT NULL DEFAULT 1 COMMENT 'Store ID for multi-tenancy',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY unique_event_year (event_name, year, store_id),
+  UNIQUE KEY unique_event_date (event_name, event_date, year, store_id),
   INDEX idx_event_date (event_date),
   INDEX idx_year (year),
   INDEX idx_store_id (store_id)

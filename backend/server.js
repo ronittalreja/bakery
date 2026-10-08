@@ -963,6 +963,63 @@ app.post('/api/update-event-type-enum', async (req, res) => {
   }
 });
 
+// Update tomorrow_ai_events unique constraint to allow multiple dates per event
+app.post('/api/update-event-unique-constraint', async (req, res) => {
+  try {
+    const mysql = require('mysql2/promise');
+    let connection;
+    
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    console.log('🔧 Updating tomorrow_ai_events unique constraint...');
+    
+    try {
+      // Drop old unique constraint
+      await connection.execute(`
+        ALTER TABLE tomorrow_ai_events 
+        DROP INDEX unique_event_year
+      `);
+      console.log('✅ Dropped old unique_event_year constraint');
+    } catch (error) {
+      console.log('ℹ️ Dropping old constraint:', error.message);
+    }
+    
+    try {
+      // Add new unique constraint that includes event_date
+      await connection.execute(`
+        ALTER TABLE tomorrow_ai_events 
+        ADD UNIQUE KEY unique_event_date (event_name, event_date, year, store_id)
+      `);
+      console.log('✅ Added new unique_event_date constraint');
+    } catch (error) {
+      console.log('ℹ️ Adding new constraint:', error.message);
+    }
+    
+    await connection.end();
+    
+    res.json({ 
+      success: true, 
+      message: 'Unique constraint updated successfully' 
+    });
+    
+  } catch (error) {
+    console.error('Error updating unique constraint:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Execute raw SQL
 app.post('/api/execute-sql', async (req, res) => {
   try {
