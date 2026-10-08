@@ -231,7 +231,7 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
       icon: ShoppingCart,
       page: "record-sale" as StaffPage,
       color: "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-200",
-      disabled: !isToday || isDayEnded || !storeHasInvoice,
+      disabled: false,
     },
     {
       title: "Today's Stock",
@@ -247,7 +247,7 @@ export function StaffDashboard({ onSwitchToUser }: StaffDashboardProps) {
       icon: RotateCcw,
       page: "returns" as StaffPage,
       color: "bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-amber-200",
-      disabled: !isToday || isDayEnded || !storeHasInvoice,
+      disabled: false,
     },
     {
       title: "Manage Products",
