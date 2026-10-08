@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart3, Clock, DollarSign, TrendingUp, Package, TrendingDown, Calendar, Star } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -12,6 +13,7 @@ import { useDateContext } from "@/hooks/use-date-context";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { formatDisplayDate, formatTime } from "@/lib/dateUtils";
 import { Alert, AlertDescription } from "./ui/alert";
+import { DateRangePicker } from "./date-range-picker";
 
 interface SaleItem {
   id: string;
@@ -118,6 +120,11 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
   const [selectedMonthOnly, setSelectedMonthOnly] = usePersistedState('admin_sales_month', new Date().getMonth() + 1);
   const [comparisonYear, setComparisonYear] = useState(new Date().getFullYear() - 1); // Previous year
   const [summaryAccurate, setSummaryAccurate] = useState<{ totalTransactions: number, totalSales: number } | null>(null);
+  
+  // Date range state
+  const [useDateRange, setUseDateRange] = useState(false);
+  const [rangeStartDate, setRangeStartDate] = useState<Date | undefined>(undefined);
+  const [rangeEndDate, setRangeEndDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     const fetchSales = async () => {
@@ -127,12 +134,21 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
           throw new Error('No authentication token found');
         }
         
-        // Construct month string from selectedMonthOnly and selectedYear
-        const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
-        const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
+        let url;
+        if (useDateRange && rangeStartDate && rangeEndDate) {
+          // Use date range
+          const startDateStr = rangeStartDate.toISOString().split('T')[0];
+          const endDateStr = rangeEndDate.toISOString().split('T')[0];
+          url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/range/${startDateStr}/${endDateStr}`;
+        } else {
+          // Use month/year selection
+          const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
+          const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
+          url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/monthly/${monthStr}`;
+        }
         
         // Use month-wise sales endpoint
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/monthly/${monthStr}`, {
+        const response = await fetch(url, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -146,7 +162,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
         const rows: any[] = Array.isArray(data.data) ? data.data : [];
         const flattened: SaleItem[] = rows.flatMap((sale: any) => {
           const saleId = sale.id || sale.sale_id;
-          const saleDate = sale.sale_date || monthStr;
+          const saleDate = sale.sale_date;
           const timeStr = saleDate ? formatTime(saleDate) : '';
           const payment = sale.payment_type || sale.paymentType || '';
           const items = Array.isArray(sale.items) ? sale.items : [];
@@ -174,6 +190,9 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
           throw new Error('No authentication token found');
         }
         
+        // Skip analytics for date range mode for now
+        if (useDateRange) return;
+        
         // Construct month string from selectedMonthOnly and selectedYear
         const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
         const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
@@ -200,6 +219,10 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
         if (!token) {
           throw new Error('No authentication token found');
         }
+        
+        // Skip YTD/MTD for date range mode
+        if (useDateRange) return;
+        
         const currentYear = new Date().getFullYear();
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/ytd-mtd/${currentYear}`, {
           headers: {
@@ -222,11 +245,20 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('No authentication token found');
         
-        // Construct month string from selectedMonthOnly and selectedYear
-        const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
-        const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
+        let url;
+        if (useDateRange && rangeStartDate && rangeEndDate) {
+          // Use date range
+          const startDateStr = rangeStartDate.toISOString().split('T')[0];
+          const endDateStr = rangeEndDate.toISOString().split('T')[0];
+          url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/summary-accurate-range/${startDateStr}/${endDateStr}`;
+        } else {
+          // Use month/year selection
+          const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
+          const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
+          url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/summary-accurate/${monthStr}`;
+        }
         
-        const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/sales/summary-accurate/${monthStr}`, {
+        const resp = await fetch(url, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await resp.json();
@@ -247,7 +279,7 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
     fetchAnalytics();
     fetchYTDMTD();
     fetchSummaryAccurate();
-  }, [selectedMonthOnly, selectedYear, comparisonYear]);
+  }, [selectedMonthOnly, selectedYear, comparisonYear, useDateRange, rangeStartDate, rangeEndDate]);
 
   // Reset admin date back to today when leaving Admin Sales page
   useEffect(() => {
@@ -375,31 +407,57 @@ export function AdminSalesPage({ onBack }: AdminSalesPageProps) {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-slate-700">Month:</label>
-              <Select value={selectedMonthOnly.toString()} onValueChange={(value) => setSelectedMonthOnly(parseInt(value))}>
-                <SelectTrigger className="h-9 w-[140px] bg-white border-slate-300 focus:border-slate-500">
-                  <SelectValue placeholder="Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getAvailableMonths(selectedYear).map((month) => (
-                    <SelectItem key={month.value} value={month.value.toString()}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                <SelectTrigger className="h-9 w-[100px] bg-white border-slate-300 focus:border-slate-500">
-                  <SelectValue placeholder="Year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getAvailableYears().map((year) => (
-                    <SelectItem key={year.value} value={year.value.toString()}>
-                      {year.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Button
+                variant={useDateRange ? "default" : "outline"}
+                size="sm"
+                onClick={() => setUseDateRange(!useDateRange)}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                {useDateRange ? "Use Month" : "Use Range"}
+              </Button>
+              {useDateRange && (
+                <DateRangePicker
+                  startDate={rangeStartDate}
+                  endDate={rangeEndDate}
+                  onStartDateChange={setRangeStartDate}
+                  onEndDateChange={setRangeEndDate}
+                  onApply={() => {}}
+                />
+              )}
+              {!useDateRange && (
+                <>
+                  <label className="text-sm font-medium text-slate-700">Month:</label>
+                  <Select value={selectedMonthOnly.toString()} onValueChange={(value) => setSelectedMonthOnly(parseInt(value))}>
+                    <SelectTrigger className="h-9 w-[140px] bg-white border-slate-300 focus:border-slate-500">
+                      <SelectValue placeholder="Month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAvailableMonths(selectedYear).map((month) => (
+                        <SelectItem key={month.value} value={month.value.toString()}>
+                          {month.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
+              {!useDateRange && (
+                <>
+                  <label className="text-sm font-medium text-slate-700">Year:</label>
+                  <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                    <SelectTrigger className="h-9 w-[100px] bg-white border-slate-300 focus:border-slate-500">
+                      <SelectValue placeholder="Year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAvailableYears().map((year) => (
+                        <SelectItem key={year.value} value={year.value.toString()}>
+                          {year.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
             </div>
           </div>
         </div>

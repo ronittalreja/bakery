@@ -113,37 +113,38 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
     try {
       const token = localStorage.getItem('token');
       
-      if (newEventType === 'fixed') {
-        // Create event for all years with the same date
-        // newEventDate is in YYYY-MM-DD format from date input
-        const dateObj = new Date(newEventDate);
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const day = String(dateObj.getDate()).padStart(2, '0');
-        
-        const eventsToCreate = years.map(year => {
-          const eventDate = `${year}-${month}-${day}`;
-          return {
-            event_name: newEventName,
-            event_type: 'fixed',
-            event_date: eventDate,
-            year: year,
-            description: `${newEventName} (Fixed event)`,
-            status: 'approved'
-          };
-        });
-
-        for (const eventData of eventsToCreate) {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(eventData)
+      if (newEventType === 'fixed' && newEventSelectedDates.length > 0) {
+        // Create event for all years for each selected date (multi-date selection for fixed events)
+        for (const date of newEventSelectedDates) {
+          const dateObj = new Date(date);
+          const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const day = String(dateObj.getDate()).padStart(2, '0');
+          
+          const eventsToCreate = years.map(year => {
+            const eventDate = `${year}-${month}-${day}`;
+            return {
+              event_name: newEventName,
+              event_type: 'fixed',
+              event_date: eventDate,
+              year: year,
+              description: `${newEventName} (Fixed event)`,
+              status: 'approved'
+            };
           });
-          const data = await response.json();
-          if (!data.success) {
-            console.error('Error creating event:', data.error);
+
+          for (const eventData of eventsToCreate) {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(eventData)
+            });
+            const data = await response.json();
+            if (!data.success) {
+              console.error('Error creating event:', data.error);
+            }
           }
         }
       } else if (newEventType === 'dynamic' && newEventSelectedDates.length > 0) {
@@ -407,21 +408,53 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
             </div>
             {newEventType === 'fixed' && (
               <div>
-                <Label htmlFor="eventDate">Date (MM-DD)</Label>
-                <Input
-                  id="eventDate"
-                  type="date"
-                  value={newEventDate}
-                  onChange={(e) => setNewEventDate(e.target.value)}
-                />
+                <Label>Select Multiple Dates (Click to toggle)</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  This will create the event on this date for all years
+                  This will create the event on selected dates for all years
+                </p>
+                <div className="space-y-4 mt-2 max-h-60 overflow-y-auto">
+                  {getDatesForYear(selectedYear).map((month) => (
+                    <div key={month.monthName}>
+                      <h4 className="font-medium text-sm mb-2">{month.monthName}</h4>
+                      <div className="grid grid-cols-7 gap-2">
+                        {month.dates.map((date) => {
+                          const isSelected = newEventSelectedDates.includes(date.date);
+                          return (
+                            <button
+                              key={date.date}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setNewEventSelectedDates(newEventSelectedDates.filter(d => d !== date.date));
+                                } else {
+                                  setNewEventSelectedDates([...newEventSelectedDates, date.date]);
+                                }
+                              }}
+                              title={`${date.month} ${date.day}`}
+                              className={`p-2 text-sm rounded border ${
+                                isSelected
+                                  ? 'bg-purple-600 text-white border-purple-600'
+                                  : 'bg-white hover:bg-gray-100'
+                              }`}
+                            >
+                              {date.day}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Selected: {newEventSelectedDates.length} dates
                 </p>
               </div>
             )}
             {newEventType === 'dynamic' && (
               <div>
                 <Label>Select Multiple Dates (Click to toggle)</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  This will create the event on selected dates for the selected year only
+                </p>
                 <div className="space-y-4 mt-2 max-h-60 overflow-y-auto">
                   {getDatesForYear(selectedYear).map((month) => (
                     <div key={month.monthName}>
@@ -466,7 +499,7 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
               }}>
                 Cancel
               </Button>
-              <Button onClick={createEvent} disabled={!newEventName || (newEventType === 'fixed' && !newEventDate) || (newEventType === 'dynamic' && newEventSelectedDates.length === 0)}>
+              <Button onClick={createEvent} disabled={!newEventName || newEventSelectedDates.length === 0}>
                 Create Event
               </Button>
             </div>

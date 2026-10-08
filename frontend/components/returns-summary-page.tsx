@@ -13,6 +13,7 @@ import { FileText, Calendar, TrendingDown, ArrowLeft, BarChart3, TrendingUp, Act
 import { useDateContext } from "@/hooks/use-date-context";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { formatDisplayDate, formatDate } from "@/lib/dateUtils";
+import { DateRangePicker } from "./date-range-picker";
 
 interface ReturnItem {
   id: string;
@@ -58,6 +59,11 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
   const [customMonth, setCustomMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonthOnly, setSelectedMonthOnly] = useState(new Date().getMonth() + 1);
+  
+  // Date range state
+  const [useDateRange, setUseDateRange] = useState(false);
+  const [rangeStartDate, setRangeStartDate] = useState<Date | undefined>(undefined);
+  const [rangeEndDate, setRangeEndDate] = useState<Date | undefined>(undefined);
 
   // Insider tab states
   const [insiderDate, setInsiderDate] = useState(new Date().toISOString().split('T')[0]);
@@ -325,12 +331,21 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
   // Initialize with current month, then drive via selectedYear and selectedMonthOnly
   useEffect(() => {
     if (mainTab === 'summary') {
-      const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
-      const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
+      let monthStr;
+      if (useDateRange && rangeStartDate && rangeEndDate) {
+        // Use date range - for now, we'll use the start date's month
+        // TODO: Update API to support date range for returns
+        const startDateStr = rangeStartDate.toISOString().split('T')[0];
+        monthStr = startDateStr.slice(0, 7);
+      } else {
+        // Use month/year selection
+        const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
+        monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
+      }
       setCustomMonth(monthStr);
       fetchReturns(monthStr);
     }
-  }, [selectedYear, selectedMonthOnly, mainTab]);
+  }, [selectedYear, selectedMonthOnly, mainTab, useDateRange, rangeStartDate, rangeEndDate]);
 
   // Auto-trigger insider analysis when date changes
   useEffect(() => {
@@ -601,30 +616,51 @@ export function ReturnsSummaryPage({ onBack }: ReturnsSummaryPageProps) {
               </p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Select value={selectedMonthOnly.toString()} onValueChange={(value) => setSelectedMonthOnly(parseInt(value))}>
-                <SelectTrigger className="h-9 w-[140px] bg-white border-slate-300 focus:border-slate-500">
-                  <SelectValue placeholder="Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getAvailableMonths(selectedYear).map((month) => (
-                    <SelectItem key={month.value} value={month.value.toString()}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                <SelectTrigger className="h-9 w-[100px] bg-white border-slate-300 focus:border-slate-500">
-                  <SelectValue placeholder="Year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getAvailableYears().map((year) => (
-                    <SelectItem key={year.value} value={year.value.toString()}>
-                      {year.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Button
+                variant={useDateRange ? "default" : "outline"}
+                size="sm"
+                onClick={() => setUseDateRange(!useDateRange)}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                {useDateRange ? "Use Month" : "Use Range"}
+              </Button>
+              {useDateRange && (
+                <DateRangePicker
+                  startDate={rangeStartDate}
+                  endDate={rangeEndDate}
+                  onStartDateChange={setRangeStartDate}
+                  onEndDateChange={setRangeEndDate}
+                  onApply={() => {}}
+                />
+              )}
+              {!useDateRange && (
+                <>
+                  <Select value={selectedMonthOnly.toString()} onValueChange={(value) => setSelectedMonthOnly(parseInt(value))}>
+                    <SelectTrigger className="h-9 w-[140px] bg-white border-slate-300 focus:border-slate-500">
+                      <SelectValue placeholder="Month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAvailableMonths(selectedYear).map((month) => (
+                        <SelectItem key={month.value} value={month.value.toString()}>
+                          {month.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                    <SelectTrigger className="h-9 w-[100px] bg-white border-slate-300 focus:border-slate-500">
+                      <SelectValue placeholder="Year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAvailableYears().map((year) => (
+                        <SelectItem key={year.value} value={year.value.toString()}>
+                          {year.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { 
@@ -22,6 +23,7 @@ import {
   Sparkles,
   Calculator
 } from "lucide-react";
+import { DateRangePicker } from "./date-range-picker";
 
 interface InsightsData {
   month: string;
@@ -51,6 +53,11 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
   const [insights, setInsights] = useState<InsightsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  // Date range state
+  const [useDateRange, setUseDateRange] = useState(false);
+  const [rangeStartDate, setRangeStartDate] = useState<Date | undefined>(undefined);
+  const [rangeEndDate, setRangeEndDate] = useState<Date | undefined>(undefined);
 
   const getAvailableYears = () => {
     const currentYear = new Date().getFullYear();
@@ -102,11 +109,20 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
           throw new Error('No authentication token found');
         }
 
-        // Construct month string from selectedMonthOnly and selectedYear
-        const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
-        const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
+        let url;
+        if (useDateRange && rangeStartDate && rangeEndDate) {
+          // Use date range - for now, we'll use the start date's month
+          // TODO: Update API to support date range for insights
+          const startDateStr = rangeStartDate.toISOString().split('T')[0];
+          url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/insights/monthly/${startDateStr.slice(0, 7)}`;
+        } else {
+          // Use month/year selection
+          const monthParam = selectedMonthOnly === 0 ? 'all' : selectedMonthOnly.toString().padStart(2, '0');
+          const monthStr = selectedMonthOnly === 0 ? `${selectedYear}-all` : `${selectedYear}-${monthParam}`;
+          url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/insights/monthly/${monthStr}`;
+        }
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/insights/monthly/${monthStr}`, {
+        const response = await fetch(url, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -128,7 +144,7 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
     };
 
     fetchInsights();
-  }, [selectedMonthOnly, selectedYear]);
+  }, [selectedMonthOnly, selectedYear, useDateRange, rangeStartDate, rangeEndDate]);
 
   const formatCurrency = (amount: number | undefined) => `₹${(amount || 0).toLocaleString()}`;
   const formatPercentage = (value: number | undefined) => `${(value || 0).toFixed(1)}%`;
@@ -167,31 +183,52 @@ export function InsightsPage({ onBack }: InsightsPageProps) {
               </p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <label className="text-sm font-medium text-slate-700">Month:</label>
-              <Select value={selectedMonthOnly.toString()} onValueChange={(value) => setSelectedMonthOnly(parseInt(value))}>
-                <SelectTrigger className="h-9 w-[140px] bg-white border-slate-300 focus:border-slate-500">
-                  <SelectValue placeholder="Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getAvailableMonths(selectedYear).map((month) => (
-                    <SelectItem key={month.value} value={month.value.toString()}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                <SelectTrigger className="h-9 w-[100px] bg-white border-slate-300 focus:border-slate-500">
-                  <SelectValue placeholder="Year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getAvailableYears().map((year) => (
-                    <SelectItem key={year.value} value={year.value.toString()}>
-                      {year.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Button
+                variant={useDateRange ? "default" : "outline"}
+                size="sm"
+                onClick={() => setUseDateRange(!useDateRange)}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                {useDateRange ? "Use Month" : "Use Range"}
+              </Button>
+              {useDateRange && (
+                <DateRangePicker
+                  startDate={rangeStartDate}
+                  endDate={rangeEndDate}
+                  onStartDateChange={setRangeStartDate}
+                  onEndDateChange={setRangeEndDate}
+                  onApply={() => {}}
+                />
+              )}
+              {!useDateRange && (
+                <>
+                  <label className="text-sm font-medium text-slate-700">Month:</label>
+                  <Select value={selectedMonthOnly.toString()} onValueChange={(value) => setSelectedMonthOnly(parseInt(value))}>
+                    <SelectTrigger className="h-9 w-[140px] bg-white border-slate-300 focus:border-slate-500">
+                      <SelectValue placeholder="Month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAvailableMonths(selectedYear).map((month) => (
+                        <SelectItem key={month.value} value={month.value.toString()}>
+                          {month.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                    <SelectTrigger className="h-9 w-[100px] bg-white border-slate-300 focus:border-slate-500">
+                      <SelectValue placeholder="Year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAvailableYears().map((year) => (
+                        <SelectItem key={year.value} value={year.value.toString()}>
+                          {year.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
             </div>
           </div>
         </div>
