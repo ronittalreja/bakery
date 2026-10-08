@@ -36,7 +36,7 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
   const [newEventName, setNewEventName] = useState('');
   const [newEventDate, setNewEventDate] = useState('');
   const [newEventType, setNewEventType] = useState<'fixed' | 'dynamic'>('fixed');
-  const [dynamicYearDates, setDynamicYearDates] = useState<Record<number, string>>({});
+  const [dynamicYearDates, setDynamicYearDates] = useState<Record<number, string[]>>({});
   const [newEventSelectedDates, setNewEventSelectedDates] = useState<string[]>([]);
 
   // Generate years from current year - 2 to current year
@@ -81,6 +81,9 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
   const filteredGroupedEvents = Object.values(groupedEvents).filter(group => {
     if (filter === 'all') return true;
     return group.status === filter;
+  }).filter(group => {
+    // Filter by selected year
+    return group.year === selectedYear;
   });
 
   const updateEventStatus = async (eventId: number, status: 'approved' | 'rejected') => {
@@ -177,26 +180,34 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
         }
       } else if (newEventType === 'dynamic') {
         // Dynamic event - create with specific dates for each year
-        for (const [year, date] of Object.entries(dynamicYearDates)) {
-          if (date) {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                event_name: newEventName,
-                event_type: 'dynamic',
-                event_date: date,
-                year: parseInt(year),
-                description: `${newEventName} (Dynamic event)`,
-                status: 'approved'
-              })
-            });
-            const data = await response.json();
-            if (!data.success) {
-              console.error('Error creating event:', data.error);
+        for (const [year, dates] of Object.entries(dynamicYearDates)) {
+          if (dates && dates.length > 0) {
+            for (const date of dates) {
+              // Extract month and day from the selected date, then combine with the target year
+              const dateObj = new Date(date);
+              const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+              const day = String(dateObj.getDate()).padStart(2, '0');
+              const eventDate = `${year}-${month}-${day}`;
+              
+              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events`, {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  event_name: newEventName,
+                  event_type: 'dynamic',
+                  event_date: eventDate,
+                  year: parseInt(year),
+                  description: `${newEventName} (Dynamic event)`,
+                  status: 'approved'
+                })
+              });
+              const data = await response.json();
+              if (!data.success) {
+                console.error('Error creating event:', data.error);
+              }
             }
           }
         }
@@ -469,17 +480,49 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
                   {years.map((year) => (
                     <div key={year}>
                       <h4 className="font-medium text-sm mb-2">{year}</h4>
-                      <Input
-                        type="date"
-                        value={dynamicYearDates[year] || ''}
-                        onChange={(e) => {
-                          setDynamicYearDates({
-                            ...dynamicYearDates,
-                            [year]: e.target.value
-                          });
-                        }}
-                        className="w-fit"
-                      />
+                      <div className="space-y-2">
+                        {getDatesForYear(year).map((month) => (
+                          <div key={month.monthName}>
+                            <h5 className="text-xs font-medium mb-1">{month.monthName}</h5>
+                            <div className="grid grid-cols-7 gap-1">
+                              {month.dates.map((date) => {
+                                const yearDates = dynamicYearDates[year] || [];
+                                const isSelected = yearDates.includes(date.date);
+                                return (
+                                  <button
+                                    key={date.date}
+                                    onClick={() => {
+                                      const currentDates = dynamicYearDates[year] || [];
+                                      if (isSelected) {
+                                        setDynamicYearDates({
+                                          ...dynamicYearDates,
+                                          [year]: currentDates.filter(d => d !== date.date)
+                                        });
+                                      } else {
+                                        setDynamicYearDates({
+                                          ...dynamicYearDates,
+                                          [year]: [...currentDates, date.date]
+                                        });
+                                      }
+                                    }}
+                                    title={`${date.month} ${date.day}`}
+                                    className={`p-1 text-xs rounded border ${
+                                      isSelected
+                                        ? 'bg-purple-600 text-white border-purple-600'
+                                        : 'bg-white hover:bg-gray-100'
+                                    }`}
+                                  >
+                                    {date.day}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Selected: {(dynamicYearDates[year] || []).length} dates
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -493,7 +536,7 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
               }}>
                 Cancel
               </Button>
-              <Button onClick={createEvent} disabled={!newEventName || (newEventType === 'fixed' && newEventSelectedDates.length === 0) || (newEventType === 'dynamic' && Object.values(dynamicYearDates).filter(d => d).length === 0)}>
+              <Button onClick={createEvent} disabled={!newEventName || (newEventType === 'fixed' && newEventSelectedDates.length === 0) || (newEventType === 'dynamic' && Object.values(dynamicYearDates).every(dates => !dates || dates.length === 0))}>
                 Create Event
               </Button>
             </div>

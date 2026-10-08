@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { ArrowLeft, Plus, Edit2, Trash2, Store } from "lucide-react"
+import { ArrowLeft, Plus, Edit2, Trash2, Store, ShoppingCart, Package } from "lucide-react"
 import { apiClient } from "@/lib/apiClient"
 import { usePersistedState } from "@/hooks/use-persisted-state"
 
@@ -334,7 +334,7 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
             stores.map((store) => (
               <Card key={store.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center">
                         <Store className="h-6 w-6" />
@@ -365,6 +365,31 @@ export function ManageStoresPage({ onBack }: ManageStoresPageProps) {
                         Delete
                       </Button>
                     </div>
+                  </div>
+                  {/* Store-specific cards */}
+                  <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
+                      onClick={() => {
+                        localStorage.setItem('selectedStoreId', store.id.toString());
+                        window.location.href = '/record-sale';
+                      }}
+                    >
+                      <ShoppingCart className="h-5 w-5 text-emerald-600" />
+                      <span className="text-sm font-medium">Record Sale</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
+                      onClick={() => {
+                        localStorage.setItem('selectedStoreId', store.id.toString());
+                        window.location.href = '/returns';
+                      }}
+                    >
+                      <Package className="h-5 w-5 text-green-600" />
+                      <span className="text-sm font-medium">Returns</span>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

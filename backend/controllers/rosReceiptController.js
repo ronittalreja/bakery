@@ -232,12 +232,14 @@ const uploadRosReceipt = async (req, res) => {
       });
     }
     
+    const storeId = req.user?.store_id || 1;
+    
     // Insert ROS receipt
     const insertQuery = `
       INSERT INTO ros_receipts (
         receipt_number, receipt_date, received_from, total_amount, 
-        payment_method, bills, file_name, original_name, cloudinary_url, cloudinary_public_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        payment_method, bills, file_name, original_name, cloudinary_url, cloudinary_public_id, store_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     const [result] = await db.execute(insertQuery, [
@@ -250,7 +252,8 @@ const uploadRosReceipt = async (req, res) => {
       fileName,
       originalName,
       cloudinaryUrl,
-      actualPublicId
+      actualPublicId,
+      storeId
     ]);
     
     const rosReceiptId = result.insertId;

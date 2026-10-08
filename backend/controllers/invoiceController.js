@@ -356,8 +356,8 @@ const uploadInvoice = async (req, res) => {
           
           try {
             const [result] = await connection.execute(
-              'INSERT INTO products (name, item_code, hsn_code, invoice_price, sale_price, grm_value, category, shelf_life_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-              [item.itemName, item.itemCode, item.hsnCode, item.rate, newMrp, newGrmValue, inferred.category || null, inferred.shelf_life_days ?? null]
+              'INSERT INTO products (name, item_code, hsn_code, invoice_price, sale_price, grm_value, category, shelf_life_days, store_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              [item.itemName, item.itemCode, item.hsnCode, item.rate, newMrp, newGrmValue, inferred.category || null, inferred.shelf_life_days ?? null, storeId]
             );
             productId = result.insertId;
             console.log(`✓ Created new product ${item.itemCode} with ID ${productId}, invoice_price: ${item.rate}, sale_price: ${newMrp}`);

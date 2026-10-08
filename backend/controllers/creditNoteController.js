@@ -241,12 +241,14 @@ const uploadCreditNoteHandler = async (req, res) => {
           actualPublicId: actualPublicId || 'NOT_DEFINED'
         });
 
+        const storeId = req.user?.store_id || 1;
+
         const [result] = await db.execute(`
           INSERT INTO credit_notes (
             credit_note_number, date, return_date, receiver_name, receiver_gstin, 
             reason, total_items, gross_value, net_value, 
-            file_name, original_name, cloudinary_url, cloudinary_public_id, items, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            file_name, original_name, cloudinary_url, cloudinary_public_id, items, created_at, store_id
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
         `, [
           creditNote.creditNoteNumber,
           creditNote.date, // Original credit note date
@@ -261,7 +263,8 @@ const uploadCreditNoteHandler = async (req, res) => {
           originalName,
           cloudinaryUrl,
           actualPublicId,
-          JSON.stringify(creditNote.items || [])
+          JSON.stringify(creditNote.items || []),
+          storeId
         ]);
 
         console.log('✅ Credit note inserted successfully with ID:', result.insertId);

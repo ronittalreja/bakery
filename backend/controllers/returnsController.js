@@ -146,6 +146,7 @@ const processGrmReturn = async (req, res) => {
 
     const { returnDate, items } = req.body;
     const staffId = req.user?.id;
+    const storeId = req.user?.store_id || 1;
 
     if (!returnDate || !items || !Array.isArray(items) || items.length === 0) {
       await connection.rollback();
@@ -187,8 +188,8 @@ const processGrmReturn = async (req, res) => {
 
       // Insert return record
       const [returnResult] = await connection.execute(
-        'INSERT INTO returns (return_date, type, product_id, batch_id, quantity, invoice_price, loss_amount, rtd, staff_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [returnDate, 'GRM', productId, batchId, quantity, invoicePrice, lossAmount, rtd, staffId]
+        'INSERT INTO returns (return_date, type, product_id, batch_id, quantity, invoice_price, loss_amount, rtd, staff_id, store_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [returnDate, 'GRM', productId, batchId, quantity, invoicePrice, lossAmount, rtd, staffId, storeId]
       );
 
       totalLoss += lossAmount;
@@ -357,6 +358,7 @@ const processGvnDamage = async (req, res) => {
 
     const { damageDate, items } = req.body;
     const staffId = req.user?.id;
+    const storeId = req.user?.store_id || 1;
 
     if (!damageDate || !items || !Array.isArray(items) || items.length === 0) {
       await connection.rollback();
@@ -394,8 +396,8 @@ const processGvnDamage = async (req, res) => {
       // Insert damage record (GVN has 0 loss amount and 0 RTD)
       const rtd = 0.00; // RTD for GVN returns
       const [damageResult] = await connection.execute(
-        'INSERT INTO returns (return_date, type, product_id, batch_id, quantity, invoice_price, loss_amount, rtd, staff_id) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)',
-        [damageDate, 'GVN', productId, batchId, quantity, invoicePrice, rtd, staffId]
+        'INSERT INTO returns (return_date, type, product_id, batch_id, quantity, invoice_price, loss_amount, rtd, staff_id, store_id) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)',
+        [damageDate, 'GVN', productId, batchId, quantity, invoicePrice, rtd, staffId, storeId]
       );
 
       processedItems.push({

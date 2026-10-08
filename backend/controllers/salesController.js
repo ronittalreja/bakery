@@ -21,6 +21,7 @@ const recordSale = async (req, res) => {
     isHistorical = false
   } = req.body;
   const staffId = req.user?.id || 0;
+  const storeId = req.user?.store_id || 1;
 
   // Handle demo user separately - use demo data instead of database
   if (req.isDemo) {
@@ -443,8 +444,9 @@ const recordSale = async (req, res) => {
         decoration_mrp_total,
         product_cost_total,
         decoration_cost_total,
-        total_cost
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        total_cost,
+        store_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         saleDateTime,
         totalAmount,
@@ -454,7 +456,8 @@ const recordSale = async (req, res) => {
         decorationMRPTotal,
         productCostTotal,
         decorationCostTotal,
-        totalCost
+        totalCost,
+        storeId
       ]
     );
     
