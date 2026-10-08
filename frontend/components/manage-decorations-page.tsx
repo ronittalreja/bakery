@@ -42,8 +42,9 @@ interface ManageDecorationsPageProps {
 }
 
 export function ManageDecorationsPage({ onBack, storeId }: ManageDecorationsPageProps) {
-  const { user, loading: authLoading } = useAuth(); // Add useAuth
-  const router = useRouter(); // Add useRouter
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const effectiveStoreId = storeId || (typeof window !== 'undefined' ? parseInt(localStorage.getItem('selectedStoreId') || '0') : 0);
   const [decorations, setDecorations] = useState<Decoration[]>([]);
   const [filteredDecorations, setFilteredDecorations] = useState<Decoration[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -133,7 +134,7 @@ export function ManageDecorationsPage({ onBack, storeId }: ManageDecorationsPage
       if (!token) {
         throw new Error("No authentication token found");
       }
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/decorations`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/decorations?store_id=${effectiveStoreId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",

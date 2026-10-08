@@ -42,6 +42,7 @@ interface TodaysStockPageProps {
 
 export function TodaysStockPage({ onBack, storeId }: TodaysStockPageProps) {
   const { selectedDate } = useDateContext();
+  const effectiveStoreId = storeId || (typeof window !== 'undefined' ? parseInt(localStorage.getItem('selectedStoreId') || '0') : 0);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [totalQuantity, setTotalQuantity] = useState<number>(0);
   const [mrpValue, setMrpValue] = useState<number>(0);
@@ -66,7 +67,7 @@ export function TodaysStockPage({ onBack, storeId }: TodaysStockPageProps) {
 
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?date=${selectedDate}&t=${Date.now()}`,
+          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?date=${selectedDate}&store_id=${effectiveStoreId}&t=${Date.now()}`,
           {
             method: "GET",
             headers: {

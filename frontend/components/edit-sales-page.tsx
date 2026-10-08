@@ -53,6 +53,7 @@ interface AddSalesPageProps {
 export function AddSalesPage({ onBack, storeId }: AddSalesPageProps) {
   const { user } = useAuth();
   const { setRefreshSales } = useSaleContext();
+  const effectiveStoreId = storeId || (typeof window !== 'undefined' ? parseInt(localStorage.getItem('selectedStoreId') || '0') : 0);
   const [products, setProducts] = useState<Product[]>([]);
   const [addonProducts, setAddonProducts] = useState<Product[]>([]);
   const [decorations, setDecorations] = useState<Product[]>([]);
@@ -132,7 +133,7 @@ export function AddSalesPage({ onBack, storeId }: AddSalesPageProps) {
 
       // Fetch available stock for add sales (excludes already sold items, includes GRM processed)
       const response: any = await apiClient(
-        `/api/add-sales/available-stock?date=${date}`,
+        `/api/add-sales/available-stock?date=${date}&store_id=${effectiveStoreId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -176,7 +177,7 @@ export function AddSalesPage({ onBack, storeId }: AddSalesPageProps) {
       }
 
       const response: any = await apiClient(
-        `/api/decorations/add-sales?date=${date}`,
+        `/api/decorations/add-sales?date=${date}&store_id=${effectiveStoreId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       

@@ -88,6 +88,7 @@ export function UploadInvoicePage({ onBack, storeId }: UploadInvoicePageProps) {
   const { selectedDate } = useDateContext();
   const { refreshSales } = useSaleContext();
   const router = useRouter();
+  const effectiveStoreId = storeId || (typeof window !== 'undefined' ? parseInt(localStorage.getItem('selectedStoreId') || '0') : 0);
   
   // Tab state - persisted
   const [activeTab, setActiveTab] = usePersistedState<UploadTab>('upload_invoice_tab', 'invoice');
@@ -427,6 +428,7 @@ export function UploadInvoicePage({ onBack, storeId }: UploadInvoicePageProps) {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("invoiceDate", selectedDate);
+      formData.append("store_id", effectiveStoreId.toString());
 
       const token = getAuthToken();
       if (!token) {
@@ -507,6 +509,7 @@ export function UploadInvoicePage({ onBack, storeId }: UploadInvoicePageProps) {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("invoiceDate", selectedDate);
+      formData.append("store_id", effectiveStoreId.toString());
 
       const token = getAuthToken();
       if (!token) {

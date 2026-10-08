@@ -46,8 +46,9 @@ interface AdminStockManagementPageProps {
 }
 
 export function AdminStockManagementPage({ onBack, storeId }: AdminStockManagementPageProps) {
-  const { user, loading: authLoading } = useAuth(); // Get auth state
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const effectiveStoreId = storeId || (typeof window !== 'undefined' ? parseInt(localStorage.getItem('selectedStoreId') || '0') : 0);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -148,7 +149,7 @@ export function AdminStockManagementPage({ onBack, storeId }: AdminStockManageme
           throw new Error("No authentication token found");
         }
         // Fetch batch-level stock for admin edits
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?date=${new Date().toISOString().split('T')[0]}&t=${Date.now()}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?date=${new Date().toISOString().split('T')[0]}&store_id=${effectiveStoreId}&t=${Date.now()}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -336,7 +337,7 @@ export function AdminStockManagementPage({ onBack, storeId }: AdminStockManageme
       await new Promise((r) => setTimeout(r, 200));
       const token2 = getAuthToken();
       if (token2) {
-        const ref = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?date=${new Date().toISOString().split('T')[0]}&t=${Date.now()}`, {
+        const ref = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/stock?date=${new Date().toISOString().split('T')[0]}&store_id=${effectiveStoreId}&t=${Date.now()}`, {
           headers: { Authorization: `Bearer ${token2}` },
         });
         const refData = await ref.json();

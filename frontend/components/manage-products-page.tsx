@@ -38,6 +38,7 @@ interface ManageProductsPageProps {
 }
 
 export function ManageProductsPage({ onBack, storeId }: ManageProductsPageProps) {
+  const effectiveStoreId = storeId || (typeof window !== 'undefined' ? parseInt(localStorage.getItem('selectedStoreId') || '0') : 0);
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -127,7 +128,7 @@ export function ManageProductsPage({ onBack, storeId }: ManageProductsPageProps)
         throw new Error("No authentication token found");
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/products`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/products?store_id=${effectiveStoreId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
