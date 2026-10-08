@@ -411,6 +411,7 @@ const uploadInvoice = async (req, res) => {
             invoiceReference: parsedData.invoiceNo,
             invoicePrice: batchInvoicePrice,
             salePrice: batchSalePrice,
+            storeId: storeId
           },
           connection
         );
@@ -1178,7 +1179,8 @@ const uploadMultipleInvoices = async (req, res) => {
               reference: `Invoice: ${invoiceData.invoiceNo}`,
               referenceId: invoice.id,
               referenceType: 'invoice',
-              createdAt: new Date(invoiceData.invoiceDate)
+              createdAt: new Date(invoiceData.invoiceDate),
+              store_id: req.user?.store_id || 1
             });
 
             // Update product stock
