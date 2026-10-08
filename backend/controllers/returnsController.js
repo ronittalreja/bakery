@@ -33,7 +33,6 @@ const getGrmReturns = async (req, res) => {
       return res.json({ success: true, data: demoGrmReturns });
     }
 
-    const { date } = req.query;
     const toLocalYMD = (d) => {
       const dt = new Date(d);
       const year = dt.getFullYear();
