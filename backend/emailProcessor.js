@@ -62,7 +62,8 @@ class EmailProcessor {
     const payload = {
       id: 1,
       username: 'admin',
-      role: 'admin'
+      role: 'admin',
+      store_id: process.env.DEFAULT_STORE_ID ? parseInt(process.env.DEFAULT_STORE_ID) : 1
     };
     const token = jwt.sign(payload, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1h' });
     return token;
@@ -82,6 +83,19 @@ class EmailProcessor {
     return 'unknown';
   }
 
+  detectStoreId(subject) {
+    // Try to extract store code from subject (e.g., R3309, R3399)
+    const storeMatch = subject.match(/R\d{4}/i);
+    if (storeMatch) {
+      const storeCode = storeMatch[0].toUpperCase();
+      console.log(`🏪 Detected store code from subject: ${storeCode}`);
+      // You may need to map store codes to store IDs here
+      // For now, return null and let the backend handle it with default
+      return null;
+    }
+    return null;
+  }
+
   async uploadToBackend(emailData, attachments) {
     try {
       const formData = new FormData();
@@ -91,6 +105,13 @@ class EmailProcessor {
       formData.append('from', emailData.from);
       formData.append('date', emailData.date);
       formData.append('messageId', emailData.messageId);
+      
+      // Detect and add store_id from subject if possible
+      const detectedStoreId = this.detectStoreId(emailData.subject);
+      if (detectedStoreId) {
+        formData.append('store_id', detectedStoreId.toString());
+        console.log(`🏪 Adding store_id to upload: ${detectedStoreId}`);
+      }
       
       // Add attachments if any
       if (attachments && attachments.length > 0) {
@@ -119,19 +140,24 @@ class EmailProcessor {
           throw new Error(`Unknown email type: ${emailData.type}`);
       }
 
+      const token = this.generateAuthToken();
+      console.log(`🔑 Generated auth token with store_id: ${process.env.DEFAULT_STORE_ID || 1}`);
+
       const response = await axios.post(`${this.backendUrl}${endpoint}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${this.generateAuthToken()}`
+          'Authorization': `Bearer ${token}`
         },
         timeout: 30000
       });
 
       console.log(`✅ Successfully uploaded ${emailData.type} email: ${emailData.subject}`);
+      console.log(`📊 Response data:`, response.data);
       return response.data;
 
     } catch (error) {
       console.error(`❌ Failed to upload ${emailData.type} email:`, error.response?.data?.error || error.message);
+      console.error(`❌ Full error details:`, error.response?.data);
       throw error;
     }
   }

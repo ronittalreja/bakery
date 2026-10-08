@@ -34,6 +34,12 @@ const uploadCreditNoteHandler = async (req, res) => {
     console.log('Request file:', req.file);
     console.log('Request body:', req.body);
     console.log('Request user:', req.user);
+    console.log('Request user store_id:', req.user?.store_id);
+    console.log('Request body store_id:', req.body.store_id);
+    
+    // Use store_id from request body if provided, otherwise use from user
+    const effectiveStoreId = req.body.store_id ? parseInt(req.body.store_id) : (req.user?.store_id || 1);
+    console.log('🏪 Effective store_id for credit note:', effectiveStoreId);
     
     if (!req.file) {
       console.log('❌ No file uploaded');
@@ -183,7 +189,7 @@ const uploadCreditNoteHandler = async (req, res) => {
         const [tableStructure] = await db.execute('DESCRIBE credit_notes');
         console.log('Credit notes table structure:', tableStructure);
         
-        const storeId = req.user?.store_id;
+        const storeId = effectiveStoreId;
         const [existing] = await db.execute(
           'SELECT id, cloudinary_url FROM credit_notes WHERE credit_note_number = ? AND date = ? AND store_id = ?',
           [creditNote.creditNoteNumber, creditNote.date, storeId]
@@ -262,7 +268,7 @@ const uploadCreditNoteHandler = async (req, res) => {
           cloudinaryUrl,
           actualPublicId,
           JSON.stringify(creditNote.items || []),
-          req.user?.store_id || 1
+          effectiveStoreId
         ]);
 
         console.log('✅ Credit note inserted successfully with ID:', result.insertId);
