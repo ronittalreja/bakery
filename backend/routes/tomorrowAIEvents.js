@@ -39,16 +39,16 @@ router.get('/all', getAllEvents);
 // POST /api/tomorrow-ai/events
 router.post('/', createEvent);
 
-// Delete an event
-// DELETE /api/tomorrow-ai/events/:eventId
-router.delete('/:eventId', deleteEvent);
-
-// Update event status (approve/reject)
+// Update event status (approve/reject) - must come before /:eventId
 // PUT /api/tomorrow-ai/events/:eventId/status
 router.put('/:eventId/status', updateEventStatus);
 
-// Update event dates (multi-date selection)
+// Update event dates (multi-date selection) - must come before /:eventId
 // PUT /api/tomorrow-ai/events/:eventId/dates
 router.put('/:eventId/dates', updateEventDates);
+
+// Delete an event - must come after specific routes
+// DELETE /api/tomorrow-ai/events/:eventId
+router.delete('/:eventId', deleteEvent);
 
 module.exports = router;
