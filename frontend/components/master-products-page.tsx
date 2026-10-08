@@ -5,12 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Package, Search, Store } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { ArrowLeft, Package, Search, Store, RefreshCw, Plus } from "lucide-react"
 import { useAuth, getAuthToken } from "@/hooks/use-auth"
 import { apiClient } from "@/lib/apiClient"
 
 interface MasterProduct {
-  id: number
+  id: number | null
   item_code: string
   name: string
   hsn_code: string
@@ -19,9 +20,14 @@ interface MasterProduct {
   grm_value: string
   is_active: string
   category: string
-  shelf_life_days: string
+  shelf_life_days: string | null
   store_id: number
   store_name: string
+  source: 'existing' | 'unmapped'
+  invoice_count?: number
+  total_quantity?: number
+  first_seen?: string
+  last_seen?: string
 }
 
 interface MasterProductsPageProps {
@@ -54,6 +60,12 @@ export function MasterProductsPage({ onBack }: MasterProductsPageProps) {
     }
   }, [searchTerm, products])
 
+  const stats = {
+    total: products.length,
+    existing: products.filter(p => p.source === 'existing').length,
+    unmapped: products.filter(p => p.source === 'unmapped').length
+  }
+
   const fetchProducts = async () => {
     setIsLoading(true)
     setError("")
@@ -72,6 +84,62 @@ export function MasterProductsPage({ onBack }: MasterProductsPageProps) {
       console.error(err)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleSyncProduct = async (product: MasterProduct) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/products/sync-unmapped`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          productName: product.name,
+          productCode: product.item_code === 'PENDING' ? null : product.item_code,
+          storeId: product.store_id,
+          unitPrice: parseFloat(product.invoice_price)
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Refresh the product list
+        fetchProducts()
+      } else {
+        alert(data.error || 'Failed to sync product')
+      }
+    } catch (error) {
+      console.error('Error syncing product:', error)
+      alert('Failed to sync product')
+    }
+  }
+
+  const handleSyncAll = async () => {
+    if (!confirm(`Sync all ${stats.unmapped} unmapped products to master database?`)) return
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/products/sync-all-unmapped`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        alert(`Successfully synced ${data.syncedCount} products`)
+        fetchProducts()
+      } else {
+        alert(data.error || 'Failed to sync products')
+      }
+    } catch (error) {
+      console.error('Error syncing all products:', error)
+      alert('Failed to sync products')
     }
   }
 
@@ -118,16 +186,29 @@ export function MasterProductsPage({ onBack }: MasterProductsPageProps) {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle>Products List</CardTitle>
-              <CardDescription>{filteredProducts.length} products across all stores</CardDescription>
+              <CardDescription>
+                {stats.total} total ({stats.existing} existing, {stats.unmapped} unmapped)
+              </CardDescription>
             </div>
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex gap-2 w-full sm:w-auto">
+              {stats.unmapped > 0 && (
+                <Button onClick={handleSyncAll} className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Sync All ({stats.unmapped})
+                </Button>
+              )}
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button onClick={fetchProducts} variant="outline" size="icon">
+                <RefreshCw className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -136,6 +217,7 @@ export function MasterProductsPage({ onBack }: MasterProductsPageProps) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Source</TableHead>
                   <TableHead>Item Code</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Category</TableHead>
@@ -143,18 +225,29 @@ export function MasterProductsPage({ onBack }: MasterProductsPageProps) {
                   <TableHead>Invoice Price</TableHead>
                   <TableHead>Sale Price</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Invoices</TableHead>
+                  <TableHead>First Seen</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredProducts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                       No products found
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredProducts.map((product) => (
-                    <TableRow key={product.id}>
+                    <TableRow key={product.id || product.name}>
+                      <TableCell>
+                        <Badge
+                          variant={product.source === 'existing' ? 'default' : 'secondary'}
+                          className={product.source === 'unmapped' ? 'bg-orange-100 text-orange-800' : ''}
+                        >
+                          {product.source === 'existing' ? 'Master' : 'Unmapped'}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="font-medium">{product.item_code}</TableCell>
                       <TableCell>{product.name}</TableCell>
                       <TableCell>{product.category}</TableCell>
@@ -176,6 +269,36 @@ export function MasterProductsPage({ onBack }: MasterProductsPageProps) {
                         >
                           {product.is_active === "1" ? "Active" : "Inactive"}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        {product.source === 'unmapped' ? (
+                          <Badge variant="outline">{product.invoice_count || 0}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {product.source === 'unmapped' && product.first_seen ? (
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(product.first_seen).toLocaleDateString()}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {product.source === 'unmapped' ? (
+                          <Button
+                            onClick={() => handleSyncProduct(product)}
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Sync
+                          </Button>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
