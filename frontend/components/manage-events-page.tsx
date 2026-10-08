@@ -115,8 +115,12 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
       
       if (newEventType === 'fixed') {
         // Create event for all years with the same date
+        // newEventDate is in YYYY-MM-DD format from date input
+        const dateObj = new Date(newEventDate);
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        
         const eventsToCreate = years.map(year => {
-          const [month, day] = newEventDate.split('-');
           const eventDate = `${year}-${month}-${day}`;
           return {
             event_name: newEventName,
