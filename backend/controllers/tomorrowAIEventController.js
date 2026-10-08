@@ -463,10 +463,24 @@ async function deleteEvent(req, res) {
   try {
     const { eventId } = req.params;
 
-    await db.execute(`
-      DELETE FROM tomorrow_ai_events
+    // Get the event details first to find all related events
+    const [events] = await db.execute(`
+      SELECT event_name, year, store_id
+      FROM tomorrow_ai_events
       WHERE id = ?
     `, [eventId]);
+
+    if (events.length === 0) {
+      return res.status(404).json({ success: false, error: 'Event not found' });
+    }
+
+    const event = events[0];
+
+    // Delete ALL events with the same name, year, and store_id
+    await db.execute(`
+      DELETE FROM tomorrow_ai_events
+      WHERE event_name = ? AND year = ? AND store_id = ?
+    `, [event.event_name, event.year, event.store_id]);
 
     res.json({ success: true, message: 'Event deleted' });
   } catch (error) {
@@ -500,11 +514,11 @@ async function updateEventDates(req, res) {
 
     const event = events[0];
 
-    // Delete the specific event being edited
+    // Delete ALL events with the same name, year, and store_id to avoid duplicates
     await db.execute(`
       DELETE FROM tomorrow_ai_events
-      WHERE id = ?
-    `, [eventId]);
+      WHERE event_name = ? AND year = ? AND store_id = ?
+    `, [event.event_name, event.year, event.store_id]);
 
     // Create new events for each selected date
     for (const date of dates) {

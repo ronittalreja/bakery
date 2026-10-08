@@ -64,6 +64,25 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
     }
   };
 
+  // Group events by name, year, and store_id for display
+  const groupedEvents = events.reduce((acc, event) => {
+    const key = `${event.event_name}-${event.year}-${event.store_id}`;
+    if (!acc[key]) {
+      acc[key] = {
+        ...event,
+        dates: [event.event_date]
+      };
+    } else {
+      acc[key].dates.push(event.event_date);
+    }
+    return acc;
+  }, {} as Record<string, Event & { dates: string[] }>);
+
+  const filteredGroupedEvents = Object.values(groupedEvents).filter(group => {
+    if (filter === 'all') return true;
+    return group.status === filter;
+  });
+
   const updateEventStatus = async (eventId: number, status: 'approved' | 'rejected') => {
     try {
       const token = localStorage.getItem('token');
@@ -77,8 +96,17 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
       });
       const data = await response.json();
       if (data.success) {
-        // Update local state
-        setEvents(events.map(e => e.id === eventId ? { ...e, status } : e));
+        // Update local state - update all events with same name, year, and store_id
+        const eventToUpdate = events.find(e => e.id === eventId);
+        if (eventToUpdate) {
+          setEvents(events.map(e => 
+            e.event_name === eventToUpdate.event_name && 
+            e.year === eventToUpdate.year && 
+            e.store_id === eventToUpdate.store_id 
+              ? { ...e, status } 
+              : e
+          ));
+        }
       }
     } catch (error) {
       console.error('Error updating event status:', error);
@@ -220,7 +248,15 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
       });
       const data = await response.json();
       if (data.success) {
-        setEvents(events.filter(e => e.id !== eventId));
+        // Delete all events with same name, year, and store_id
+        const eventToDelete = events.find(e => e.id === eventId);
+        if (eventToDelete) {
+          setEvents(events.filter(e => 
+            !(e.event_name === eventToDelete.event_name && 
+              e.year === eventToDelete.year && 
+              e.store_id === eventToDelete.store_id)
+          ));
+        }
       }
     } catch (error) {
       console.error('Error deleting event:', error);
@@ -572,37 +608,39 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredEvents.map((event) => (
-                <TableRow key={event.id}>
+              {filteredGroupedEvents.map((group) => (
+                <TableRow key={`${group.event_name}-${group.year}-${group.store_id}`}>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">{getEventEmoji(event.event_name)}</span>
+                      <span className="text-xl">{getEventEmoji(group.event_name)}</span>
                       <div>
-                        <div className="font-medium">{event.event_name}</div>
-                        <div className="text-sm text-muted-foreground">{event.year}</div>
+                        <div className="font-medium">{group.event_name}</div>
+                        <div className="text-sm text-muted-foreground">{group.year}</div>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{event.event_type}</Badge>
+                    <Badge variant="outline">{group.event_type}</Badge>
                   </TableCell>
-                  <TableCell>{formatDate(event.event_date)}</TableCell>
-                  <TableCell>{getStatusBadge(event.status)}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {group.dates.sort().map((date) => (
+                        <Badge key={date} variant="secondary" className="text-xs">
+                          {formatDate(date)}
+                        </Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell>{getStatusBadge(group.status)}</TableCell>
                   <TableCell className="text-right">
-                    {event.status === 'approved' && (
+                    {group.status === 'approved' && (
                       <div className="flex justify-end gap-2">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            // Find all events with the same name, year, and store_id
-                            const allRelatedEvents = events.filter(e => 
-                              e.event_name === event.event_name && 
-                              e.year === event.year &&
-                              e.store_id === event.store_id
-                            );
-                            setEditingEvent(event);
-                            setSelectedDates(allRelatedEvents.map(e => e.event_date));
+                            setEditingEvent(group);
+                            setSelectedDates(group.dates);
                           }}
                         >
                           <Edit className="h-4 w-4" />
@@ -610,32 +648,32 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => updateEventStatus(event.id, 'rejected')}
+                          onClick={() => updateEventStatus(group.id, 'rejected')}
                         >
                           <X className="h-4 w-4 text-red-600" />
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => deleteEvent(event.id)}
+                          onClick={() => deleteEvent(group.id)}
                         >
                           <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>
                       </div>
                     )}
-                    {event.status === 'rejected' && (
+                    {group.status === 'rejected' && (
                       <div className="flex justify-end gap-2">
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => updateEventStatus(event.id, 'approved')}
+                          onClick={() => updateEventStatus(group.id, 'approved')}
                         >
                           <Check className="h-4 w-4 text-green-600" />
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => deleteEvent(event.id)}
+                          onClick={() => deleteEvent(group.id)}
                         >
                           <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>
@@ -644,7 +682,7 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredEvents.length === 0 && (
+              {filteredGroupedEvents.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     No events found
