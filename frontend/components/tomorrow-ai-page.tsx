@@ -81,10 +81,13 @@ export default function TomorrowAIPage() {
       console.log('Next event response:', data);
       if (data.success) {
         setNextEvent(data.data);
+      } else {
+        console.error('Next event API returned error:', data.error);
+        // Don't set error state, just log it
       }
     } catch (error) {
       console.error('Error fetching next event:', error);
-      setError('Failed to fetch next event');
+      // Don't set error state, just log it
     }
   };
 
@@ -98,10 +101,13 @@ export default function TomorrowAIPage() {
       console.log('Upcoming events response:', data);
       if (data.success) {
         setUpcomingEvents(data.data);
+      } else {
+        console.error('Upcoming events API returned error:', data.error);
+        // Don't set error state, just log it
       }
     } catch (error) {
       console.error('Error fetching upcoming events:', error);
-      setError('Failed to fetch upcoming events');
+      // Don't set error state, just log it
     }
   };
 
@@ -267,7 +273,7 @@ export default function TomorrowAIPage() {
         {view === "events" && !isInitialLoading && !error && (
           <div className="space-y-6">
             {/* Next Event Card */}
-            {nextEvent && (
+            {nextEvent ? (
               <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-xl">
@@ -292,6 +298,16 @@ export default function TomorrowAIPage() {
                   </div>
                 </CardContent>
               </Card>
+            ) : (
+              <Card>
+                <CardContent className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-lg font-medium mb-2">No upcoming events</p>
+                    <p className="text-muted-foreground">Add events in the Manage Events page</p>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Upcoming Events */}
@@ -303,31 +319,37 @@ export default function TomorrowAIPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {upcomingEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                      onClick={() => fetchEventForecast(event)}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="text-3xl">{getEventEmoji(event.event_name)}</div>
-                        <div>
-                          <div className="font-semibold text-lg">{event.event_name}</div>
-                          <div className="text-sm text-muted-foreground">{formatDate(event.event_date)}</div>
+                {upcomingEvents.length > 0 ? (
+                  <div className="space-y-3">
+                    {upcomingEvents.map((event) => (
+                      <div
+                        key={event.id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                        onClick={() => fetchEventForecast(event)}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="text-3xl">{getEventEmoji(event.event_name)}</div>
+                          <div>
+                            <div className="font-semibold text-lg">{event.event_name}</div>
+                            <div className="text-sm text-muted-foreground">{formatDate(event.event_date)}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <Badge variant="outline" className="text-purple-600 border-purple-600">
+                            {event.days_to_go} days
+                          </Badge>
+                          <Button size="sm" variant="ghost">
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <Badge variant="outline" className="text-purple-600 border-purple-600">
-                          {event.days_to_go} days
-                        </Badge>
-                        <Button size="sm" variant="ghost">
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No upcoming events available
+                  </div>
+                )}
               </CardContent>
             </Card>
 
