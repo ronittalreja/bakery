@@ -1193,14 +1193,14 @@ const getSalesByRange = async (req, res) => {
       
       // Fetch items for this invoice
       const [items] = await db.execute(
-        `SELECT item_id, product_id, batch_id, quantity, unit_price, total_price, item_type 
+        `SELECT item_name, item_code, qty, rate, total 
          FROM invoice_items WHERE invoice_id = ?`,
         [invoiceId]
       );
       
       for (const item of items) {
-        const product = productMap.get(item.product_id);
-        const productName = await getProductName(item.product_id, storeId);
+        const product = productMap.get(item.item_code);
+        const productName = item.item_name;
         
         if (!salesMap.has(invoiceId)) {
           salesMap.set(invoiceId, {
@@ -1213,15 +1213,13 @@ const getSalesByRange = async (req, res) => {
         }
         
         salesMap.get(invoiceId).items.push({
-          item_id: item.item_id,
-          product_id: item.product_id,
-          batch_id: item.batch_id,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total_price: item.total_price,
+          item_name: item.item_name,
+          item_code: item.item_code,
+          qty: item.qty,
+          rate: item.rate,
+          total: item.total,
           name: productName,
-          item_type: item.item_type,
-          item_code: product?.item_code || '',
+          item_code: item.item_code,
           hsn_code: product?.hsn_code || ''
         });
       }
