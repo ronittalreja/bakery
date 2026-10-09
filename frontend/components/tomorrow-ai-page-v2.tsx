@@ -64,8 +64,9 @@ export default function TomorrowAIPageV2() {
   const [isMounted, setIsMounted] = useState(true);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-  const MAX_RETRIES = 3;
-  const API_TIMEOUT = 10000; // 10 seconds
+  const MAX_RETRIES = 5;
+  const API_TIMEOUT = 30000; // 30 seconds (increased for slow connections)
+  const RETRY_DELAY = 2000; // 2 seconds between retries
 
   // Robust API fetch with timeout and retry
   const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = API_TIMEOUT): Promise<Response> => {
@@ -76,6 +77,8 @@ export default function TomorrowAIPageV2() {
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
+        cache: 'no-store', // Prevent caching issues
+        keepalive: false, // Prevent keepalive issues
       });
       clearTimeout(timeoutId);
       return response;
@@ -85,10 +88,11 @@ export default function TomorrowAIPageV2() {
     }
   };
 
-  // Robust API call with error handling
+  // Robust API call with error handling and retry logic
   const apiCall = async <T,>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retryCount = 0
   ): Promise<ApiResponse<T>> => {
     try {
       const token = localStorage.getItem('token');
@@ -116,11 +120,22 @@ export default function TomorrowAIPageV2() {
       console.log(`API Response [${endpoint}]:`, data);
       return data;
     } catch (error: any) {
-      console.error(`API Error [${endpoint}]:`, error);
-      if (error.name === 'AbortError') {
-        return { success: false, error: 'Request timeout. Please try again.' };
+      console.error(`API Error [${endpoint}] (attempt ${retryCount + 1}/${MAX_RETRIES}):`, error);
+      
+      // Retry on network errors or abort errors
+      if (retryCount < MAX_RETRIES && 
+          (error.name === 'AbortError' || 
+           error.message?.includes('Failed to fetch') || 
+           error.message?.includes('Network'))) {
+        console.log(`Retrying ${endpoint} in ${RETRY_DELAY}ms...`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        return apiCall<T>(endpoint, options, retryCount + 1);
       }
-      return { success: false, error: error.message || 'Failed to fetch data' };
+      
+      if (error.name === 'AbortError') {
+        return { success: false, error: 'Request timeout. Please check your connection and try again.' };
+      }
+      return { success: false, error: error.message || 'Failed to fetch data. Please check your connection.' };
     }
   };
 
