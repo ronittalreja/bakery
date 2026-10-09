@@ -1,15 +1,15 @@
-// Events AI Event-Based Demand Forecasting Page
-// Event-based demand forecasting for Monginis
+// Events AI V2 - Robust Event-Based Demand Forecasting Page
+// Enhanced with comprehensive error handling and fallbacks
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Brain, Calendar, RefreshCw, AlertCircle, CheckCircle, ArrowRight, TrendingUp } from "lucide-react";
+import { Brain, Calendar, RefreshCw, AlertCircle, CheckCircle, ArrowRight, TrendingUp, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 
@@ -37,9 +37,17 @@ interface EventPattern {
   pattern: Record<number, number | null>;
 }
 
-export default function TomorrowAIPage() {
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+type ViewState = "events" | "forecast" | "error";
+
+export default function TomorrowAIPageV2() {
   const { user } = useAuth();
-  const [view, setView] = usePersistedState<"events" | "forecast">('tomorrow_ai_view', "events");
+  const [view, setView] = usePersistedState<ViewState>("tomorrow_ai_v2_view", "events");
   const [nextEvent, setNextEvent] = useState<Event | null>(null);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -47,72 +55,115 @@ export default function TomorrowAIPage() {
   const [eventPattern, setEventPattern] = useState<EventPattern | null>(null);
   const [yearWindow, setYearWindow] = useState<{ prediction_year: number; historical_years: number[] } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [syncProgress, setSyncProgress] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
-  useEffect(() => {
-    fetchNextEvent();
-    fetchUpcomingEvents();
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const MAX_RETRIES = 3;
+  const API_TIMEOUT = 10000; // 10 seconds
 
-    // Poll sync progress every 2 seconds if syncing
-    const interval = setInterval(() => {
-      if (isSyncing) {
-        fetchSyncProgress();
-      }
-    }, 2000);
+  // Robust API fetch with timeout and retry
+  const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = API_TIMEOUT): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    return () => clearInterval(interval);
-  }, [isSyncing]);
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
+  };
 
-  const fetchNextEvent = async () => {
+  // Robust API call with error handling
+  const apiCall = async <T,>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<ApiResponse<T>> => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/next`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetchWithTimeout(
+        `${API_URL}${endpoint}`,
+        {
+          ...options,
+          headers: {
+            ...options.headers,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
-      console.log('Next event response:', data);
-      if (data.success) {
-        setNextEvent(data.data);
+      console.log(`API Response [${endpoint}]:`, data);
+      return data;
+    } catch (error: any) {
+      console.error(`API Error [${endpoint}]:`, error);
+      if (error.name === 'AbortError') {
+        return { success: false, error: 'Request timeout. Please try again.' };
+      }
+      return { success: false, error: error.message || 'Failed to fetch data' };
+    }
+  };
+
+  const fetchNextEvent = useCallback(async () => {
+    try {
+      const result = await apiCall<Event>('/api/tomorrow-ai/events/next');
+      if (result.success && result.data) {
+        setNextEvent(result.data);
       }
     } catch (error) {
       console.error('Error fetching next event:', error);
     }
-  };
+  }, []);
 
-  const fetchUpcomingEvents = async () => {
+  const fetchUpcomingEvents = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/upcoming?limit=3`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      console.log('Upcoming events response:', data);
-      if (data.success) {
-        setUpcomingEvents(data.data);
+      const result = await apiCall<Event[]>('/api/tomorrow-ai/events/upcoming?limit=3');
+      if (result.success && result.data) {
+        setUpcomingEvents(result.data);
       }
     } catch (error) {
       console.error('Error fetching upcoming events:', error);
     }
-  };
+  }, []);
 
   const fetchEventForecast = async (event: Event) => {
     setIsLoading(true);
+    setError(null);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/forecast?eventName=${encodeURIComponent(event.event_name)}&year=${event.year}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setForecasts(data.data.forecasts);
-        setSelectedEvent(data.data.event);
-        setYearWindow(data.data.year_window);
+      const result = await apiCall<any>(
+        `/api/tomorrow-ai/events/forecast?eventName=${encodeURIComponent(event.event_name)}&year=${event.year}`
+      );
+      
+      if (result.success && result.data) {
+        setForecasts(result.data.forecasts || []);
+        setSelectedEvent(result.data.event || event);
+        setYearWindow(result.data.year_window || null);
         setView("forecast");
+      } else {
+        setError(result.error || 'Failed to fetch forecast data');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching event forecast:', error);
+      setError(error.message || 'Failed to fetch forecast data');
     } finally {
       setIsLoading(false);
     }
@@ -120,13 +171,11 @@ export default function TomorrowAIPage() {
 
   const fetchEventPattern = async (event: Event, mlGroupId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/events/pattern?eventName=${encodeURIComponent(event.event_name)}&year=${event.year}&mlGroupId=${mlGroupId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setEventPattern(data.data);
+      const result = await apiCall<EventPattern>(
+        `/api/tomorrow-ai/events/pattern?eventName=${encodeURIComponent(event.event_name)}&year=${event.year}&mlGroupId=${mlGroupId}`
+      );
+      if (result.success && result.data) {
+        setEventPattern(result.data);
       }
     } catch (error) {
       console.error('Error fetching event pattern:', error);
@@ -135,13 +184,9 @@ export default function TomorrowAIPage() {
 
   const fetchSyncProgress = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/sync/progress`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setSyncProgress(data.data);
+      const result = await apiCall<any>('/api/tomorrow-ai/sync/progress');
+      if (result.success && result.data) {
+        setSyncProgress(result.data);
       }
     } catch (error) {
       console.error('Error fetching sync progress:', error);
@@ -154,22 +199,17 @@ export default function TomorrowAIPage() {
     setSyncStatus(null);
     setSyncProgress(null);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/tomorrow-ai/sync/historical`, {
+      const result = await apiCall<any>('/api/tomorrow-ai/sync/historical', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
       });
-      const data = await response.json();
-      if (data.success) {
+      
+      if (result.success && result.data) {
         setSyncStatus({
-          message: `Sync completed: ${data.data.datesProcessed} dates processed, ${data.data.totalRecords} records inserted, ${data.data.aliasMatches} matched via aliases, ${data.data.skippedProducts} skipped (not in product master)`,
+          message: `Sync completed: ${result.data.datesProcessed} dates processed, ${result.data.totalRecords} records inserted, ${result.data.aliasMatches} matched via aliases, ${result.data.skippedProducts} skipped (not in product master)`,
           type: "success"
         });
       } else {
-        setSyncStatus({ message: data.error || "Sync failed", type: "error" });
+        setSyncStatus({ message: result.error || "Sync failed", type: "error" });
       }
     } catch (error: any) {
       setSyncStatus({ message: error.message || "Sync failed", type: "error" });
@@ -179,12 +219,44 @@ export default function TomorrowAIPage() {
     }
   };
 
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    setError(null);
+    setIsInitialLoading(true);
+    Promise.all([fetchNextEvent(), fetchUpcomingEvents()])
+      .finally(() => setIsInitialLoading(false));
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      setIsInitialLoading(true);
+      setError(null);
+      try {
+        await Promise.all([fetchNextEvent(), fetchUpcomingEvents()]);
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+        setError('Failed to load events data. Please try again.');
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+    loadData();
+
+    // Poll sync progress every 2 seconds if syncing
+    const interval = setInterval(() => {
+      if (isSyncing) {
+        fetchSyncProgress();
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isSyncing, fetchNextEvent, fetchUpcomingEvents]);
+
   const getEventEmoji = (eventName: string) => {
     const name = eventName.toLowerCase();
     if (name.includes('valentine')) return '❤️';
     if (name.includes('holi')) return '🎨';
     if (name.includes('diwali')) return '🪔';
-
     if (name.includes('new year')) return '🎉';
     if (name.includes('mother')) return '🌸';
     if (name.includes('father')) return '👨';
@@ -192,12 +264,17 @@ export default function TomorrowAIPage() {
     if (name.includes('eid')) return '🌙';
     if (name.includes('independence')) return '🇮🇳';
     if (name.includes('raksha')) return '🧵';
+    if (name.includes('christmas')) return '🎄';
     return '🎉';
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch (error) {
+      return dateString;
+    }
   };
 
   return (
@@ -210,10 +287,10 @@ export default function TomorrowAIPage() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Brain className="h-6 w-6 text-purple-600" />
-                  Events AI
+                  Events AI V2
                 </CardTitle>
                 <CardDescription>
-                  Event-based demand forecasting
+                  Robust event-based demand forecasting
                 </CardDescription>
               </div>
               <Badge variant="outline" className="text-purple-600 border-purple-600">
@@ -223,8 +300,40 @@ export default function TomorrowAIPage() {
           </CardHeader>
         </Card>
 
+        {/* Loading State */}
+        {isInitialLoading && (
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin text-purple-600 mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading events...</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error State with Retry */}
+        {error && !isInitialLoading && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>{error}</span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleRetry}
+                disabled={retryCount >= MAX_RETRIES}
+                className="ml-4"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry {retryCount > 0 && `(${retryCount}/${MAX_RETRIES})`}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Sync Status */}
-        {syncStatus && (
+        {syncStatus && !isInitialLoading && (
           <Alert variant={syncStatus.type === "success" ? "default" : "destructive"}>
             {syncStatus.type === "success" ? (
               <CheckCircle className="h-4 w-4" />
@@ -236,7 +345,7 @@ export default function TomorrowAIPage() {
         )}
 
         {/* Events View */}
-        {view === "events" && (
+        {view === "events" && !isInitialLoading && !error && (
           <div className="space-y-6">
             {/* Next Event Card */}
             {nextEvent ? (
@@ -259,6 +368,7 @@ export default function TomorrowAIPage() {
                       disabled={isLoading}
                       className="bg-purple-600 hover:bg-purple-700"
                     >
+                      {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                       View Forecast <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </div>
@@ -382,32 +492,38 @@ export default function TomorrowAIPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead className="text-right">{yearWindow?.prediction_year} Expected</TableHead>
-                      {yearWindow?.historical_years.map(year => (
-                        <TableHead key={year} className="text-right">{year}</TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {forecasts.map((forecast, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{forecast.product_name}</TableCell>
-                        <TableCell className="text-right font-bold text-green-600">
-                          {forecast.prediction}
-                        </TableCell>
+                {forecasts.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Item</TableHead>
+                        <TableHead className="text-right">{yearWindow?.prediction_year} Expected</TableHead>
                         {yearWindow?.historical_years.map(year => (
-                          <TableCell key={year} className="text-right">
-                            {forecast.historical[year] !== null ? forecast.historical[year] : '—'}
-                          </TableCell>
+                          <TableHead key={year} className="text-right">{year}</TableHead>
                         ))}
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {forecasts.map((forecast, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">{forecast.product_name}</TableCell>
+                          <TableCell className="text-right font-bold text-green-600">
+                            {forecast.prediction}
+                          </TableCell>
+                          {yearWindow?.historical_years.map(year => (
+                            <TableCell key={year} className="text-right">
+                              {forecast.historical[year] !== null ? forecast.historical[year] : '—'}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No forecast data available
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -440,6 +556,22 @@ export default function TomorrowAIPage() {
               </Card>
             )}
           </div>
+        )}
+
+        {/* Error View */}
+        {view === "error" && (
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+                <p className="text-lg font-medium mb-2">Something went wrong</p>
+                <p className="text-muted-foreground mb-4">{error}</p>
+                <Button onClick={() => setView("events")}>
+                  Back to Events
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </main>

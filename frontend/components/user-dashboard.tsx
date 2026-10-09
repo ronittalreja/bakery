@@ -42,6 +42,7 @@ import { TodaysSalesPage } from "@/components/todays-sales-page";
 import CreditNotesPage from "@/components/credit-notes-page";
 import CreditNoteDetailsPage from "@/components/credit-note-details-page";
 import TomorrowAIPage from "@/components/tomorrow-ai-page";
+import TomorrowAIPageV2 from "@/components/tomorrow-ai-page-v2";
 
 type AdminPage =
   | "dashboard"
@@ -61,7 +62,8 @@ type AdminPage =
   | "sales"
   | "credit-notes"
   | "credit-note-details"
-  | "tomorrow-ai";
+  | "tomorrow-ai"
+  | "tomorrow-ai-v2";
 
 interface UserDashboardProps {
   onBackToDeveloper?: () => void;
@@ -130,6 +132,14 @@ export function UserDashboard({ onBackToDeveloper }: UserDashboardProps) {
       icon: Sparkles,
       page: "tomorrow-ai" as AdminPage,
       color: "bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 text-white shadow-slate-300",
+      isDark: true,
+    },
+    {
+      title: "Events AI V2",
+      description: "Robust demand forecasting",
+      icon: Sparkles,
+      page: "tomorrow-ai-v2" as AdminPage,
+      color: "bg-gradient-to-br from-purple-600 via-purple-500 to-pink-600 text-white shadow-purple-300",
       isDark: true,
     },
   ];
@@ -305,6 +315,8 @@ export function UserDashboard({ onBackToDeveloper }: UserDashboardProps) {
         return <PaymentsPage onBack={() => setCurrentPage("dashboard")} />;
       case "tomorrow-ai":
         return <TomorrowAIPage />;
+      case "tomorrow-ai-v2":
+        return <TomorrowAIPageV2 />;
       default:
         return (
           <div className="h-full bg-white flex items-center justify-center">

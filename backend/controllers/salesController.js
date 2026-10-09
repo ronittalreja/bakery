@@ -1230,7 +1230,7 @@ const getSalesByRange = async (req, res) => {
       const creditNoteId = creditNote.id;
       const creditNoteNumber = creditNote.credit_note_number;
       const returnDate = creditNote.return_date || creditNote.date;
-      const items = JSON.parse(creditNote.items || '[]');
+      const items = typeof creditNote.items === 'string' ? JSON.parse(creditNote.items || '[]') : (creditNote.items || []);
       
       for (const item of items) {
         const product = productMap.get(item.description);
