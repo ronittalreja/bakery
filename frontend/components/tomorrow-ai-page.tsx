@@ -47,13 +47,19 @@ export default function TomorrowAIPage() {
   const [eventPattern, setEventPattern] = useState<EventPattern | null>(null);
   const [yearWindow, setYearWindow] = useState<{ prediction_year: number; historical_years: number[] } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [syncProgress, setSyncProgress] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
-    fetchNextEvent();
-    fetchUpcomingEvents();
+    const loadData = async () => {
+      setIsInitialLoading(true);
+      await Promise.all([fetchNextEvent(), fetchUpcomingEvents()]);
+      setIsInitialLoading(false);
+    };
+    loadData();
 
     // Poll sync progress every 2 seconds if syncing
     const interval = setInterval(() => {
@@ -72,11 +78,13 @@ export default function TomorrowAIPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
+      console.log('Next event response:', data);
       if (data.success) {
         setNextEvent(data.data);
       }
     } catch (error) {
       console.error('Error fetching next event:', error);
+      setError('Failed to fetch next event');
     }
   };
 
@@ -87,11 +95,13 @@ export default function TomorrowAIPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
+      console.log('Upcoming events response:', data);
       if (data.success) {
         setUpcomingEvents(data.data);
       }
     } catch (error) {
       console.error('Error fetching upcoming events:', error);
+      setError('Failed to fetch upcoming events');
     }
   };
 
@@ -221,8 +231,28 @@ export default function TomorrowAIPage() {
           </CardHeader>
         </Card>
 
+        {/* Loading State */}
+        {isInitialLoading && (
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <RefreshCw className="h-8 w-8 animate-spin text-purple-600 mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading events...</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error State */}
+        {error && !isInitialLoading && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         {/* Sync Status */}
-        {syncStatus && (
+        {syncStatus && !isInitialLoading && (
           <Alert variant={syncStatus.type === "success" ? "default" : "destructive"}>
             {syncStatus.type === "success" ? (
               <CheckCircle className="h-4 w-4" />
@@ -234,7 +264,7 @@ export default function TomorrowAIPage() {
         )}
 
         {/* Events View */}
-        {view === "events" && (
+        {view === "events" && !isInitialLoading && !error && (
           <div className="space-y-6">
             {/* Next Event Card */}
             {nextEvent && (
