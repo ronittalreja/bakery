@@ -61,6 +61,7 @@ export default function TomorrowAIPageV2() {
   const [syncProgress, setSyncProgress] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [isMounted, setIsMounted] = useState(true);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
   const MAX_RETRIES = 3;
@@ -124,26 +125,28 @@ export default function TomorrowAIPageV2() {
   };
 
   const fetchNextEvent = useCallback(async () => {
+    if (!isMounted) return;
     try {
       const result = await apiCall<Event>('/api/tomorrow-ai/events/next');
-      if (result.success && result.data) {
+      if (isMounted && result.success && result.data) {
         setNextEvent(result.data);
       }
     } catch (error) {
       console.error('Error fetching next event:', error);
     }
-  }, []);
+  }, [isMounted]);
 
   const fetchUpcomingEvents = useCallback(async () => {
+    if (!isMounted) return;
     try {
       const result = await apiCall<Event[]>('/api/tomorrow-ai/events/upcoming?limit=3');
-      if (result.success && result.data) {
+      if (isMounted && result.success && result.data) {
         setUpcomingEvents(result.data);
       }
     } catch (error) {
       console.error('Error fetching upcoming events:', error);
     }
-  }, []);
+  }, [isMounted]);
 
   const fetchEventForecast = async (event: Event) => {
     setIsLoading(true);
@@ -228,6 +231,19 @@ export default function TomorrowAIPageV2() {
   };
 
   useEffect(() => {
+    setIsMounted(true);
+    setRetryCount(0);
+    // Reset view to events on mount to prevent stuck states
+    setView("events");
+    // Reset all data on mount
+    setNextEvent(null);
+    setUpcomingEvents([]);
+    setSelectedEvent(null);
+    setForecasts([]);
+    setEventPattern(null);
+    setYearWindow(null);
+    setError(null);
+    
     const loadData = async () => {
       setIsInitialLoading(true);
       setError(null);
@@ -235,21 +251,28 @@ export default function TomorrowAIPageV2() {
         await Promise.all([fetchNextEvent(), fetchUpcomingEvents()]);
       } catch (error) {
         console.error('Error loading initial data:', error);
-        setError('Failed to load events data. Please try again.');
+        if (isMounted) {
+          setError('Failed to load events data. Please try again.');
+        }
       } finally {
-        setIsInitialLoading(false);
+        if (isMounted) {
+          setIsInitialLoading(false);
+        }
       }
     };
     loadData();
 
     // Poll sync progress every 2 seconds if syncing
     const interval = setInterval(() => {
-      if (isSyncing) {
+      if (isSyncing && isMounted) {
         fetchSyncProgress();
       }
     }, 2000);
 
-    return () => clearInterval(interval);
+    return () => {
+      setIsMounted(false);
+      clearInterval(interval);
+    };
   }, [isSyncing, fetchNextEvent, fetchUpcomingEvents]);
 
   const getEventEmoji = (eventName: string) => {

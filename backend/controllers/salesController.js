@@ -1140,12 +1140,15 @@ const getSalesByRange = async (req, res) => {
       });
     }
 
+    console.log(`[getSalesByRange] startDate: ${startDate}, endDate: ${endDate}, storeId: ${storeId}`);
+    
     // Fetch invoices for the date range - filter by store_id
     const [invoices] = await db.execute(
       `SELECT id, invoice_number, invoice_date, total_amount FROM invoices 
          WHERE invoice_date BETWEEN ? AND ? AND store_id = ?`,
       [startDate, endDate, storeId]
     );
+    console.log(`[getSalesByRange] Found ${invoices.length} invoices`);
 
     // Fetch credit notes with return date in the range - filter by store_id
     const [creditNotes] = await db.execute(
@@ -1153,6 +1156,7 @@ const getSalesByRange = async (req, res) => {
          WHERE (return_date BETWEEN ? AND ? OR date BETWEEN ? AND ?) AND store_id = ?`,
       [startDate, endDate, startDate, endDate, storeId]
     );
+    console.log(`[getSalesByRange] Found ${creditNotes.length} credit notes`);
 
     // Fetch all products to get categories and MRP (sale_price) - filter by store_id
     const [products] = await db.execute(
@@ -1263,6 +1267,8 @@ const getSalesByRange = async (req, res) => {
     const salesData = Array.from(salesMap.values());
     const totalQuantity = salesData.reduce((sum, s) => sum + s.items.reduce((is, i) => is + i.quantity, 0), 0);
     const totalValue = salesData.reduce((sum, s) => sum + s.total_amount, 0);
+
+    console.log(`[getSalesByRange] Returning ${salesData.length} sales records, totalQuantity: ${totalQuantity}, totalValue: ${totalValue}`);
 
     return res.json({ 
       success: true, 
