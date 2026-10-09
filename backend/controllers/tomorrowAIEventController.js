@@ -433,13 +433,45 @@ async function createEvent(req, res) {
     const formattedDate = event_date.includes('T') ? event_date.split('T')[0] : event_date;
 
     const storeId = req.user?.store_id || 1;
+    const isFixed = event_type === 'fixed';
 
-    const [result] = await db.execute(`
-      INSERT INTO tomorrow_ai_events (event_name, event_type, event_date, year, description, status, is_fixed_date, store_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [event_name, event_type, formattedDate, year, description, status || 'approved', event_type === 'fixed', storeId]);
+    // For fixed events, create entries for multiple years
+    if (isFixed) {
+      // Extract month and day from the provided date
+      const dateObj = new Date(formattedDate);
+      const month = dateObj.getMonth() + 1; // 1-12
+      const day = dateObj.getDate();
 
-    res.json({ success: true, data: { id: result.insertId } });
+      // Create events for current year and next 10 years (to cover all foreseeable years)
+      const startYear = parseInt(year);
+      const yearsToCreate = [];
+      for (let i = 0; i <= 10; i++) {
+        yearsToCreate.push(startYear + i);
+      }
+
+      const insertedIds = [];
+      for (const targetYear of yearsToCreate) {
+        // Format the date for this year (YYYY-MM-DD)
+        const yearDate = `${targetYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+        const [result] = await db.execute(`
+          INSERT INTO tomorrow_ai_events (event_name, event_type, event_date, year, description, status, is_fixed_date, store_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [event_name, event_type, yearDate, targetYear, description, status || 'approved', true, storeId]);
+
+        insertedIds.push(result.insertId);
+      }
+
+      res.json({ success: true, data: { ids: insertedIds, years: yearsToCreate } });
+    } else {
+      // For non-fixed events, create single event for the specified year
+      const [result] = await db.execute(`
+        INSERT INTO tomorrow_ai_events (event_name, event_type, event_date, year, description, status, is_fixed_date, store_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `, [event_name, event_type, formattedDate, year, description, status || 'approved', false, storeId]);
+
+      res.json({ success: true, data: { id: result.insertId } });
+    }
   } catch (error) {
     console.error('Error creating event:', error);
     res.status(500).json({ success: false, error: error.message });

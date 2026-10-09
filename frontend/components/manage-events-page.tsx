@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import { ArrowLeft, Check, X, RefreshCw, Calendar, Edit, Trash2, Plus } from "lucide-react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 
@@ -40,8 +41,9 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
   const [newEventSelectedDates, setNewEventSelectedDates] = useState<string[]>([]);
   const [showCalendar, setShowCalendar] = useState<Record<number, boolean>>({});
 
-  // Generate years from current year - 2 to current year
-  const years = Array.from({ length: 3 }, (_, i) => new Date().getFullYear() - 2 + i);
+  // Generate years from 2023 to current year + 2
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 2023 + 3 }, (_, i) => 2023 + i);
 
   useEffect(() => {
     fetchEvents();
@@ -373,19 +375,29 @@ export function ManageEventsPage({ onBack }: { onBack: () => void }) {
         <CardContent>
           {/* Year Slider */}
           <div className="mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium">Year:</span>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Year: {selectedYear}</span>
+              <span className="text-xs text-muted-foreground">
+                {years[0]} - {years[years.length - 1]}
+              </span>
             </div>
-            <div className="flex gap-2">
-              {years.map((year) => (
-                <Button
+            <Slider
+              value={[years.indexOf(selectedYear)]}
+              onValueChange={(value) => setSelectedYear(years[value[0]])}
+              min={0}
+              max={years.length - 1}
+              step={1}
+              className="w-full"
+            />
+            <div className="flex justify-between mt-1">
+              {years.map((year, index) => (
+                <span
                   key={year}
-                  variant={selectedYear === year ? 'default' : 'outline'}
-                  size="sm"
+                  className={`text-xs cursor-pointer ${selectedYear === year ? 'font-bold text-purple-600' : 'text-muted-foreground'}`}
                   onClick={() => setSelectedYear(year)}
                 >
                   {year}
-                </Button>
+                </span>
               ))}
             </div>
           </div>
