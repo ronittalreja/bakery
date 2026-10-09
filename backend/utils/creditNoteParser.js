@@ -163,6 +163,8 @@ class CreditNoteParser {
     }
     console.log('=== END CREDIT NOTE DETECTION ===');
     
+    // Don't split by Tax Invoice here - handle it in parseSingleCreditNote
+    // This way we preserve common details across all Tax Invoice sections
     return creditNotes.length > 0 ? creditNotes : [lines];
   }
 
@@ -174,54 +176,66 @@ class CreditNoteParser {
    */
   parseSingleCreditNote(lines, index) {
     try {
-      // Extract credit note number
+      console.log(`\n=== PARSING CREDIT NOTE ${index + 1} ===`);
+      
+      // Check if this is a GVN format credit note
+      const isGVNFormat = this.checkGVNFormat(lines);
+      console.log(`Is GVN Format: ${isGVNFormat}`);
+      
+      // Extract common credit note details (these remain same across all splits)
       const creditNoteNumber = this.extractCreditNoteNumber(lines);
       console.log('📄 Extracted credit note number:', creditNoteNumber);
       
-      // Extract date
       const date = this.extractDate(lines);
-      console.log('📅 Extracted date for credit note:', date);
+      console.log('📅 Extracted credit note date:', date);
       
-      // Extract items first
-      const items = this.extractItems(lines);
+      const receiver = this.extractReceiverDetails(lines);
+      console.log('👤 Extracted receiver:', receiver.name);
       
-      // Only extract other details if we have items
-      if (items.length === 0) {
-        console.log(`Credit Note ${index + 1} has no items, skipping detailed extraction`);
+      // For GVN format, override reason
+      let reason = isGVNFormat ? 'GVN / DAMAGED GOODS' : this.extractReason(lines);
+      console.log('📝 Extracted reason:', reason);
+      
+      const totals = this.extractTotals(lines);
+      console.log('💰 Extracted totals:', totals);
+      
+      // Now extract items with their associated Tax Invoice dates or GVN date
+      const itemsWithDates = this.extractItemsWithTaxInvoiceDates(lines, isGVNFormat);
+      console.log(`📦 Extracted ${itemsWithDates.length} items with dates`);
+      
+      if (itemsWithDates.length === 0) {
+        console.log(`Credit Note ${index + 1} has no items, skipping`);
         return [];
       }
       
-      // Extract receiver details
-      const receiver = this.extractReceiverDetails(lines);
-      
-      // Extract totals
-      const totals = this.extractTotals(lines);
-      
-      // Extract reason
-      const reason = this.extractReason(lines);
-      
-      // Group items by return date
-      const itemsByReturnDate = this.groupItemsByReturnDate(items);
+      // Group items by their return date
+      const itemsByReturnDate = this.groupItemsByReturnDate(itemsWithDates);
+      console.log(`Grouped items into ${itemsByReturnDate.size} return date groups`);
       
       // Create separate credit note entries for each return date
       const creditNotes = [];
       
       for (const [returnDate, dateItems] of itemsByReturnDate) {
+        console.log(`\n--- Creating entry for return date: ${returnDate} (${dateItems.length} items) ---`);
+        
         // Calculate totals for this specific return date
         const dateTotals = this.calculateTotalsForItems(dateItems);
         
         creditNotes.push({
-          creditNoteNumber,
-          date, // Original credit note date
-          returnDate, // Primary date for this entry
-          receiver,
-          items: dateItems,
-          totals: dateTotals,
-          reason,
+          creditNoteNumber, // Same for all entries
+          date, // Original credit note date (same for all entries)
+          returnDate, // Varies per entry
+          receiver, // Same for all entries
+          items: dateItems, // Items specific to this return date
+          totals: dateTotals, // Totals specific to this return date
+          reason, // Same for all entries
           totalItems: dateItems.length,
-          index: `${index}_${returnDate}` // Unique index for each return date
+          index: `${index}_${returnDate}`, // Unique index for each return date
+          isGVNFormat // Flag to indicate GVN format
         });
       }
+      
+      console.log(`\n=== CREATED ${creditNotes.length} ENTRIES FROM CREDIT NOTE ${index + 1} ===`);
       
       return creditNotes;
     } catch (error) {
@@ -232,6 +246,116 @@ class CreditNoteParser {
         index
       }];
     }
+  }
+
+  /**
+   * Check if credit note is in GVN format
+   * @param {Array} lines - Array of text lines
+   * @returns {boolean} True if GVN format
+   */
+  checkGVNFormat(lines) {
+    for (const line of lines) {
+      if (line.includes('Your GVN No :')) {
+        console.log('Detected GVN format from line:', line);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Extract items with their associated Tax Invoice dates
+   * @param {Array} lines - Array of text lines
+   * @param {boolean} isGVNFormat - Whether this is a GVN format credit note
+   * @returns {Array} Array of item objects with return dates
+   */
+  extractItemsWithTaxInvoiceDates(lines, isGVNFormat = false) {
+    const items = [];
+    let inItemsSection = false;
+    let currentReturnDate = null; // Rolling return date based on Tax Invoice sections or GVN date
+    
+    console.log('=== ITEMS WITH TAX INVOICE DATES EXTRACTION ===');
+    
+    // Get the main credit note date as fallback
+    const mainDate = this.extractDate(lines);
+    console.log(`Main credit note date (fallback): ${mainDate}`);
+    
+    // For GVN format, extract GVN date and use it for all items
+    if (isGVNFormat) {
+      for (const line of lines) {
+        const gvnMatch = line.match(/Your GVN No\s*:\s*\d+\s+Date\s*:\s*(\d{1,2}\/\d{1,2}\/\d{4})/i);
+        if (gvnMatch) {
+          currentReturnDate = this.formatDate(gvnMatch[1]);
+          console.log(`GVN Format: Extracted GVN date ${currentReturnDate} from line: ${line}`);
+          break;
+        }
+      }
+      if (!currentReturnDate) {
+        console.log('GVN Format: No GVN date found, using main credit note date');
+        currentReturnDate = mainDate;
+      }
+    } else {
+      // For non-GVN format, find all Tax Invoice dates
+      const taxInvoiceDates = [];
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const taxInvoiceMatch = line.match(/Tax Invoice\s*:\s*(\d+)\s+Date\s*:\s*(\d{1,2}\/\d{1,2}\/\d{4})/i);
+        if (taxInvoiceMatch) {
+          const invoiceNum = taxInvoiceMatch[1];
+          const date = this.formatDate(taxInvoiceMatch[2]);
+          taxInvoiceDates.push({ lineIndex: i, invoiceNum, date });
+          console.log(`Found Tax Invoice ${invoiceNum} with date ${date} at line ${i + 1}`);
+        }
+      }
+      console.log(`Found ${taxInvoiceDates.length} Tax Invoice dates`);
+    }
+    
+    // Process items line by line
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      // Check if we're entering the items section
+      if (line.includes('Sl.Item') && line.includes('Description')) {
+        console.log(`Found items header at line ${i + 1}`);
+        inItemsSection = true;
+        continue;
+      }
+      
+      // Check if we're leaving the items section
+      if (inItemsSection && (line.includes('Gross Total') || line.includes('Tax Summary'))) {
+        console.log(`Leaving items section at line ${i + 1}`);
+        break;
+      }
+      
+      // Update currentReturnDate if we encounter a Tax Invoice line (only for non-GVN)
+      if (!isGVNFormat && inItemsSection && line.includes('Tax Invoice :')) {
+        const taxInvoiceMatch = line.match(/Tax Invoice\s*:\s*(\d+)\s+Date\s*:\s*(\d{1,2}\/\d{1,2}\/\d{4})/i);
+        if (taxInvoiceMatch) {
+          currentReturnDate = this.formatDate(taxInvoiceMatch[2]);
+          console.log(`Updated currentReturnDate to ${currentReturnDate} from Tax Invoice at line ${i + 1}`);
+          continue; // Skip this line, it's not an item
+        }
+      }
+      
+      // Parse item if we're in items section and line starts with digit
+      if (inItemsSection && /^\d+/.test(line)) {
+        try {
+          const parsedItem = this.parseSingleLineItem(line, new Map(), mainDate, currentReturnDate);
+          if (parsedItem) {
+            console.log(`✓ Parsed item: ${parsedItem.itemCode} - ${parsedItem.description} - Qty: ${parsedItem.quantity} - Return Date: ${parsedItem.returnDate}`);
+            items.push(parsedItem);
+          }
+        } catch (error) {
+          console.log(`Error parsing item at line ${i + 1}: ${error.message}`);
+          continue;
+        }
+      }
+    }
+    
+    console.log(`Total items extracted: ${items.length}`);
+    console.log('=== END ITEMS EXTRACTION ===');
+    
+    return items;
   }
 
   /**
@@ -458,6 +582,26 @@ class CreditNoteParser {
     console.log(`Main credit note date: ${mainDate}`);
     this.logDebug(`Main credit note date: ${mainDate}`);
     
+    // First pass: Look for "Tax Invoice :" lines and extract dates
+    // This is the primary method for multi-date credit notes
+    const taxInvoiceDates = new Map(); // Map line index to date
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const taxInvoiceMatch = line.match(/Tax Invoice\s*:\s*(\d+)\s+Date\s*:\s*(\d{1,2}\/\d{1,2}\/\d{4})/i);
+      if (taxInvoiceMatch) {
+        const invoiceNum = taxInvoiceMatch[1];
+        const date = this.formatDate(taxInvoiceMatch[2]);
+        taxInvoiceDates.set(i, date);
+        console.log(`Found Tax Invoice ${invoiceNum} with date ${date} at line ${i + 1}`);
+        this.logDebug(`Tax Invoice ${invoiceNum} at line ${i + 1} -> date ${date}`);
+      }
+    }
+    
+    // If we found Tax Invoice dates, use them to determine currentReturnDate
+    if (taxInvoiceDates.size > 0) {
+      console.log(`Found ${taxInvoiceDates.size} Tax Invoice dates, will use rolling date`);
+    }
+    
     // First pass: collect all item-specific dates (if any)
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -525,6 +669,16 @@ class CreditNoteParser {
       if (inItemsSection && (line.includes('Gross Total') || line.includes('Tax Summary'))) {
         console.log(`Leaving items section at line ${i + 1}: ${line}`);
         break;
+      }
+      
+      // Update currentReturnDate if we encounter a Tax Invoice line
+      if (inItemsSection && line.includes('Tax Invoice :')) {
+        const taxInvoiceMatch = line.match(/Tax Invoice\s*:\s*(\d+)\s+Date\s*:\s*(\d{1,2}\/\d{1,2}\/\d{4})/i);
+        if (taxInvoiceMatch) {
+          currentReturnDate = this.formatDate(taxInvoiceMatch[2]);
+          console.log(`Updated currentReturnDate to ${currentReturnDate} from Tax Invoice line: ${line}`);
+          continue; // Skip this line, it's not an item
+        }
       }
       
       // If we encounter a standalone date line while inside the items section, update currentReturnDate
