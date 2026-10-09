@@ -186,6 +186,18 @@ async function getEventForecast(req, res) {
             return `(YEAR(ds.sale_date) = ${historicalYear} AND ds.sale_date BETWEEN '${startDate.toISOString().split('T')[0]}' AND '${endDate.toISOString().split('T')[0]}')`;
           }).join(' OR ');
           dateConditions.push(historicalDateConditions);
+        } else if (isFixedDate && eventDates.length > 0) {
+          // For fixed events, if no event exists for historical year, use same month/day from target year
+          const historicalDateConditions = eventDates.map(eventDate => {
+            const startDate = new Date(eventDate);
+            startDate.setFullYear(historicalYear);
+            startDate.setDate(startDate.getDate() - 1);
+            const endDate = new Date(eventDate);
+            endDate.setFullYear(historicalYear);
+            return `(YEAR(ds.sale_date) = ${historicalYear} AND ds.sale_date BETWEEN '${startDate.toISOString().split('T')[0]}' AND '${endDate.toISOString().split('T')[0]}')`;
+          }).join(' OR ');
+          dateConditions.push(historicalDateConditions);
+          console.log(`No event found for ${historicalYear}, using fixed date pattern from target year`);
         }
       }
 
