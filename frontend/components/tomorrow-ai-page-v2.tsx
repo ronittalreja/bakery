@@ -61,13 +61,38 @@ export default function TomorrowAIPageV2() {
   const [syncProgress, setSyncProgress] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [isMounted, setIsMounted] = useState(true);
+  const [lastRequestTime, setLastRequestTime] = useState<number>(0);
+  const [requestQueue, setRequestQueue] = useState<number>(0);
+  const [cache, setCache] = useState<Map<string, any>>(new Map());
+  const [cacheTimestamp, setCacheTimestamp] = useState<number>(0);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
   const MAX_RETRIES = 3;
-  const API_TIMEOUT = 10000; // 10 seconds
+  const API_TIMEOUT = 15000; // 15 seconds (increased for slow connections)
+  const REQUEST_COOLDOWN = 1000; // 1 second between requests (increased)
+  const MAX_CONCURRENT_REQUESTS = 3; // Reduced to prevent overwhelming server
+  const CACHE_TTL = 60000; // 1 minute cache
 
   // Robust API fetch with timeout and retry
   const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = API_TIMEOUT): Promise<Response> => {
+    // Rate limiting: check cooldown
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastRequestTime;
+    
+    if (timeSinceLastRequest < REQUEST_COOLDOWN) {
+      const waitTime = REQUEST_COOLDOWN - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    // Check concurrent request limit
+    if (requestQueue >= MAX_CONCURRENT_REQUESTS) {
+      throw new Error('Too many concurrent requests. Please wait.');
+    }
+    
+    setRequestQueue(prev => prev + 1);
+    setLastRequestTime(Date.now());
+    
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -81,14 +106,29 @@ export default function TomorrowAIPageV2() {
     } catch (error) {
       clearTimeout(timeoutId);
       throw error;
+    } finally {
+      setRequestQueue(prev => Math.max(0, prev - 1));
     }
   };
 
-  // Robust API call with error handling
+  // Robust API call with error handling and caching
   const apiCall = async <T,>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    useCache = true
   ): Promise<ApiResponse<T>> => {
+    // Check cache first
+    if (useCache) {
+      const now = Date.now();
+      const cacheKey = endpoint;
+      const cached = cache.get(cacheKey);
+      
+      if (cached && (now - cacheTimestamp < CACHE_TTL)) {
+        console.log(`Cache hit [${endpoint}]`);
+        return cached;
+      }
+    }
+    
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -113,6 +153,13 @@ export default function TomorrowAIPageV2() {
 
       const data = await response.json();
       console.log(`API Response [${endpoint}]:`, data);
+      
+      // Cache the response
+      if (useCache && data.success) {
+        setCache(prev => new Map(prev).set(endpoint, data));
+        setCacheTimestamp(Date.now());
+      }
+      
       return data;
     } catch (error: any) {
       console.error(`API Error [${endpoint}]:`, error);
@@ -124,28 +171,31 @@ export default function TomorrowAIPageV2() {
   };
 
   const fetchNextEvent = useCallback(async () => {
+    if (!isMounted) return;
     try {
       const result = await apiCall<Event>('/api/tomorrow-ai/events/next');
-      if (result.success && result.data) {
+      if (isMounted && result.success && result.data) {
         setNextEvent(result.data);
       }
     } catch (error) {
       console.error('Error fetching next event:', error);
     }
-  }, []);
+  }, [isMounted]);
 
   const fetchUpcomingEvents = useCallback(async () => {
+    if (!isMounted) return;
     try {
       const result = await apiCall<Event[]>('/api/tomorrow-ai/events/upcoming?limit=3');
-      if (result.success && result.data) {
+      if (isMounted && result.success && result.data) {
         setUpcomingEvents(result.data);
       }
     } catch (error) {
       console.error('Error fetching upcoming events:', error);
     }
-  }, []);
+  }, [isMounted]);
 
   const fetchEventForecast = async (event: Event) => {
+    if (!isMounted) return;
     setIsLoading(true);
     setError(null);
     try {
@@ -153,19 +203,23 @@ export default function TomorrowAIPageV2() {
         `/api/tomorrow-ai/events/forecast?eventName=${encodeURIComponent(event.event_name)}&year=${event.year}`
       );
       
-      if (result.success && result.data) {
+      if (isMounted && result.success && result.data) {
         setForecasts(result.data.forecasts || []);
         setSelectedEvent(result.data.event || event);
         setYearWindow(result.data.year_window || null);
         setView("forecast");
-      } else {
+      } else if (isMounted) {
         setError(result.error || 'Failed to fetch forecast data');
       }
     } catch (error: any) {
       console.error('Error fetching event forecast:', error);
-      setError(error.message || 'Failed to fetch forecast data');
+      if (isMounted) {
+        setError(error.message || 'Failed to fetch forecast data');
+      }
     } finally {
-      setIsLoading(false);
+      if (isMounted) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -228,6 +282,12 @@ export default function TomorrowAIPageV2() {
   };
 
   useEffect(() => {
+    setIsMounted(true);
+    setRetryCount(0);
+    // Clear cache on mount to ensure fresh data
+    setCache(new Map());
+    setCacheTimestamp(0);
+    
     const loadData = async () => {
       setIsInitialLoading(true);
       setError(null);
@@ -235,21 +295,28 @@ export default function TomorrowAIPageV2() {
         await Promise.all([fetchNextEvent(), fetchUpcomingEvents()]);
       } catch (error) {
         console.error('Error loading initial data:', error);
-        setError('Failed to load events data. Please try again.');
+        if (isMounted) {
+          setError('Failed to load events data. Please try again.');
+        }
       } finally {
-        setIsInitialLoading(false);
+        if (isMounted) {
+          setIsInitialLoading(false);
+        }
       }
     };
     loadData();
 
     // Poll sync progress every 2 seconds if syncing
     const interval = setInterval(() => {
-      if (isSyncing) {
+      if (isSyncing && isMounted) {
         fetchSyncProgress();
       }
     }, 2000);
 
-    return () => clearInterval(interval);
+    return () => {
+      setIsMounted(false);
+      clearInterval(interval);
+    };
   }, [isSyncing, fetchNextEvent, fetchUpcomingEvents]);
 
   const getEventEmoji = (eventName: string) => {
